@@ -87,3 +87,9 @@ class TestBasicExecutionCommands:
         r = await dbg.handle("step_over")
         assert r == True
         conn.send_event.assert_called_with("Terminated.")
+    
+    @pytest.mark.asyncio
+    async def test_select_path(self, dbg, conn):
+        r = await dbg.handle("select_path 0")
+        assert r == True
+        assert 'State 0 at 0x4003e0' in str(conn.send_event.call_args[0][0])

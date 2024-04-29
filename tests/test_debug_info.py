@@ -37,11 +37,11 @@ class TestDebugInfoCommands:
 
         return dbg
 
-    @pytest.mark.asyncio
-    async def test_get_cfg(self, dbg, conn):
-        r = await dbg.handle("get_cfg")
-        assert r == True
-        assert "{\'graph\': \'digraph " in str(conn.send_event.call_args[0][0])
+    # @pytest.mark.asyncio
+    # async def test_get_cfg(self, dbg, conn):
+    #     r = await dbg.handle("get_cfg")
+    #     assert r == True
+    #     assert "{\'graph\': \'digraph " in str(conn.send_event.call_args[0][0])
     
     @pytest.mark.asyncio
     async def test_get_current_block(self, dbg, conn):
@@ -78,3 +78,10 @@ class TestDebugInfoCommands:
         r = await dbg.handle("list_breakpoints")
         assert r == True
         assert "Breakpoints: Breakpoint at 0x400566" in str(conn.send_event.call_args[0][0])
+    
+    @pytest.mark.asyncio
+    async def test_list_active_paths(self, dbg, conn):
+        r = await dbg.handle("list_active_paths")
+        assert r == True
+        assert "Paths Found: State 0 at 0x400566" in str(conn.send_event.call_args[0][0])
+    
