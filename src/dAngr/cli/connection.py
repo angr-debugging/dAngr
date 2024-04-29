@@ -1,5 +1,6 @@
 from prompt_toolkit import HTML, print_formatted_text
 import html
+import re
 
 class CliConnection:
 
@@ -18,9 +19,15 @@ class CliConnection:
         return html.escape(data )
         # return data.replace("&", "&amp").replace("<", "&lt").replace(">", "&gt").replace("\"", "&quot").replace("'", "&apos")
     
+    def remove_html_tags(self, data):
+        """Remove html tags from a string"""
+        clean = re.compile('(&lt;.*?&gt;)|<.*?>')
+        return re.sub(clean, '', data)
+    
     async def send_event(self, data):
         #replace newlines with newlines and 4 spaces
         data = self._escape(str(data).replace("\n", "\n" + " "*self.indent))
+        data = self.remove_html_tags(data)
         print_formatted_text(HTML(f"    {data}"))
 
     async def send_output(self, data):
