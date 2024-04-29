@@ -1,6 +1,7 @@
 # dAngr - A Debugger for Angr
 
-dAngr is a command-line debugger designed to facilitate the debugging of binaries using symbolic execution. It leverages [angr](https://angr.io) as its symbolic execution engine, providing powerful capabilities for analyzing and debugging binaries.
+dAngr offers a streamlined approach to leverage [angr's](https://angr.io) powerful symbolic execution capabilities within a user-friendly command-line interface (CLI) environment, eliminating the necessity for extensive programming knowledge usually required to use angr. 
+Providing powerful capabilities for analyzing and debugging binaries.
 
 ## Features
 
@@ -72,6 +73,9 @@ Without specifying any concrete inputs, dAngr will execute the target binary usi
 ## Contributing
 
 Contributions to dAngr are welcome! If you find any bugs or have suggestions for new features, please open an issue or submit a pull request on GitHub.
+
+## Research
+Check out our other research [here](https://distrinet.cs.kuleuven.be/research/publications) 
 
 ## Citations
 If you have used dAngr in your research, please cite at least the following paper describing it:
