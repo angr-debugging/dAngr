@@ -84,7 +84,7 @@ class CommandLineDebugger(Debugger):
             # get module base name if different from the previous one
             if package != DEBUGGER_COMMANDS[command].__module__.split('.')[-2]:
                 package = DEBUGGER_COMMANDS[command].__module__.split('.')[-2]
-                table_data.append([EMPTY, f"<i>{package}:</i>"])
+                table_data.append([EMPTY, f"{package}"])
 
             # don't list short commands
             name = DEBUGGER_COMMANDS[command].__name__
@@ -101,13 +101,13 @@ class CommandLineDebugger(Debugger):
                 table_data.append([EMPTY,EMPTY, EMPTY, DEBUGGER_COMMANDS[command](None).info.replace("\n", " ")])
 
         # Create HTML table
-        html_table = "<table>\n"
+        html_table = ""
         for row in table_data:
-            html_table += "<tr>"
+            html_table += "\t"
             for cell in row:
-                html_table += f"<td>{cell}</td>"
-            html_table += "</tr>\n"
-        html_table += "</table>"
+                html_table += f"{cell}"
+            html_table += "\n"
+        
 
         # Create formatted HTML text with style
         formatted_html = f"{html_table}"
