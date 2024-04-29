@@ -77,6 +77,7 @@ Contributions to dAngr are welcome! If you find any bugs or have suggestions for
 ## Research
 Check out our other research [here](https://distrinet.cs.kuleuven.be/research/publications) 
 
+
 ## Citations
 If you have used dAngr in your research, please cite at least the following paper describing it:
 ````{verbatim}
@@ -94,6 +95,9 @@ If you have used dAngr in your research, please cite at least the following pape
 ````
 ## Contact
 Have questions or feedback? Don't hesitate to reach out to us! [open an issue](https://github.com/angr-debugging/dAngr/issues) on our repository or feel free to contact one of the authors.
+
+## Artifact
+We published a separate version of this [Artifact](https://zenodo.org/doi/10.5281/zenodo.11085514) on Zenodo.
 
 
 ## License
