@@ -1,0 +1,15 @@
+.venv/
+.pytest_cache/
+build/
+node_modules
+.DS_Store
+package-lock.json
+old
+out/
+__pycache__
+example.dSYM
+test.py
+cfg.png
+src/dAngr.egg-info/
+.dAngr/
+dAngr.egg-info/

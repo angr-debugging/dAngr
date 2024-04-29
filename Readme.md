@@ -1,0 +1,76 @@
+# dAngr - A Debugger for Angr
+
+dAngr is a command-line debugger designed to facilitate the debugging of binaries using symbolic execution. It leverages [angr](https://angr.io) as its symbolic execution engine, providing powerful capabilities for analyzing and debugging binaries.
+
+## Features
+
+- Perform symbolic execution on binaries for debugging purposes.
+- Command-line interface for easy interaction.
+- Easy way to call a function with chosen arguments without the hassle of memory management and argument parsing.
+- Platform independent execution
+
+## Installation
+
+To use dAngr, follow these steps:
+
+0. Preferable create a virtual environment, for instance using [venv](https://docs.python.org/3/library/venv.html).
+
+1. Install the required dependencies by running the following command:
+
+```bash
+pip install .
+```
+Note: on MacOS you may need to run the following for now:
+```bash
+pip install --pre --no-binary capstone capstone==5.0.0.post1
+```
+
+2. Run dAngr:
+
+```bash
+dAngr
+```
+
+Or use the Dockerfile to create an clean environment for dAngr.
+
+## Help
+1. In the debugger prompt, you can find help as follows:
+```bash
+(dAngr)> help
+```
+## Documentation
+
+Further documentation on the commands that may be used can be found [here](./docs/documentation.md).
+
+## Example Usage
+
+A basic example, demonstrating the capabilities of dAngr, can be found [here](./examples/basic_example/)
+
+A more practical example, a simplified version of the vulnerability found in the Eufy ecosystem, can be found [here](./examples/aes_example/)
+
+## Advanced Symobic Use Case
+Without specifying any concrete inputs, dAngr will execute the target binary using symbolic inputs.  
+
+## Contributing
+
+Contributions to dAngr are welcome! If you find any bugs or have suggestions for new features, please open an issue or submit a pull request on GitHub.
+
+## Citations
+If you have used dAngr in your research, please cite at least the following paper describing it:
+````{verbatim}
+@inproceedings{dangr24, 
+    author = {Goeman, V and de Ruck, D and Cordemans, T and Lapon, J and Naessens, V}, 
+    booktitle = {Proceedings of the WOOT Conference on Offensive Technologies (WOOT '24)}, 
+    month = {Aug}, 
+    organization = {Philadelphia}, 
+    title = {Reverse Engineering the Eufy Ecosystem: A Deep Dive into Security Vulnerabilities 
+            and Proprietary Protocols},
+    year = {2024},
+    month = {Aug}, 
+    conference = {USENIX WOOT Conference on Offensive Technologies}, 
+}
+````
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
