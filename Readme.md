@@ -11,6 +11,7 @@ dAngr is a command-line debugger designed to facilitate the debugging of binarie
 
 ## Installation
 
+
 To use dAngr, follow these steps:
 
 0. Preferable create a virtual environment, for instance using [venv](https://docs.python.org/3/library/venv.html).
@@ -31,8 +32,16 @@ pip install --pre --no-binary capstone capstone==5.0.0.post1
 dAngr
 ```
 
-Or use the Dockerfile to create an clean environment for dAngr.
+### Docker
 
+Or use the Dockerfile to create an clean environment for dAngr.
+```bash
+docker build -t dAngr .
+```
+
+```bash
+docker run -it dAngr
+```
 ## Help
 1. In the debugger prompt, you can find help as follows:
 ```bash

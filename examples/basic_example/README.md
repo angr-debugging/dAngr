@@ -9,7 +9,7 @@ This example demonstrates how to use the debugger to set function prototypes, fu
 1. Start dAngr and load the binary:
 
 ```bash
-(dAngr)> load example
+(dAngr)> load examples/basic_example/example
 ```
 
 2. Optionally Load SimProcedure hooks from a file (e.g.,`example_hooks.py`):
