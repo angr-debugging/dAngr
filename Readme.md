@@ -92,6 +92,9 @@ If you have used dAngr in your research, please cite at least the following pape
     conference = {USENIX WOOT Conference on Offensive Technologies}, 
 }
 ````
+## Contact
+Have questions or feedback? Don't hesitate to reach out to us! Connect with our team on [GitHub Discussions](https://github.com/angr-debugging/dAngr/discussions), [open an issue](https://github.com/angr-debugging/dAngr/issues) on our repository or feel free to contact one of the authors.
+
 
 ## License
 
