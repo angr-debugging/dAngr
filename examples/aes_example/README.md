@@ -4,7 +4,7 @@ in aes_example.c is the source code of the binary aes_example. This files create
 ## Commands
 1. Start dAngr and load the binary:
 ```bash
-(dAngr)> load aes_example
+(dAngr)> load examples/aes_example/aes_example
 ```
 
 2. Set the function prototype for `obfuscate`:
