@@ -1,4 +1,4 @@
-from dAngr.cli.models import Response,Memory
+from dAngr.cli.models import Memory
 from ..base import BaseCommand
 
 class GetStringMemoryCommand(BaseCommand):
@@ -9,5 +9,5 @@ class GetStringMemoryCommand(BaseCommand):
 
     async def execute(self, address):
         str_value = self.debugger.get_string_memory(address)
-        return Response(Memory(address, str_value, 'str'))
+        return Memory(address, str_value, 'str')
 

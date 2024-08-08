@@ -1,5 +1,6 @@
-from dAngr.cli.models import Response,State
+from dAngr.cli.models import State
 from dAngr.cli.debugger_commands import BaseCommand
+from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 
 class SelectPathCommand(BaseCommand):
     def __init__(self, debugger_core):
@@ -8,7 +9,8 @@ class SelectPathCommand(BaseCommand):
         self.info = "Select the next path to take by index."
 
     async def execute(self, index):
-        self.throw_if_not_initialized()
         state = self.debugger.select_active_path(index)
-        return Response(State(index, state.addr))
+        if state is None:
+            raise DebuggerCommandError("Invalid path index specified.")
+        await self.send_info(f"Path {index} selected: {hex(state.addr)}")
 

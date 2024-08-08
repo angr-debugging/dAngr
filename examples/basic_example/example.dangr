@@ -1,5 +1,5 @@
-l ./examples/basic_example/example
-lh ./examples/basic_example/example_hooks.py
+l example
+lh example_hooks.py
 add_breakpoint 0x400566
 set_function_prototype int processMessage(char*, int, char**)
 set_function_call processMessage('abc',2,b'0000000000')

@@ -10,11 +10,16 @@
     "typescript.tsc.autoDetect": "off",
 
     "python.languageServer": "Pylance",
+    "python.analysis.typeCheckingMode": "standard",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportIncompatibleMethodOverride": "information"  // or "information", "warning", "error"
+    },
+
     "python.testing.pytestArgs": [
         "tests"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "debugpy.debugJustMyCode": false,
-    
+    "terminal.integrated.scrollback":3000
 }

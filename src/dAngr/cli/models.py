@@ -1,34 +1,23 @@
+from abc import abstractmethod
 import json
 
-class Response:
-    def __init__(self,data,format=None):
-        self.data = data
-        self.format = format
-    def __str__(self):
-        d = self.data
-        if isinstance(self.data, list):
-            d = {"self":"\n ".join([str(s) for s in self.data])}            
-        if self.format:
-            if isinstance(d, dict):
-                return self.format.format(**d)
-            else:
-                return self.format.format(self=d)
-        return  str(d)
-    
+from angr import SimState
+
+
 class Breakpoint:
-    def __init__(self, address=None, source=None, line_nr=None, enabled=True):
+    def __init__(self, address, source=None, line_nr=None, enabled=True):
         self.address = address  # The memory address of the breakpoint
         self.source = source    # The source file in which the breakpoint is set
         self.line_nr = line_nr  # The line number of the breakpoint in the source file
         self.enabled = enabled  # Whether the breakpoint is currently active
 
     def __str__(self):
-        status = "Enabled" if self.enabled else "Disabled"
+        status = "" if self.enabled else " (disabled)"
         if self.line_nr is None:
-            return f"Breakpoint at {hex(self.address)} - {status}"
+            return f"Breakpoint at {hex(self.address)}{status}"
         else:
-            return f"Breakpoint at {hex(self.address)} in {self.source} line  {self.line_nr} - {status}"
-
+            return f"Breakpoint at {hex(self.address)} in {self.source} line  {self.line_nr}{status}"
+        
 class Register:
     def __init__(self,name,size,value):
         self.name = name
@@ -54,13 +43,16 @@ class State:
         return f"State {self.index} at {hex(self.address)}"
     
 class BasicBlock:
-    def __init__(self,address, size, instructions, assembly):
+    def __init__(self,address, size, instructions, assembly, function=None):
         self.address = address
         self.size = size
         self.instructions = instructions
         self.assembly = assembly
+        self.function = function
     def __str__(self) -> str:
-        return f"Address: {hex(self.address)}:\nSize: {self.size} bytes\nNumber of Instructions: {self.instructions}\nDisassembly:\n{self.assembly}"
+        #add function name if function is not None
+        f = f"  Function: {self.function}\n" if self.function else ""
+        return f"Address: {hex(self.address)}:\n{f}  Size: {self.size} bytes\n  Number of Instructions: {self.instructions}\n  Disassembly:\n    {str(self.assembly).replace('\n','\n    ').strip()}"
     
 class StateExecution:
     def __init__(self,index,output):
@@ -86,3 +78,4 @@ class DebugSymbol:
             return f"Debug Symbol: {self.name} ({self.type}) at {hex(self.address)}"
         else:
             return f"Debug Symbol: {self.name} ({self.type})"
+        

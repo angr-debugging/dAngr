@@ -6,3 +6,6 @@ from .list_registers import ListRegistersCommand
 from .set_memory import SetMemoryCommand
 from .set_register import SetRegisterCommand
 from .zero_fill import ZeroFillCommand
+from .dump_stdin import DumpStdinCommand
+from .add_symbol import AddSymbolCommand
+from .get_symbol import GetSymbolCommand

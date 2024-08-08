@@ -1,6 +1,7 @@
-from dAngr.cli.models import Response
+from dAngr.cli.filters import BreakpointFilter
+from dAngr.cli.models import Breakpoint
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
-from ..base import BaseCommand
+from ...base import BaseCommand
 
 class EnableBreakpointAtLineCommand(BaseCommand):
     def __init__(self, debugger_core):
@@ -11,8 +12,11 @@ class EnableBreakpointAtLineCommand(BaseCommand):
     async def execute(self, sourcefile, line_nr):
         """Enable a breakpoint at the specified source file and line number."""
         for bp in self.debugger.breakpoints:
-            if bp.source == sourcefile and int(bp.line_nr) == line_nr:
-                bp.enabled = True
-                return Response(bp, f"Breakpoint enabled at {bp.source}:{bp.line_nr}.")
-        raise DebuggerCommandError(f"No breakpoint found at {bp.source}:{bp.line_nr}.")
+            if isinstance(bp, BreakpointFilter):
+                b:Breakpoint = bp.breakpoint
+                if b.source == sourcefile and b.line_nr == line_nr:
+                    bp.enabled = True
+                    await self.send_info (f"Breakpoint enabled at {b.source}:{b.line_nr}.")
+                    return
+        raise DebuggerCommandError(f"No breakpoint found at {sourcefile}:{line_nr}.")
     

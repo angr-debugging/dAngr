@@ -1,5 +1,5 @@
 from dAngr.cli.command_line_debugger import CommandLineDebugger
-from dAngr.cli.connection import CliConnection
+from dAngr.cli.cli_connection import CliConnection
 
 
 import pytest
@@ -22,66 +22,62 @@ class TestDebugInfoCommands:
     @pytest.fixture
     def conn(self):
         c = CliConnection()
-        c.send_event = AsyncMock()
+        c.send_result = AsyncMock()
+        c.send_info = AsyncMock()
         c.send_error = AsyncMock()
         return c
 
     @pytest.fixture
     async def dbg(self,conn):
         dbg = CommandLineDebugger(conn)
-        await dbg.handle("load example")
-        await dbg.handle("add_breakpoint 0x400566")
-        await dbg.handle("continue")
-        conn.send_event = AsyncMock()
+        assert await dbg.handle("load example")
+        assert await dbg.handle("add_breakpoint 0x400566")
+        assert await dbg.handle("continue")
+        conn.send_result = AsyncMock()
+        conn.send_info = AsyncMock()
         conn.send_error = AsyncMock()
 
         return dbg
 
     # @pytest.mark.asyncio
     # async def test_get_cfg(self, dbg, conn):
-    #     r = await dbg.handle("get_cfg")
+    #     assert await dbg.handle("get_cfg")
     #     assert r == True
-    #     assert "{\'graph\': \'digraph " in str(conn.send_event.call_args[0][0])
+    #     assert "{\'graph\': \'digraph " in str(conn.send_info.call_args[0][0])
     
     @pytest.mark.asyncio
+    async def test_get_basicblocks(self, dbg, conn):
+        assert await dbg.handle("get_basicblocks")
+        assert "Address: 0x40059b" in str(conn.send_result.call_args[0][0])
+
+    @pytest.mark.asyncio
     async def test_get_current_block(self, dbg, conn):
-        r = await dbg.handle("get_current_block")
-        assert r == True
-        assert "Current basic block:" in str(conn.send_event.call_args[0][0])
+        assert await dbg.handle("get_current_block")
+        assert "Current basic block:" in str(conn.send_result.call_args[0][0])
     
     @pytest.mark.asyncio
     async def test_list_active_paths(self, dbg, conn):
-        r = await dbg.handle("list_active_paths")
-        assert r == True
-        assert "Paths Found: State 0 at 0x400566" == str(conn.send_event.call_args[0][0])
+        assert await dbg.handle("list_active_paths")
+        assert "Paths Found: State 0 at 0x400566" == str(conn.send_result.call_args[0][0])    
     
     @pytest.mark.asyncio
     async def test_list_binary_symbols(self, dbg, conn):
-        r = await dbg.handle("list_binary_symbols")
-        assert r == True
-        assert "Binary Symbols:" in str(conn.send_event.call_args[0][0])
+        assert await dbg.handle("list_binary_symbols")
+        assert "Binary Symbols:" in str(conn.send_result.call_args[0][0])
 
     @pytest.mark.asyncio
     async def test_list_constraints(self, dbg, conn):
-        r = await dbg.handle("list_constraints")
-        assert r == True
-        assert "Constraints:" in str(conn.send_event.call_args[0][0])
+        assert await dbg.handle("list_constraints")
+        assert "Constraints:" in str(conn.send_result.call_args[0][0])
     
     @pytest.mark.asyncio
     async def test_list_path_history(self, dbg, conn):
-        r = await dbg.handle("list_path_history")
-        assert r == True
-        assert "Path History:" in str(conn.send_event.call_args[0][0])
+        assert await dbg.handle("list_path_history")
+        assert "Path History:" in str(conn.send_result.call_args[0][0])
     
     @pytest.mark.asyncio
     async def test_list_breakpoints(self, dbg, conn):
-        r = await dbg.handle("list_breakpoints")
-        assert r == True
-        assert "Breakpoints: Breakpoint at 0x400566" in str(conn.send_event.call_args[0][0])
+        assert await dbg.handle("list_breakpoints")
+        assert "Breakpoint(s): [0] Breakpoint at 0x400566" == str(conn.send_result.call_args[0][0])
     
-    @pytest.mark.asyncio
-    async def test_list_active_paths(self, dbg, conn):
-        r = await dbg.handle("list_active_paths")
-        assert r == True
-        assert "Paths Found: State 0 at 0x400566" in str(conn.send_event.call_args[0][0])
     

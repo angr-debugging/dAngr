@@ -1,4 +1,4 @@
-from  dAngr.cli.models import Memory, Response
+from  dAngr.cli.models import Memory
 from ..base import BaseCommand
 
 class GetMemoryCommand(BaseCommand):
@@ -7,9 +7,10 @@ class GetMemoryCommand(BaseCommand):
         self.arg_specs = [("address",int),("size",int)]
         self.info = "Get memory value of lengt size at a specific address as a byte array."
 
+
     async def execute(self, address,size):
         byte_value = self.debugger.get_memory(address, size)
         if byte_value.concrete:
             byte_value = self.debugger.cast_to(byte_value, cast_to=bytes)
         
-        return Response(Memory(address, byte_value, "bytes"))
+        return Memory(address, byte_value, "bytes")

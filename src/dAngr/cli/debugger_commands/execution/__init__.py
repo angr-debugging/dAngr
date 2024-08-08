@@ -1,6 +1,6 @@
 from .continue_ import ContinueCommand
 from .exit import ExitCommand
-from .start_at_address import StartAtAddressCommand
+from .set_start_address import SetStartAddressCommand
 from .load_hooks import LoadHooksCommand
 from .load import LoadCommand
 from .pause import PauseCommand
@@ -8,5 +8,8 @@ from .start import StartCommand
 from .step import StepCommand
 from .step_over import StepOverCommand
 from .step_out import StepOutCommand
-from .reload import ReloadCommand
+from .reset_state import ResetStateCommand
 from .select_path import SelectPathCommand
+from .list_exclusions import ListExclusionsCommand
+from .run_script import RunScriptCommand
+from .filters import *

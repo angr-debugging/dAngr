@@ -1,6 +1,46 @@
+from enum import Enum, auto
 import importlib
 import os
 import inspect
+from typing import Union, get_args
+
+from claripy import List
+
+class Type(Enum):
+    INT = auto()
+    STR = auto()
+    BYTES = auto()
+    BOOL = auto()
+    DOUBLE = auto()
+    HEX = auto()
+    
+
+def get_union_members(union_type):
+    return get_args(union_type)
+
+def parse_arguments(input:str, splitter):
+    # Construct a regex pattern from the command's argument specifications
+        # string arguments can be a signle word or words in double quotes
+        # parse user_input:
+        # 1. split by spaces
+        # 2. if a word starts with double quote, join all words until the next double quote
+        tokens:List[str] = [t.strip() for t in input.split(splitter)]
+        if len(tokens) == 1 and not tokens[0]:
+            tokens = []
+        parsed_args = []
+        i = 0
+        while i < len(tokens):
+            if tokens[i].startswith(('\'','"')):
+                t = tokens[i][0]
+                j = i
+                while j<len(tokens) and  not tokens[j].endswith(t):
+                    j += 1
+                parsed_args.append(splitter.join(tokens[i:j+1]))
+                i = j
+            else:
+                parsed_args.append(tokens[i])
+            i += 1
+        return parsed_args
 
 def get_python_classes_in_folder(folder_path):
     python_classes = []
@@ -20,9 +60,9 @@ def get_classes_from_file(file_path):
 
     # Attempt to import the module dynamically
     module_name = os.path.splitext(os.path.basename(file_path))[0]
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    spec = importlib.util.spec_from_file_location(module_name, file_path) # type: ignore
     if spec is not None:
-        module = importlib.util.module_from_spec(spec)
+        module = importlib.util.module_from_spec(spec) # type: ignore
         try:
             spec.loader.exec_module(module)
 

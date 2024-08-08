@@ -6,10 +6,9 @@ from dAngr.exceptions import DebuggerCommandError, ExecutionError
 class ContinueCommand(BaseCommand):
     def __init__(self, debugger:Debugger):
         super().__init__(debugger)
-        self.info = "Run until a breakpoint, a fork (if not fully concrete), or until execution completed."
+        self.info = "Run until a breakpoint or terminated."
         
-    async def execute(self):
-        self.throw_if_not_active()
+    async def execute(self): # type: ignore
         await self.run()
 
 

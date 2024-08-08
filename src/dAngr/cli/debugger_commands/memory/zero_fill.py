@@ -1,5 +1,3 @@
-from dAngr.cli.models import Response
-import angr
 from ..base import BaseCommand
 
 class ZeroFillCommand(BaseCommand):
@@ -9,6 +7,5 @@ class ZeroFillCommand(BaseCommand):
         self.optional_args = [("enable", bool)]
 
     async def execute(self, enable=True):
-        """Enable or disable zero fill."""
-        self.debugger.zero_fill(enable)
-        return Response(f"Zero fill {'enabled' if enable else 'disabled'}.")
+        await self.debugger.zero_fill(enable)
+        await self.send_info( f"Zero fill {'enabled' if enable else 'disabled'}.")

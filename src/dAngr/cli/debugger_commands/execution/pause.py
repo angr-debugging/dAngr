@@ -8,7 +8,6 @@ class PauseCommand(BaseCommand):
         self.info = "Pause debugging."
     
     async def execute(self):
-        self.throw_if_not_active()
         await self.debugger.pause()
-        await self.send_event("Paused successfully.")
+        await self.send_info("Paused successfully.")
 

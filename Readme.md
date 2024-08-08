@@ -103,3 +103,8 @@ We also published this [Artifact](https://zenodo.org/doi/10.5281/zenodo.11085514
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+
+## Notes:
+When installing pygraphviz, you may need to first install graphviz with dev extensions:
+apt-get install graphviz graphviz-dev

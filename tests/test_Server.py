@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from prompt_toolkit import PromptSession
 import pytest
 
-from dAngr.cli.command_line_debugger import CommandLineDebugger
-from dAngr.cli.connection import CliConnection
+from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS, CommandLineDebugger
+from dAngr.cli.cli_connection import CliConnection
 from dAngr.cli.server import Server
 
 
@@ -28,14 +28,25 @@ def test_start_server(asyncio_run,server):
         asyncio_run.assert_called_once()
 
 @pytest.mark.asyncio
-@patch.object(CliConnection,'send_event')
+@patch.object(CliConnection,'send_info')
 @patch.object(CommandLineDebugger,'handle', side_effect=[False])
 @patch.object(PromptSession ,'prompt_async', side_effect=["help"])
-async def test_loop(prompt, handle, send_event, server):
+async def test_loop(prompt, handle, send_info, server):
     
     await server.loop()
     prompt.assert_called_once()
-    send_event.assert_called_once_with("Welcome to dAngr, the symbolic debugger. Type help or ? to list commands.")
+    send_info.assert_called_once_with("Welcome to dAngr, the symbolic debugger. Type help or ? to list commands.")
     handle.assert_called_once_with('help')
 
+@pytest.mark.asyncio
+async def test_check_shortnames(server):
+    conn = CliConnection()
+    dbg = CommandLineDebugger(conn)
+
+            # get duplicate short commands and print short and fullname
+    for cmd in DEBUGGER_COMMANDS.values():
+        c = cmd(dbg)
+        if c.cmd_name in ["start","continue"]:
+            break
+        assert not any([o(dbg).short_cmd_name == c.short_cmd_name for o in DEBUGGER_COMMANDS.values() if o != cmd]), f"Duplicate short command {c.short_cmd_name}"
 

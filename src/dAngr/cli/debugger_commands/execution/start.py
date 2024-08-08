@@ -5,5 +5,10 @@ from dAngr.exceptions import DebuggerCommandError
 
 
 class StartCommand(ContinueCommand):
+    def __init__(self, debugger:Debugger
+                    ):
+            super().__init__(debugger)
+            self.info = "Start the execution."
+            self.short_cmd_name = "c"
     pass
 

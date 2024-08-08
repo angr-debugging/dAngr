@@ -1,5 +1,5 @@
 from dAngr.cli.command_line_debugger import CommandLineDebugger
-from dAngr.cli.connection import CliConnection
+from dAngr.cli.cli_connection import CliConnection
 
 import pytest
 import os
@@ -19,7 +19,8 @@ class TestBasicExecutionCommands:
     @pytest.fixture
     def conn(self):
         c = CliConnection()
-        c.send_event = AsyncMock()
+        c.send_result = AsyncMock()
+        c.send_info = AsyncMock()
         c.send_error = AsyncMock()
         return c
 
@@ -28,68 +29,82 @@ class TestBasicExecutionCommands:
         dbg = CommandLineDebugger(conn)
         await dbg.handle("load example")
         #reset functions
-        conn.send_event = AsyncMock()
+        conn.send_info = AsyncMock()
         conn.send_error = AsyncMock()
         return dbg
 
     @pytest.mark.asyncio
-    async def test_reload(self, dbg, conn):
-        r = await dbg.handle("reload")
-        assert r == True
-        conn.send_event.assert_called_with("Binary reloaded.")
+    async def test_reset(self, dbg, conn):
+        assert await dbg.handle("reset_state")
+        conn.send_info.assert_called_with("State reset.")
 
     @pytest.mark.asyncio
     async def test_continue(self, dbg, conn):
-        r = await dbg.handle("continue")
-        assert r == True
-        conn.send_event.assert_called_with("Terminated.")
+        assert await dbg.handle("continue")
+        conn.send_info.assert_called_with("Terminated.")
 
     @pytest.mark.asyncio
     async def test_load_hooks(self, dbg, conn):
-        r = await dbg.handle("load_hooks example_hooks.py")
-        assert r == True
-        conn.send_event.assert_called_with("Hooks 'example_hooks.py' successfully attached.")
+        assert await dbg.handle("load_hooks example_hooks.py")
+        conn.send_info.assert_called_with("Hooks 'example_hooks.py' successfully attached.")
 
     # pause needs further testing
     @pytest.mark.asyncio
     async def test_pause(self, dbg, conn):
-        r = await dbg.handle("pause")
-        assert r == True
-        conn.send_event.assert_called_with("Paused successfully.")
+        assert await dbg.handle("pause")
+        conn.send_info.assert_called_with("Paused successfully.")
 
     @pytest.mark.asyncio
-    async def test_start_at_address(self, dbg, conn):
-        r = await dbg.handle("start_at_address 0x40054d")
-        assert r == True
-        conn.send_event.assert_called_with("Terminated.")
+    async def test_set_start_address(self, dbg, conn):
+        assert await dbg.handle("set_start_address 0x40054d")
+        conn.send_info.assert_called_with("Execution will start at address 0x40054d.")
+        assert await dbg.handle("start")
+        conn.send_info.assert_called_with("Terminated.")
 
     @pytest.mark.asyncio
     async def test_start(self, dbg, conn):
-        r = await dbg.handle("start")
-        assert r == True
-        conn.send_event.assert_called_with("Terminated.")
+        assert await dbg.handle("start")
+        conn.send_info.assert_called_with("Terminated.")
 
     @pytest.mark.asyncio
     async def test_step_into(self, dbg, conn):
-        r = await dbg.handle("step")
-        assert r == True
-        conn.send_event.assert_called_with("Paused at: 0x4003f6")
+        assert await dbg.handle("step")
+        conn.send_info.assert_called_with("Stepped to: 0x4003f6.")
 
     @pytest.mark.asyncio
     async def test_step_out(self, dbg, conn):
-        r = await dbg.handle("step_out")
-        assert r == True
-        conn.send_event.assert_called_with("Terminated.")
+        assert await dbg.handle("step_out")
+        conn.send_info.assert_called_with("Terminated.")
 
 
     @pytest.mark.asyncio
     async def test_step_over(self, dbg, conn):
-        r = await dbg.handle("step_over")
-        assert r == True
-        conn.send_event.assert_called_with("Terminated.")
+        assert await dbg.handle("step_over")
+        conn.send_info.assert_called_with("Terminated.")
     
     @pytest.mark.asyncio
     async def test_select_path(self, dbg, conn):
-        r = await dbg.handle("select_path 0")
-        assert r == True
-        assert 'State 0 at 0x4003e0' in str(conn.send_event.call_args[0][0])
+        assert await dbg.handle("select_path 0")
+        assert 'Path 0 selected: 0x4003e0' in str(conn.send_info.call_args[0][0])
+    
+    @pytest.mark.asyncio
+    async def test_exclude_function(self, dbg, conn):
+        assert await dbg.handle("function_filter main True")
+        conn.send_info.assert_called_with("Function main added to exclusions.")
+        assert await dbg.handle("function_filter main True False")
+        conn.send_info.assert_called_with("Function main removed from exclusions.")
+    
+    @pytest.mark.asyncio
+    async def test_exclude_address(self, dbg, conn):
+        assert await dbg.handle("address_filter 0x40054d True")
+        conn.send_info.assert_called_with("Address 0x40054d added to exclusions.")
+        assert await dbg.handle("address_filter 0x40054d True False")
+        conn.send_info.assert_called_with("Address 0x40054d removed from exclusions.")
+
+    @pytest.mark.asyncio
+    async def test_list_exclusions(self, dbg, conn):
+        assert await dbg.handle("list_exclusions")
+        conn.send_info.assert_called_with("No exclusions.")
+        assert await dbg.handle("address_filter 0x40054d True")
+        assert await dbg.handle("list_exclusions")
+        conn.send_result.assert_called_with("Exclusions: Address Filter: 0x40054d")

@@ -9,7 +9,7 @@ LABEL maintainer='DistriNet'
 
 RUN apt-get update && apt-get install --no-install-recommends --yes python3
 RUN apt-get -y install git
-RUN apt-get -y install python3-pip python3.12-venv
+RUN apt-get -y install python3-pip python3.12-venv graphviz graphviz-dev 
 
 
 # Clone Repo..

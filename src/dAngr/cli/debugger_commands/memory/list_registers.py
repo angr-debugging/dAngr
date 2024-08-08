@@ -1,5 +1,4 @@
-from dAngr.cli.models import Response,Register
-from dAngr.exceptions import DebuggerCommandError
+from dAngr.cli.models import Register
 from ..base import BaseCommand
 
 class ListRegistersCommand(BaseCommand):
@@ -9,8 +8,6 @@ class ListRegistersCommand(BaseCommand):
 
     async def execute(self):
         """List all registers and their current values."""
-        if not self.debugger.is_initialized():
-            raise DebuggerCommandError("Debugger is not initialized.")
         regs=[]
         registers = self.debugger.list_registers()
         for reg, (offset, size) in registers.items():
@@ -18,5 +15,5 @@ class ListRegistersCommand(BaseCommand):
             value = self.debugger.get_register_value(reg, size)
             regs.append(Register(reg,size,value))
         
-        return Response(regs, "Registers and their current values:{self}")
+        return  "Registers and their current values:{self}"
     

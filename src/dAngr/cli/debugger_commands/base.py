@@ -1,23 +1,48 @@
-
+from abc import abstractmethod
+from typing import Callable, cast
+from angr import SimState, SimulationManager
+from dAngr.angr_ext import utils
 from dAngr.angr_ext.debugger import Debugger
+from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.exceptions import ExecutionError
-from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
 
 def get_cmd_name(cls):
     return ''.join(['_'+i.lower() if i.isupper() else i for i in cls.__name__.replace('Command', '')]).lstrip('_')
 
 def get_short_cmd_name(cls):
+    # use the first letter of each word in the command name
     return ''.join([i.lower() for i in cls.__name__.replace('Command', '') if i.isupper()])
-    
-class BaseCommand:
-    def __init__(self, debugger:Debugger):
-        self.debugger = debugger
+
+class BaseCommand(StepHandler):
+    def __init__(self, debugger:Debugger|None):
+        self._debugger = debugger
         self.arg_specs = []
         self.optional_args = []
         self.info = ""
         self.paused = False
         self.cmd_name = get_cmd_name(self.__class__)
         self.short_cmd_name = get_short_cmd_name(self.__class__)
+
+
+    @property
+    def debugger(self):
+        from dAngr.cli.command_line_debugger import CommandLineDebugger
+
+        if self._debugger is None:
+            raise ExecutionError("Debugger not set.")
+        # return self._debugger
+        return cast(CommandLineDebugger,self._debugger)
+
+    async def execute_base(self, *args):
+        return await self.execute(*args)
+
+    @abstractmethod
+    async def execute(self, args):
+        raise NotImplementedError("Each command must implement an execute method")
+
+    async def run(self, until:Callable[[SimulationManager],StopReason] = lambda _: StopReason.NONE):
+        u = until
+        await self.debugger.run(u)
 
     def get_example(self):
         args_lst = [f"<{a[0].replace(' ','_')}>"  for a in self.arg_specs]
@@ -35,38 +60,17 @@ class BaseCommand:
         else:
             return None
     
-    def throw_if_not_initialized(self):
-        if not self.debugger.is_initialized():
-            raise ExecutionError("project not initialized.")
-    def throw_if_not_active(self):
-        if not self.debugger.is_active():
-            raise ExecutionError("Execution not started. First 'load'.")
-    def throw_if_not_finished(self):
-        if not self.debugger.is_finished():
-            raise ExecutionError("Execution not finished.")
+    def send_info(self, data):
+        return self.debugger.conn.send_info(data)
 
-    def send_event(self, data):
-        return self.debugger.conn.send_event(data)
+    def send_error(self, data):
+        return self.debugger.conn.send_error(data)
     
-    async def execute(self, args):
-        raise NotImplementedError("Each command must implement an execute method")
+    def send_warning(self, data):
+        return self.debugger.conn.send_warning(data)
     
-    # handler methods
-    async def handle_exit(self):
-        await self.send_event("Terminated.")
-
-    async def handle_output(self, output:str):
-        await self.debugger.conn.send_output(f"{output}")
-
-    async def handle_breakpoint(self,breakpoints:list[int]):
-        bps = ",".join([ str(bp) for bp in self.debugger.breakpoints if bp.address in breakpoints])
-        await self.send_event(f"Breakpoints hit: {bps}")
+    def send_result(self, data):
+        return self.debugger.conn.send_result(data)
     
-    async def handle_pause(self, addr):
-        await self.send_event(f"Paused at: {hex(addr)}")
 
-    async def handle_step(self,addr):
-        await self.send_event(f"Paused at: {hex(addr)}")
-
-    async def run(self, until = None):
-        await self.debugger.run([int(bp.address) for bp in self.debugger.breakpoints if bp.enabled], self, until)
+    

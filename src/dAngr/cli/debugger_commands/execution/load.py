@@ -1,6 +1,5 @@
 import os
 from dAngr.angr_ext.debugger import Debugger
-from dAngr.cli.models import Response
 from dAngr.cli.debugger_commands import BaseCommand
 from dAngr.exceptions import DebuggerCommandError
 
@@ -16,6 +15,6 @@ class LoadCommand(BaseCommand):
         except Exception as e:
             raise DebuggerCommandError(f"Failed to load binary: {e}")
         f = os.path.basename(binary_path)
-        await self.send_event(f"Binary '{f}' loaded.")
+        await self.send_info(f"Binary '{f}' loaded.")
 
 
