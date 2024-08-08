@@ -39,12 +39,12 @@ For simplicity dAngr is also available using a Dockerfile.
 
 Build Dockerfile to create an clean environment for dAngr.
 ```bash
-docker build -t dAngr .
+docker build -t dangr .
 ```
 
 Run the Docker image and get the dAngr command prompt.
 ```bash
-docker run -it dAngr
+docker run -it dangr
 ```
 
 If you wish to run the dAngr Docker on your own binaries, you may need use shared volumes.
