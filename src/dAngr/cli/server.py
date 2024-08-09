@@ -71,6 +71,11 @@ class Server:
                         self.stop = True
                     except EOFError:
                         return # Ctrl-D to exit
+                    except Exception as e:
+                        if os.getenv("BUILD_TYPE") == "Debug":
+                            raise e
+                        else:
+                            print(f"An unexpected error occurred: {e}")
                 if self.stop:
                     break
         self.stop = False
@@ -86,8 +91,11 @@ class Server:
                 return # Ctrl-C to exit
             except EOFError:
                 return # Ctrl-D to exit
-            # except Exception as e:
-            #     print   (f"An error occurred: {e}")
+            except Exception as e:
+                if os.getenv("BUILD_TYPE") == "Debug":
+                    raise e
+                else:
+                    print(f"An unexpected error occurred: {e}")
 
     def start_server(self):
         asyncio.run(self.loop())
