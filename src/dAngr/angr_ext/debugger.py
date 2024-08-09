@@ -9,7 +9,7 @@ from angr.knowledge_plugins.functions.function import Function
 import claripy
 
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
-from dAngr.utils.utils import StreamType
+from dAngr.utils.utils import DEBUG, StreamType
 
 
 
@@ -38,7 +38,10 @@ for log in log_things:
     logger = logging.getLogger(log)
     logger.disabled = False
     logger.propagate = True
-    logger.setLevel(logging.WARNING)
+    if DEBUG:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.ERROR)
 
 
 class Debugger:
