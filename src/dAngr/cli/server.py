@@ -1,6 +1,5 @@
 import asyncio
 import os
-from re import DEBUG
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.application import get_app
@@ -21,6 +20,8 @@ from dAngr.cli.script_processor import ScriptProcessor
 
 # add logger
 import logging
+
+from dAngr.utils.utils import DEBUG
 logger = logging.getLogger("dAngr")
 
 
