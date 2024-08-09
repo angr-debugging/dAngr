@@ -58,12 +58,12 @@ class TestBasicExecutionCommands:
     async def test_set_start_address(self, dbg, conn):
         assert await dbg.handle("set_start_address 0x40054d")
         conn.send_info.assert_called_with("Execution will start at address 0x40054d.")
-        assert await dbg.handle("start")
+        assert await dbg.handle("run")
         conn.send_info.assert_called_with("Terminated.")
 
     @pytest.mark.asyncio
     async def test_start(self, dbg, conn):
-        assert await dbg.handle("start")
+        assert await dbg.handle("run")
         conn.send_info.assert_called_with("Terminated.")
 
     @pytest.mark.asyncio

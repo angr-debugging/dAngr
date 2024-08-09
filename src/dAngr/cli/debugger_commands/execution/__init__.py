@@ -4,7 +4,7 @@ from .set_start_address import SetStartAddressCommand
 from .load_hooks import LoadHooksCommand
 from .load import LoadCommand
 from .pause import PauseCommand
-from .start import StartCommand
+from .run import RunCommand
 from .step import StepCommand
 from .step_over import StepOverCommand
 from .step_out import StepOutCommand

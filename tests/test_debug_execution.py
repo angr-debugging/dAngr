@@ -48,20 +48,20 @@ class TestDebugExecutionCommands:
         assert await dbg.handle("add_breakpoint 0x4005de")
         assert await dbg.handle("set_start_address 0x40054d")
         conn.send_info.assert_called_with("Execution will start at address 0x40054d.")
-        assert await dbg.handle("start")
+        assert await dbg.handle("run")
         conn.send_info.assert_called_with("Break: Breakpoint at 0x4005de.") # should not stop at 0x400611
     # - start
     @pytest.mark.asyncio
     async def test_start(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x400611")
-        assert await dbg.handle("start")
+        assert await dbg.handle("run")
         conn.send_info.assert_called_with("Break: Breakpoint at 0x400611.")
 
     # - step into
     @pytest.mark.asyncio
     async def test_step_into(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x40062a")
-        assert await dbg.handle("start")
+        assert await dbg.handle("run")
         assert await dbg.handle("step")
         conn.send_info.assert_called_with("Stepped to: 0x40054d.")
 
@@ -69,7 +69,7 @@ class TestDebugExecutionCommands:
     @pytest.mark.asyncio
     async def test_step_out(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x40054d")
-        assert await dbg.handle("start")
+        assert await dbg.handle("run")
         assert await dbg.handle("step_out")
         conn.send_info.assert_called_with("Stepped to: 0x40062f.")
 
@@ -77,6 +77,6 @@ class TestDebugExecutionCommands:
     @pytest.mark.asyncio
     async def test_step_over(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x40062a")
-        assert await dbg.handle("start")
+        assert await dbg.handle("run")
         assert await dbg.handle("step_over")
         conn.send_info.assert_called_with("Stepped to: 0x40062f.")
