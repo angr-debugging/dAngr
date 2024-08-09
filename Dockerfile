@@ -16,6 +16,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ARG CASH=1
 RUN git clone --branch ctf_support https://github.com/angr-debugging/dAngr.git /home/ubuntu/dAngr
 # Install dAngr
+ENV BUILD_TYPE=Release
 RUN  cd /home/ubuntu/dAngr/ && pip install .
 
 ENTRYPOINT ["sh", "-c", "cd /workspace; dAngr"]

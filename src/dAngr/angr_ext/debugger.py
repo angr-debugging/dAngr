@@ -209,7 +209,7 @@ class Debugger:
     def get_function_address(self, name:str):
         return get_function_address(self.project, name)
     
-    def get_function_callstate(self, function_name:str, prototype:types.SimTypeFunction, cc:SimCC,arguments:List[Any],):
+    def get_function_callstate(self, function_name:str, prototype:types.SimTypeFunction, cc:SimCC,arguments:List[Any]):
         self._entry_point = (function_name,prototype,cc,arguments)
         self.reset_state()
         return self.simgr.one_active
