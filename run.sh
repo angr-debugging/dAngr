@@ -1,2 +1,3 @@
 #!/bin/bash
-docker run -it -p 8000:8000 -v $(pwd):/workspace dangr
+#run docker and pass all args
+docker run -it -p 8000:8000 -v $(pwd):/workspace dangr $@ 
