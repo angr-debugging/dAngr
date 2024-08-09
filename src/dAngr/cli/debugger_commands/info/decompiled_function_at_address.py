@@ -4,7 +4,7 @@ from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 class DecompiledFunctionAtAddressCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.arg_specs = [("address",int)]
+        self.arg_specs = [("address",int,"Address of the function to decompile.")]
         self.info = "Decompiles a function at specified address."
 
     async def execute(self, address): # type: ignore

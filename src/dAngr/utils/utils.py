@@ -2,18 +2,24 @@ from enum import Enum, auto
 import importlib
 import os
 import inspect
+import sys
 from typing import get_args
 
 from claripy import List
 import re
 
 class Type(Enum):
-    INT = auto()
-    STR = auto()
-    BYTES = auto()
-    BOOL = auto()
-    DOUBLE = auto()
-    HEX = auto()
+    int = auto()
+    str = auto()
+    bytes = auto()
+    bool = auto()
+    double = auto()
+    hex = auto()
+
+class StreamType(Enum):
+    stdin = 0
+    stdout = 1
+    stderr = 2
 
 def remove_xml_tags(text):
     # Use a regular expression to match and remove all tags

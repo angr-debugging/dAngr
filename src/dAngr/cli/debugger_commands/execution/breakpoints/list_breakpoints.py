@@ -9,5 +9,5 @@ class ListBreakpointsCommand(BaseCommand):
         if self.debugger.breakpoints.empty():
             await self.send_info("No breakpoints set.")
             return []
-        return f"Breakpoint(s): {",".join([f"[{i}] {b}" for i,b in enumerate(self.debugger.breakpoints)])}"
+        return f"Breakpoint(s): {','.join([f'[{i}] {b}' for i,b in enumerate(self.debugger.breakpoints)])}"
 

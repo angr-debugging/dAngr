@@ -6,7 +6,7 @@ from dAngr.exceptions import DebuggerCommandError
 class LoadCommand(BaseCommand):
     def __init__(self, debugger:Debugger):
         super().__init__(debugger)
-        self.arg_specs = [("binary path", str)]
+        self.arg_specs = [("binary path", str, "The path to the binary to load.")]
         self.info = "Setup the simulation manager with the initial state."
 
     async def execute(self, binary_path:str):

@@ -6,7 +6,7 @@ from..base import BaseCommand
 class SetFunctionPrototypeCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.arg_specs = [("prototype",str)]
+        self.arg_specs = [("prototype",str, "set the function prototype (C-style)")]
         self.info = "Set the function prototype including name, argument types and return type.\n Example: void myfunc(char*, int)"
     
     async def execute(self, prt):

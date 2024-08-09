@@ -6,9 +6,9 @@ class BashCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
         self.arg_specs = [
-            ('command', str, 'command to execute in shell')
+            ('command', str, 'Command to execute in shell. May contain spaces.')
         ]
-        self.info = "execute commands in shell."
+        self.info = "Execute commands in shell."
         self.short_cmd_name = "%"
         
     async def execute(self, command):

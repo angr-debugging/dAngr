@@ -6,7 +6,7 @@ from dAngr.exceptions import DebuggerCommandError, ExecutionError
 class SetStartAddressCommand(BaseCommand):
     def __init__(self, debugger:Debugger):
         super().__init__(debugger)
-        self.arg_specs = [("start address", int)]
+        self.arg_specs = [("start address", int, "The address to start execution at.")]
         self.info = "Start execution at selected entrypoint."
 
     async def execute(self, address:int):

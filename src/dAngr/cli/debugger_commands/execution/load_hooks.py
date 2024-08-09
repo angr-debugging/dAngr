@@ -4,7 +4,7 @@ from dAngr.exceptions import DebuggerCommandError, ExecutionError
 class LoadHooksCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.arg_specs = [("filename",str)]
+        self.arg_specs = [("filename",str, "The python file containing the hooks to load.")]
         self.info = "Load a python file containing SimProcedures as hooks."
         self.extra_info = """
 import angr

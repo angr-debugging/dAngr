@@ -5,7 +5,7 @@ from ...base import BaseCommand
 class RemoveBreakpointCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.arg_specs = [("address",int)]
+        self.arg_specs = [("address",int,"Address to remove the breakpoint at.")]
         self.info = "Remove a breakpoint at specified address."
         
     async def execute(self, address:int):

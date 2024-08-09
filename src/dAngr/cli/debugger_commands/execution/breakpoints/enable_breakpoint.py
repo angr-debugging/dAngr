@@ -5,7 +5,7 @@ from ...base import BaseCommand
 class EnableBreakpointCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.arg_specs = [ ("address",int)]
+        self.arg_specs = [ ("address",int,"Address to enable the breakpoint at.")]
         self.info = "Enable a breakpoint at address."
 
     async def execute(self, address):

@@ -4,7 +4,7 @@ from ..base import BaseCommand
 class GetMemoryCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.arg_specs = [("address",int),("size",int)]
+        self.arg_specs = [("address",int,"Address in memory to return memory"),("size",int,"Size of the memory to retrieve.")]
         self.info = "Get memory value of lengt size at a specific address as a byte array."
 
 

@@ -8,7 +8,7 @@ from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 class LessCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.info = "View last previous output."
+        self.info = "View previously retrieved output in a scrollable pane."
         self.short_cmd_name = "less"
         
     async def execute(self):

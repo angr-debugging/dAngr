@@ -8,6 +8,7 @@ class ListRegistersCommand(BaseCommand):
 
     async def execute(self):
         """List all registers and their current values."""
+        # TODO: add wildcard filtering
         regs=[]
         registers = self.debugger.list_registers()
         for reg, (offset, size) in registers.items():

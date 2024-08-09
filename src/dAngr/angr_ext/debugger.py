@@ -9,6 +9,7 @@ from angr.knowledge_plugins.functions.function import Function
 import claripy
 
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
+from dAngr.utils.utils import StreamType
 
 
 
@@ -388,6 +389,7 @@ class Debugger:
         return bb.instruction_addrs[-1]
     
     def get_bbs(self):
+        # TODO: Add filtering support
         #return all basic blocks of the binary including block addr size instructions and capstone based on the CFG
         for node in self.cfg.graph.nodes():
             #include function name if available:
@@ -404,9 +406,9 @@ class Debugger:
         except Exception as e:
             raise DebuggerCommandError(f"Failed to retrieve basic block: {e}")
         
-    def get_stdin(self):
+    def get_stdstream(self, stream:StreamType):
         state = self.get_current_state()
-        return state.posix.dumps(0)
+        return state.posix.dumps(stream.value)
      
         
     

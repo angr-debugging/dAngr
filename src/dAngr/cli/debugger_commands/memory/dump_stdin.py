@@ -1,4 +1,5 @@
 from  dAngr.cli.models import Memory
+from dAngr.utils.utils import StreamType
 from ..base import BaseCommand
 
 class DumpStdinCommand(BaseCommand):
@@ -7,5 +8,5 @@ class DumpStdinCommand(BaseCommand):
         self.info = "Get contents of stdin passed to the binary to get at current state."
 
     async def execute(self):
-        value = self.debugger.get_stdin()
+        value = self.debugger.get_stdstream(StreamType.stdin)
         return value

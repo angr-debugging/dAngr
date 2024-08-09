@@ -8,7 +8,7 @@ from ...base import BaseCommand
 class AddBreakpointCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.arg_specs = [("address",int)]
+        self.arg_specs = [("address",int,"Address to set the breakpoint at.")]
         self.info = "Set a breakpoint at a given address. If avoid is set, the breakpoint will be set to avoid the address."
 
     async def execute(self, address):  # type: ignore

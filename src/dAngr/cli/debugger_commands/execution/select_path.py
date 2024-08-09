@@ -5,7 +5,7 @@ from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 class SelectPathCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.arg_specs = [("index",int)]
+        self.arg_specs = [("index",int, "The index of the path to select as shown in list_active_paths.")]
         self.info = "Select the next path to take by index."
 
     async def execute(self, index):

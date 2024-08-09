@@ -9,7 +9,7 @@ from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 class SetFunctionCallCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.arg_specs = [("function call",str)]
+        self.arg_specs = [("function call",str, "Function call with arguments")]
         self.info = "Initialize the function based on the previously pased prototype with the arguments.\n Example: void myfunc(\"txt\", 10)"
     
     async def execute(self, args):

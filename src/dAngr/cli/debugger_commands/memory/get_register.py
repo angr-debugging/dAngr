@@ -3,7 +3,7 @@ from ..base import BaseCommand
 class GetRegisterCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.arg_specs = [("name",str)]
+        self.arg_specs = [("name",str, "Name of the register")]
         self.info = "Get a register value."
         self.short_cmd_name = "gr"
 

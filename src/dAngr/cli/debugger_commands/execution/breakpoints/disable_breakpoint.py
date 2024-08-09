@@ -6,7 +6,7 @@ from ...base import BaseCommand
 class DisableBreakpointCommand(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
-        self.arg_specs = [ ("address",int)]
+        self.arg_specs = [ ("address",int,"Address to disable the breakpoint at.")]
         self.info = "Disable breakpoint at index."
 
     async def execute(self, address):

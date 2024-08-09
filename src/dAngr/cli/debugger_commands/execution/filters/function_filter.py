@@ -7,8 +7,8 @@ from dAngr.exceptions import DebuggerCommandError, ExecutionError
 class FunctionFilterCommand(BaseCommand):
     def __init__(self, debugger:Debugger):
         super().__init__(debugger)
-        self.arg_specs = [("function name",str)]
-        self.optional_args = [("avoid",bool),("add",bool)]
+        self.arg_specs = [("function name",str,"Name of the function on which you want to filter")]
+        self.optional_args = [("avoid",bool,"When instead of breaking you want to ignroe the basic block"),("add",bool,"Add or remove the function filter from the list")]
         self.info = "Ignore paths part of a function with specified name."
 
     async def execute(self, name:str,avoid:bool=False, add:bool = True): # type: ignore
