@@ -3,9 +3,9 @@ import importlib.util
 import inspect
 import os
 import types
-from typing import Any, Set, List
+from typing import Any, Set, List, Tuple
 from angr import Project, SimCC, SimProcedure, SimState, SimulationManager, types, knowledge_plugins
-from claripy import Tuple
+
 
 
 from dAngr.angr_ext.std_tracker import StdTracker
