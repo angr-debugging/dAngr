@@ -9,7 +9,7 @@ from claripy import List
 import re
 
 
-DEBUG:bool = os.getenv("BUILD_TYPE") == "Debug"
+DEBUG:bool = os.getenv("BUILD_TYPE","Release").lower() == "debug"
 
 class Type(Enum):
     int = auto()
