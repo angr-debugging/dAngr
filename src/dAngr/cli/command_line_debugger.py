@@ -2,7 +2,7 @@
 import os
 import re
 import threading
-from typing import Callable, Dict, List, cast
+from typing import Callable, Dict, List, Tuple, cast
 from enum import Enum
 import typing
 
@@ -39,6 +39,8 @@ def _auto_register_commands():
             commands[cmd_name] = obj
     return commands
 DEBUGGER_COMMANDS = _auto_register_commands()
+
+EMPTY = "\t"
 
 class CommandLineDebugger(Debugger,StepHandler):
     def __init__(self, conn:CliConnection):
@@ -152,19 +154,9 @@ class CommandLineDebugger(Debugger,StepHandler):
             help_str = f"Command '{command}' not found. Type 'help' or '?' for a list of available commands.\nWith help <command> you can get more information on a specific command."
             raise InvalidArgumentError(help_str)
 
-    
-
-    async def _list_commands(self):
-        style = Style.from_dict({
-            'title': '',
-            'package': 'yellow italic',
-            'command': 'blue bold',
-            'shortcmd': 'italic',
-            'info': 'darkgray',
-        })
+    def list_commands_data(self, withArgs:bool = False):
         table_data = [[],["<title>Available commands:</title>"]]
         package = ''
-        EMPTY = "\t"
         for command in DEBUGGER_COMMANDS.keys():
             cmd = DEBUGGER_COMMANDS[command](self)
             # get module base name if different from the previous one
@@ -173,30 +165,27 @@ class CommandLineDebugger(Debugger,StepHandler):
                 table_data.append([EMPTY, f"<package>{package}</package>"])
 
             table_data.append([EMPTY, EMPTY,f"<command>{command} <shortcmd>({cmd.short_cmd_name})</shortcmd></command>:"])
-            # get first line of info and append ... if there are more lines
-            first, sec = cmd.info.split('\n', 1) if '\n' in cmd.info else (cmd.info, '')
-            if sec:
-                first += "..."
-            if len(first.strip("..."))>50:
-                first = first[:50] + "..."
-            
-            table_data.append([EMPTY, EMPTY, EMPTY, f"<info>{first}</info>"])
+            if not withArgs:
+                # get first line of info and append ... if there are more lines
+                first, sec = cmd.info.split('\n', 1) if '\n' in cmd.info else (cmd.info, '')
+                if sec:
+                    first += "..."
+                if len(first.strip("..."))>50:
+                    first = first[:50] + "..."
+                
+                table_data.append([EMPTY, EMPTY, EMPTY, f"<info>{first}</info>"])
+            else:
+                table_data.extend(self.list_args_table(cmd,[EMPTY,EMPTY,EMPTY]))
             table_data.append([])
-
-        # Create HTML table
-        html_table = ""
-        for row in table_data:
-            html_table += "\t"
-            for cell in row:
-                html_table += f"{cell}"
-            html_table += "\n"
-        
-
-        # Create formatted HTML text with style
-        formatted_html = f"{html_table}"
-        await self.conn.send_result(formatted_html,style=style)
-
-    async def _list_args(self, cmd :BaseCommand):
+        style = Style.from_dict({
+            'title': '',
+            'package': 'yellow italic',
+            'command': 'blue bold',
+            'shortcmd': 'italic',
+            'info': 'darkgray',
+        })
+        return table_data, style
+    def list_args_table(self, cmd :BaseCommand,indent = []) -> Tuple[List[List[str]],Style]:
         style = Style.from_dict({
             'title': '',
             'command': 'blue bold',
@@ -205,7 +194,6 @@ class CommandLineDebugger(Debugger,StepHandler):
             'arg_info': 'darkgray italic',
             'extra_info': 'gray italic',
         })
-        EMPTY = "\t"
         table_data = [[]]
         # command structure
         # print command name, followed by required args separated by comma, then optional args in square brackets
@@ -221,13 +209,25 @@ class CommandLineDebugger(Debugger,StepHandler):
                 table_data.append([EMPTY, "<info>Arguments:</info>"])
             first = True
             for a in cmd.arg_specs:                
-                table_data.append([EMPTY, EMPTY, f"<argument>{a[0]}</argument> <arg_info>({a[1].__name__ if a[1] else 'any'})</arg_info>"])
+                if a[1]:
+                    if members:= get_union_members(a[1]):
+                        tp = " or ".join([m.__name__ for m in members])
+                    else:
+                        tp = a[1].__name__
+                else: tp ="any"
+                table_data.append([EMPTY, EMPTY, f"<argument>{a[0]}</argument> <arg_info>({tp})</arg_info>"])
                 if len(a)>2:
                     table_data.append([EMPTY, EMPTY, EMPTY, f"<arg_info>{a[2]}</arg_info>"])
             if cmd.optional_args:
                 table_data.append([EMPTY, "<info>Optional Arguments:</info>"]) 
                 for a in cmd.optional_args:
-                    table_data.append([EMPTY, EMPTY, f"<argument>{a[0]}</argument> <arg_info>({a[1].__name__ if a[1] else 'any'})\t</arg_info>"])
+                    if a[1]:
+                        if members:= get_union_members(a[1]):
+                            tp = " or ".join([m.__name__ for m in members])
+                        else:
+                            tp = a[1].__name__
+                    else: tp ="any"
+                    table_data.append([EMPTY, EMPTY, f"<argument>{a[0]}</argument> <arg_info>({tp})\t</arg_info>"])
                     if len(a)>2:
                         table_data.append([EMPTY, EMPTY, EMPTY, f"{a[2]}"])
 
@@ -235,6 +235,27 @@ class CommandLineDebugger(Debugger,StepHandler):
             table_data.append([EMPTY, "<info>Extra info:</info>"])
             for l in cmd.extra_info.split("\n"):
                 table_data.append([EMPTY, EMPTY, f"<extra_info>{l}</extra_info>"])
+        #insert indent to each row:
+        for i in range(len(table_data)):
+            table_data[i] = indent + table_data[i]
+        return table_data, style
+    async def _list_commands(self, withArgs:bool = False):
+
+        table_data, style = self.list_commands_data(withArgs)
+        # Create HTML table
+        html_table = ""
+        for row in table_data:
+            html_table += "\t"
+            for cell in row:
+                html_table += f"{cell}"
+            html_table += "\n"
+        
+
+        # Create formatted HTML text with style
+        formatted_html = f"{html_table}"
+        await self.conn.send_result(formatted_html,style=style)
+    async def _list_args(self, cmd :BaseCommand):
+        table_data, style = self.list_args_table(cmd)
 
         html_table = ""
         for row in table_data:
@@ -244,7 +265,6 @@ class CommandLineDebugger(Debugger,StepHandler):
             html_table += "\n"
         
         await self.conn.send_result(html_table, style=style)
-
     def _parse_arguments(self,cmd :BaseCommand, user_input:str)->List: 
 
         parsed_args = parse_arguments(user_input, " ")

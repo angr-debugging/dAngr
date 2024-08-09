@@ -86,7 +86,7 @@ class Server:
                             if DEBUG:
                                 raise e
                             else:
-                                print(f"An unexpected error occurred: {e}")
+                                await conn.send_error(f"An unexpected error occurred: {e}")
                     if self.stop:
                         break
             except Exception as e:
@@ -109,7 +109,7 @@ class Server:
                 if DEBUG:
                     raise e
                 else:
-                    print(f"An unexpected error occurred: {e}")
+                    await conn.send_error(f"An unexpected error occurred: {e}")
 
     def start_server(self):
         asyncio.run(self.loop())
