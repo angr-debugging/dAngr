@@ -23,13 +23,15 @@ import logging
 
 from dAngr.utils.utils import DEBUG
 logger = logging.getLogger("dAngr")
-
+if DEBUG:
+    logger.setLevel(logging.DEBUG)
+else:
+    logger.setLevel(logging.ERROR)
 
 
 class Server:
     def __init__(self, debug_file_path = None, script_path=None):
         logger.info("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
-        print("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
 
         self.commands = DEBUGGER_COMMANDS
         dbg = CommandLineDebugger(CliConnection())
@@ -56,36 +58,40 @@ class Server:
         if self.debug_file_path:
             await dbg.handle(f"load {self.debug_file_path}")
         if self.script_path:
-            if os.path.dirname(self.script_path):
-                os.chdir(os.path.dirname(self.script_path))
-            proc:ScriptProcessor = ScriptProcessor(self.script_path)
-            first = True
-            for line in proc.process_file():
-                #read script line by line and execute commands
-                if line.strip() == "":
-                    continue
-                with patch_stdout() as po:
-                    if first:
-                        prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {line.strip()} <gray>(hit enter to proceed, Ctrl-c to end script)</gray>')
-                        first = False
-                    else:
-                        prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {line.strip()}')
-                    try:
-                        inp = await session.prompt_async(prmpt2, completer=self.completer)
-                        if not line.strip().startswith("#"):
-                            if not await dbg.handle(line.strip()):
-                                self.stop = True
-                    except KeyboardInterrupt:
-                        self.stop = True
-                    except EOFError:
-                        return # Ctrl-D to exit
-                    except Exception as e:
-                        if DEBUG:
-                            raise e
+            try:
+                if os.path.dirname(self.script_path):
+                    os.chdir(os.path.dirname(self.script_path))
+                proc:ScriptProcessor = ScriptProcessor(self.script_path)
+                first = True
+                for line in proc.process_file():
+                    #read script line by line and execute commands
+                    if line.strip() == "":
+                        continue
+                    with patch_stdout() as po:
+                        if first:
+                            prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {line.strip()} <gray>(hit enter to proceed, Ctrl-c to end script)</gray>')
+                            first = False
                         else:
-                            print(f"An unexpected error occurred: {e}")
-                if self.stop:
-                    break
+                            prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {line.strip()}')
+                        try:
+                            inp = await session.prompt_async(prmpt2, completer=self.completer)
+                            if not line.strip().startswith("#"):
+                                if not await dbg.handle(line.strip()):
+                                    self.stop = True
+                        except KeyboardInterrupt:
+                            self.stop = True
+                        except EOFError:
+                            return # Ctrl-D to exit
+                        except Exception as e:
+                            if DEBUG:
+                                raise e
+                            else:
+                                print(f"An unexpected error occurred: {e}")
+                    if self.stop:
+                        break
+            except Exception as e:
+                await conn.send_error(f"Error during script handling of {self.script_path}:{str(e)}")
+                return
         self.stop = False
         self.script_path = None
         while not self.stop:

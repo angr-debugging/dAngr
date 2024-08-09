@@ -9,6 +9,8 @@ class ScriptProcessor:
         return self.script_path.lower().endswith(('.md', '.markdown'))
 
     def process_file(self):
+        if not os.path.exists(self.script_path):
+            raise FileNotFoundError(f"File '{self.script_path}' not found.")
         with open(self.script_path, 'r') as f:
             if os.path.dirname(self.script_path):
                 os.chdir(os.path.dirname(self.script_path))

@@ -18,5 +18,5 @@ RUN git clone --branch ctf_support https://github.com/angr-debugging/dAngr.git /
 # Install dAngr
 ENV BUILD_TYPE=Release
 RUN  cd /home/ubuntu/dAngr/ && pip install .
-
-ENTRYPOINT ["sh", "-c", "cd /workspace; dAngr"]
+WORKDIR /workspace
+ENTRYPOINT ["dAngr"]
