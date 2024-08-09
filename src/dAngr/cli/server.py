@@ -28,8 +28,9 @@ logger = logging.getLogger("dAngr")
 
 class Server:
     def __init__(self, debug_file_path = None, script_path=None):
-        if DEBUG:
-            logger.info("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
+        logger.info("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
+        print("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
+
         self.commands = DEBUGGER_COMMANDS
         dbg = CommandLineDebugger(CliConnection())
         dd = {c: f">{c} ({self.commands[c](dbg).short_cmd_name})" for c in self.commands.keys()}
