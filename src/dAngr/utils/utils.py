@@ -2,9 +2,10 @@ from enum import Enum, auto
 import importlib
 import os
 import inspect
-from typing import Union, get_args
+from typing import get_args
 
 from claripy import List
+import re
 
 class Type(Enum):
     INT = auto()
@@ -13,7 +14,11 @@ class Type(Enum):
     BOOL = auto()
     DOUBLE = auto()
     HEX = auto()
-    
+
+def remove_xml_tags(text):
+    # Use a regular expression to match and remove all tags
+    clean_text = re.sub(r'<[^>]+>', '', text)
+    return clean_text
 
 def get_union_members(union_type):
     return get_args(union_type)

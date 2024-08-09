@@ -1,21 +1,23 @@
+from typing import List, Tuple
 from prompt_toolkit import HTML, print_formatted_text
 import html
 import re
 
 from dAngr.angr_ext.connection import Connection
-
+from prompt_toolkit.styles import Style
 
 class CliConnection(Connection):
 
     def __init__(self):
         super().__init__()
         self.indent = 4
-        self._output = []
+        self._output:List[Tuple[str,Style|None]] = []
         self._first = True
 
     @property
-    def output(self):
+    def output(self)->List[Tuple[str,Style|None]]:
         return self._output
+    
     
     def clear_output(self):
         self._output = []
@@ -31,7 +33,8 @@ class CliConnection(Connection):
         # except CommandError as e:
         #     print(f"    \033[91m{e}\033[0m")
     def _escape(self, data, esscape_html=True):
-        data = str(data).replace("\n", "\n" + " "*self.indent).replace("\t", " "*4)
+        # indent data
+        data = " "*self.indent + str(data).replace("\n", "\n" + " "*self.indent).replace("\t", " "*self.indent)
         return html.escape(data ) if esscape_html else data
         # return data.replace("&", "&amp").replace("<", "&lt").replace(">", "&gt").replace("\"", "&quot").replace("'", "&apos")
     
@@ -50,7 +53,7 @@ class CliConnection(Connection):
                 print_formatted_text(HTML("<gray>Output too long, use 'less' to view</gray>"),style=style)
         else:
             print_formatted_text(HTML(data),style=style)
-        self._output.append(data)
+        self._output.append((data,style))
 
     async def send_output(self, data, style=None):
         #replace newlines with newlines and 4 spaces

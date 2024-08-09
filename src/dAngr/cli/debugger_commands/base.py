@@ -22,6 +22,7 @@ class BaseCommand(StepHandler):
         self.paused = False
         self.cmd_name = get_cmd_name(self.__class__)
         self.short_cmd_name = get_short_cmd_name(self.__class__)
+        self.extra_info = ""
 
 
     @property

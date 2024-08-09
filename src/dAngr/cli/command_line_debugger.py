@@ -77,16 +77,6 @@ class CommandLineDebugger(Debugger,StepHandler):
         else:
             await self.conn.send_warning(f"Stopped with unknown reason at: {hex(start)}.") # type: ignore
 
-    def _get_command(self, command:str):
-        if command in DEBUGGER_COMMANDS:
-            return DEBUGGER_COMMANDS[command](self)
-        elif cmd := next((o for o in DEBUGGER_COMMANDS.values() if command == o(self).short_cmd_name), None):
-            return cmd(self)
-        else:
-            help_str = f"Command '{command}' not found. Type 'help' or '?' for a list of available commands.\nWith help <command> you can get more information on a specific command."
-            raise InvalidArgumentError(help_str)
-
-    
     async def handle(self, command:str):
         if not command:
             return True
@@ -99,7 +89,7 @@ class CommandLineDebugger(Debugger,StepHandler):
         if command_name == "help" or command_name == "?":
             # List all commands or show help for a specific command
             if command_args:
-                cmd = self._get_command(command_args[0])
+                cmd = self._get_command(command_args)
                 await self._list_args(cmd)
             else:
                 await self._list_commands()
@@ -144,13 +134,25 @@ class CommandLineDebugger(Debugger,StepHandler):
             #serve files in a separate thread
             self.http_thread = threading.Thread(target=self.http_server.serve_forever).start()
         return base_path
-        
+
     def __del__(self):
         if self.http_server is not None:
             self.http_server.shutdown()
             self.http_server.server_close()
         if self.http_thread is not None:
             self.http_thread.join()
+
+
+    def _get_command(self, command:str):
+        if command in DEBUGGER_COMMANDS:
+            return DEBUGGER_COMMANDS[command](self)
+        elif cmd := next((o for o in DEBUGGER_COMMANDS.values() if command == o(self).short_cmd_name), None):
+            return cmd(self)
+        else:
+            help_str = f"Command '{command}' not found. Type 'help' or '?' for a list of available commands.\nWith help <command> you can get more information on a specific command."
+            raise InvalidArgumentError(help_str)
+
+    
 
     async def _list_commands(self):
         style = Style.from_dict({
@@ -170,10 +172,15 @@ class CommandLineDebugger(Debugger,StepHandler):
                 package = cmd.__module__.split('.')[-2]
                 table_data.append([EMPTY, f"<package>{package}</package>"])
 
-            name = type(cmd).__name__
-            table_data.append([EMPTY, EMPTY,f"<command>{command}</command> <shortcmd>({cmd.short_cmd_name})</shortcmd>:"])
-            for l in cmd.info.split("\n"):
-                table_data.append([EMPTY, EMPTY, EMPTY, l])
+            table_data.append([EMPTY, EMPTY,f"<command>{command} <shortcmd>({cmd.short_cmd_name})</shortcmd></command>:"])
+            # get first line of info and append ... if there are more lines
+            first, sec = cmd.info.split('\n', 1) if '\n' in cmd.info else (cmd.info, '')
+            if sec:
+                first += "..."
+            if len(first.strip("..."))>50:
+                first = first[:50] + "..."
+            
+            table_data.append([EMPTY, EMPTY, EMPTY, f"<info>{first}</info>"])
             table_data.append([])
 
         # Create HTML table
@@ -190,19 +197,53 @@ class CommandLineDebugger(Debugger,StepHandler):
         await self.conn.send_result(formatted_html,style=style)
 
     async def _list_args(self, cmd :BaseCommand):
-        if len(cmd.arg_specs)>0 or len(cmd.optional_args)>0:
-            args = ', '.join([f"{a[0]} of type '{a[1].__name__ if a[1] else 'any'}'"  for a in cmd.arg_specs])
-            optional_args = ', '.join([f"{a[0]} of type '{a[1].__name__ if a[1] else 'any'}'"  for a in cmd.optional_args])
-            if optional_args and args:
-                msg = f"{cmd.info}\n  arguments: {args}\n  optional arguments: {optional_args}"
-            else:
-                if args:
-                    msg = f"{cmd.info}\n  arguments: {args}"
-                else:
-                    msg = f"{cmd.info}\n  optional arguments: {optional_args}"
-        else:
-            msg = f"{cmd.info}\n  No arguments required"
-        await self.conn.send_result(msg)
+        style = Style.from_dict({
+            'title': '',
+            'command': 'blue bold',
+            'info': '',
+            'argument': 'green',
+            'arg_info': 'darkgray italic',
+            'extra_info': 'gray italic',
+        })
+        EMPTY = "\t"
+        table_data = [[]]
+        # command structure
+        # print command name, followed by required args separated by comma, then optional args in square brackets
+        req = " " + " ".join([f"<argument>{a[0]}</argument>" for a in cmd.arg_specs])
+        opt = " " + " ".join([f"<argument>[{a[0]}]</argument>" for a in cmd.optional_args])
+        table_data.append([EMPTY, f"Usage: <command>{cmd.cmd_name}{req.rstrip()}{opt.rstrip()}</command>"])
+        table_data.append([EMPTY, f"Short name: <command>{cmd.short_cmd_name}</command>"])
+        for l in cmd.info.split("\n"):
+            table_data.append([EMPTY, f"<info>{l}</info>"])         
+        table_data.append([])
+        if cmd.arg_specs or cmd.optional_args:
+            if cmd.arg_specs:
+                table_data.append([EMPTY, "<info>Arguments:</info>"])
+            first = True
+            for a in cmd.arg_specs:                
+                table_data.append([EMPTY, EMPTY, f"<argument>{a[0]}</argument> <arg_info>({a[1].__name__ if a[1] else 'any'})</arg_info>"])
+                if len(a)>2:
+                    table_data.append([EMPTY, EMPTY, EMPTY, f"<arg_info>{a[2]}</arg_info>"])
+            if cmd.optional_args:
+                table_data.append([EMPTY, "<info>Optional Arguments:</info>"]) 
+                for a in cmd.optional_args:
+                    table_data.append([EMPTY, EMPTY, f"<argument>{a[0]}</argument> <arg_info>({a[1].__name__ if a[1] else 'any'})\t</arg_info>"])
+                    if len(a)>2:
+                        table_data.append([EMPTY, EMPTY, EMPTY, f"{a[2]}"])
+
+        if cmd.extra_info:
+            table_data.append([EMPTY, "<info>Extra info:</info>"])
+            for l in cmd.extra_info.split("\n"):
+                table_data.append([EMPTY, EMPTY, f"<extra_info>{l}</extra_info>"])
+
+        html_table = ""
+        for row in table_data:
+            html_table += "\t"
+            for cell in row:
+                html_table += f"{cell}"
+            html_table += "\n"
+        
+        await self.conn.send_result(html_table, style=style)
 
     def _parse_arguments(self,cmd :BaseCommand, user_input:str)->List: 
 
@@ -227,7 +268,7 @@ class CommandLineDebugger(Debugger,StepHandler):
 
         # Map argument names to parsed values
         parsed_args_list = []
-        for (arg_name, arg_type), arg_value in zip(cmd.arg_specs+cmd.optional_args, parsed_args):
+        for (arg_name, arg_type,_), arg_value in zip(cmd.arg_specs+cmd.optional_args, parsed_args):
             if arg_value is None:
                 break # must be because of optional arguments
 

@@ -7,7 +7,7 @@ from dAngr.exceptions import DebuggerCommandError, ExecutionError
 class ListExclusionsCommand(BaseCommand):
     def __init__(self, debugger:Debugger):
         super().__init__(debugger)
-        self.info = "Ignore paths containing address."
+        self.info = "List the filters for paths that will be avoided."
         
     async def execute(self ): # type: ignore
         if not self.debugger.exclusions:

@@ -8,8 +8,8 @@ class AddressFilterCommand(BaseCommand):
     def __init__(self, debugger:Debugger):
         super().__init__(debugger)
         self.arg_specs = [("address",int)]
-        self.optional_args = [("avoid",bool),("add",bool)]
-        self.info = "Ignore paths containing address."
+        self.optional_args = [("avoid",bool, "When instead of breaking you want to ignroe the basic block"),("add",bool, "Add or remove the address filter from the list")]
+        self.info = "Add an address filter to the debugger.\n Either break on the address or ignore it."
         
     async def execute(self, address:int, avoid:bool=False, add:bool = True): # type: ignore
         #if not add:

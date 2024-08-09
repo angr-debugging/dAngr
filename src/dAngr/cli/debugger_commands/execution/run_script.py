@@ -8,8 +8,11 @@ from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 class RunScriptCommand(BaseCommand):
     def __init__(self, debugger:Debugger):
         super().__init__(debugger)
-        self.arg_specs = [("script path", str)]
-        self.info = "Run dAngr script."
+        self.arg_specs = [("path", str, "Path of the script")]
+        self.info = "Run a script. If the script is a markdown file, it will\n"\
+                     "run each code block as a separate command. Otherwise it\n"\
+                     "will run each line as a separate command.\n"
+        
         self.short_cmd_name = "rs"
 
     async def execute(self, script_path:str):

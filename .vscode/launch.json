@@ -19,9 +19,9 @@
             "program": "./src/app.py",
             // "cwd": "${workspaceFolder}/examples/malware.oregonctf.org",
             "args": [
-                "-s",
+                // "-s",
                 // "${workspaceFolder}/examples/malware.oregonctf.org/00_angr_find.md"
-                "${workspaceFolder}/examples/malware.oregonctf.org/01_angr_avoid.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/01_angr_avoid.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/02_angr_find_condition.dangr"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/03_angr_symbolic_registers.dangr"
                 // "${workspaceFolder}/examples/basic_example/example.dangr"
