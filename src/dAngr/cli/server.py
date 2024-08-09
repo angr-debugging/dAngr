@@ -1,5 +1,6 @@
 import asyncio
 import os
+from re import DEBUG
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.application import get_app
@@ -18,11 +19,16 @@ from dAngr.cli import DEBUGGER_COMMANDS, CommandLineDebugger
 from dAngr.cli.cli_connection import CliConnection
 from dAngr.cli.script_processor import ScriptProcessor
 
+# add logger
+import logging
+logger = logging.getLogger("dAngr")
 
 
 
 class Server:
     def __init__(self, debug_file_path = None, script_path=None):
+        if DEBUG:
+            logger.info("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
         self.commands = DEBUGGER_COMMANDS
         dbg = CommandLineDebugger(CliConnection())
         dd = {c: f">{c} ({self.commands[c](dbg).short_cmd_name})" for c in self.commands.keys()}
@@ -72,7 +78,7 @@ class Server:
                     except EOFError:
                         return # Ctrl-D to exit
                     except Exception as e:
-                        if os.getenv("BUILD_TYPE") == "Debug":
+                        if DEBUG:
                             raise e
                         else:
                             print(f"An unexpected error occurred: {e}")
@@ -92,7 +98,7 @@ class Server:
             except EOFError:
                 return # Ctrl-D to exit
             except Exception as e:
-                if os.getenv("BUILD_TYPE") == "Debug":
+                if DEBUG:
                     raise e
                 else:
                     print(f"An unexpected error occurred: {e}")

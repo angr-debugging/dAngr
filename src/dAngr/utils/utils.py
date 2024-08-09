@@ -8,6 +8,9 @@ from typing import get_args
 from claripy import List
 import re
 
+
+DEBUG:bool = os.getenv("BUILD_TYPE") == "Debug"
+
 class Type(Enum):
     int = auto()
     str = auto()
