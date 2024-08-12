@@ -61,7 +61,7 @@ class Server:
             try:
                 if os.path.dirname(self.script_path):
                     os.chdir(os.path.dirname(self.script_path))
-                proc:ScriptProcessor = ScriptProcessor(self.script_path)
+                proc:ScriptProcessor = ScriptProcessor(os.path.basename(self.script_path))
                 first = True
                 for line in proc.process_file():
                     #read script line by line and execute commands
@@ -90,7 +90,7 @@ class Server:
                     if self.stop:
                         break
             except Exception as e:
-                await conn.send_error(f"Error during script handling of {self.script_path}:{str(e)}")
+                await conn.send_error(f"Error during script handling of {self.script_path}: {str(e)}")
                 return
         self.stop = False
         self.script_path = None
