@@ -9,7 +9,10 @@ class SetMemoryCommand(BaseCommand):
 
     async def execute(self, address:int, value:int|str|bytes):
         # Get the byte value
-        byte_value = self.debugger.cast_to_bytes(value)
-        self.debugger.set_memory(address, byte_value)
-        await self.send_info(f"Memory at {hex(address)}: {byte_value}.")
-
+        if isinstance(value, str):
+            v = self.debugger.get_new_symbol_object(value)
+            self.debugger.set_memory(address,v)
+        else:
+            byte_value = self.debugger.cast_to_bytes(value)
+            self.debugger.set_memory(address, byte_value)
+            await self.send_info(f"Memory at {hex(address)}: {byte_value}.")

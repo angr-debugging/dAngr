@@ -1,12 +1,15 @@
 # MUST
-~~- check response of list_path_history~~
-- Dockerfile
 
 # WANT
 # Symbolic Execution
-~~Add support for symbolic debugging~~
-~~- set/get arguments/objects symbolic~~
-~~- select path command~~
+Required for ctf:
+- set reg/mem/symbol to other reg/mem/symbol
+- create symbol from memory/register
+- push to stack
+- create symbolic file 
+- add symbolic file to filesystem
+- add constraints to symbol
+
 
 # Installation
 - Install issue ??
@@ -18,8 +21,4 @@
 # FUTURE WORK
 # Debugging
 - pause does not work as you cannot give inputs while running ...
-~~- printout cfg in console~~
-
-# Installation
-~~- Add dependency on the apt package: libgraphviz-dev to make sure the pygraphviz pip package can be built --> cannot be added to python setuptools --> add in Readme?~~
 
