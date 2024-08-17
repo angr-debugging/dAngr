@@ -37,69 +37,69 @@ class TestDebugBreakpointCommands:
     @pytest.mark.asyncio
     async def test_add_breakpoint(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x400566")
-        assert "Breakpoint added and enabled at address 0x400566." == str(conn.send_info.call_args[0][0])
+        assert "Address 0x400566 added to breakpoints." == str(conn.send_info.call_args[0][0])
         assert await dbg.handle("continue")
-        conn.send_info.assert_called_with("Break: Breakpoint at 0x400566.")
+        conn.send_info.assert_called_with("Break: Address Filter: 0x400566.")
     
     @pytest.mark.asyncio
     async def test_add_breakpoint2(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x400560")
-        assert "Breakpoint added and enabled at address 0x400560." == str(conn.send_info.call_args[0][0])
+        assert "Address 0x400560 added to breakpoints." == str(conn.send_info.call_args[0][0])
         assert await dbg.handle("continue")
-        conn.send_info.assert_called_with("Break: Breakpoint at 0x400560.")
+        conn.send_info.assert_called_with("Break: Address Filter: 0x400560.")
     
     @pytest.mark.asyncio
     async def test_add_breakpoint_at_line(self, dbg, conn):
         assert await dbg.handle("add_breakpoint_at_line /dangr/tests/example.c 5")
-        conn.send_info.assert_called_with("Breakpoint added and enabled at address 0x400560.")
+        conn.send_info.assert_called_with("Address 0x400560 added to breakpoints.")
         assert await dbg.handle("continue")
-        conn.send_info.assert_called_with("Break: Breakpoint at 0x400560 in /dangr/tests/example.c line  5.")
+        conn.send_info.assert_called_with("Break: Source Filter: /dangr/tests/example.c:5 (0x400560).")
     
     @pytest.mark.asyncio
     async def test_remove_breakpoint(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x400566")
-        assert "Breakpoint added and enabled at address 0x400566." == str(conn.send_info.call_args[0][0])
+        assert "Address 0x400566 added to breakpoints." == str(conn.send_info.call_args[0][0])
         assert await dbg.handle("remove_breakpoint 0x400566")
-        assert "Breakpoint removed at address 0x400566." == str(conn.send_info.call_args[0][0])
+        assert "Address 0x400566 removed from breakpoints." == str(conn.send_info.call_args[0][0])
         assert await dbg.handle("continue")
         conn.send_info.assert_called_with("Terminated.")
 
     @pytest.mark.asyncio
     async def test_remove_non_breakpoint(self, dbg, conn):
         assert await dbg.handle("remove_breakpoint 0x500")
-        assert "No breakpoint found at address 0x500."  == str(conn.send_error.call_args[0][0])
+        assert "Breakpoint at address 0x500 not found."  == str(conn.send_error.call_args[0][0])
     
     @pytest.mark.asyncio
     async def test_enable_breakpoint(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x400566")
-        assert await dbg.handle("enable_breakpoint 0x400566")
-        assert "Breakpoint enabled at address 0x400566." == str(conn.send_info.call_args[0][0])
+        assert await dbg.handle("enable_breakpoint 0")
+        assert "Breakpoint filter enabled." == str(conn.send_info.call_args[0][0])
         assert await dbg.handle("continue")
-        conn.send_info.assert_called_with("Break: Breakpoint at 0x400566.")
+        conn.send_info.assert_called_with("Break: Address Filter: 0x400566.")
     
     @pytest.mark.asyncio
     async def test_enable_non_breakpoint(self, dbg, conn):
-        assert await dbg.handle("enable_breakpoint 0x400566")
-        assert "No breakpoint found at address 0x400566." == str(conn.send_error.call_args[0][0])
+        assert await dbg.handle("enable_breakpoint 0")
+        assert "Index 0 out of range." == str(conn.send_error.call_args[0][0])
 
     @pytest.mark.asyncio
     async def test_disable_breakpoint(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x400566")
-        assert await dbg.handle("disable_breakpoint 0x400566")
-        assert "Breakpoint disabled at address 0x400566." == str(conn.send_info.call_args[0][0])
+        assert await dbg.handle("disable_breakpoint 0")
+        assert "Breakpoint filter disabled." == str(conn.send_info.call_args[0][0])
         assert await dbg.handle("continue")
         conn.send_info.assert_called_with("Terminated.")
 
     @pytest.mark.asyncio
     async def test_disable_non_breakpoint(self, dbg, conn):
-        assert await dbg.handle("disable_breakpoint 0x400566")
-        assert "No breakpoint found at address 0x400566." == str(conn.send_error.call_args[0][0])
+        assert await dbg.handle("disable_breakpoint 0")
+        assert "Index 0 out of range." == str(conn.send_error.call_args[0][0])
 
     @pytest.mark.asyncio
     async def test_list_breakpoints(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x400566")
         assert await dbg.handle("list_breakpoints")
-        assert "Breakpoint(s): [0] Breakpoint at 0x400566" == str(conn.send_result.call_args[0][0])
+        assert "Breakpoint(s): [0] Address Filter: 0x400566" == str(conn.send_result.call_args[0][0])
        
     @pytest.mark.asyncio
     async def test_list_no_breakpoints(self, dbg, conn):

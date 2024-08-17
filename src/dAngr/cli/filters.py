@@ -175,21 +175,29 @@ class InputFileFilter(Filter):
     def __str__(self) -> str:
         return f"Input File Filter: {self.path}"
 
-
-class BreakpointFilter(AddressFilter):
-    def __init__(self, address:int, source_file:str|None=None, line_nr:int|None = None, enabled:bool = True):
-        self.breakpoint = Breakpoint(address,source_file,line_nr,enabled)
-        self.address = address
-        super().__init__(address)
-    
-    @property
-    def enabled(self):
-        return self.breakpoint.enabled
-    
-    @enabled.setter
-    def enabled(self, value:bool):
-        self.breakpoint.enabled = value
-        self._enabled = value
-    
+class SourceFilter(AddressFilter):
+    def __init__(self, address:int, source_file:str, line_nr:int):
+        super().__init__(address=address)
+        self.source_file = source_file
+        self.line_nr = line_nr
+        
     def __str__(self) -> str:
-        return f"{str(self.breakpoint)}"   
+        return f"Source Filter: {self.source_file}:{self.line_nr} ({hex(self.address)})"
+    
+# class BreakpointFilter(AddressFilter):
+#     def __init__(self, address:int, source_file:str|None=None, line_nr:int|None = None, enabled:bool = True):
+#         self.breakpoint = Breakpoint(address,source_file,line_nr,enabled)
+#         self.address = address
+#         super().__init__(address)
+    
+#     @property
+#     def enabled(self):
+#         return self.breakpoint.enabled
+    
+#     @enabled.setter
+#     def enabled(self, value:bool):
+#         self.breakpoint.enabled = value
+#         self._enabled = value
+    
+#     def __str__(self) -> str:
+#         return f"{str(self.breakpoint)}"   

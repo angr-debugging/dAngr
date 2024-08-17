@@ -1,24 +1,21 @@
 import asyncio
 import os
 import re
-from typing import Any, Callable, Dict, List, Set, Tuple, cast
+from typing import Any, Callable, Dict, List, Tuple, cast
 import angr
-from angr import Project, SimCC, SimulationManager, types
+from angr import SimCC, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
 import claripy
 
+from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
-from dAngr.utils.utils import DEBUG, StreamType
-
-
-
+from dAngr.utils.utils import DEBUG, DataType, StreamType
 
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, get_function_by_addr, hook_simprocedures, load_module_from_file
 from .connection import Connection
 
-from dAngr.cli.models import BasicBlock, DebugSymbol
 from dAngr.exceptions import DebuggerCommandError
 import logging
 
@@ -262,6 +259,9 @@ class Debugger:
     def add_symbol(self, name, size):
         self._symbols[name] = size
     
+    def remove_symbol(self,name):
+        self._symbols.pop(name)
+    
     def get_new_symbol_object(self, name):
         if size := self._symbols.get(name):
             s = claripy.BVS(name, size=size)
@@ -269,12 +269,10 @@ class Debugger:
             return s
         raise DebuggerCommandError(f"Symbol {name} not found.")
     
-    def get_symbol_value(self, name):
-        s = self._synbols_cache.get(name)
+    def get_symbol(self, name):
+        s = self._synbols_cache.get(name, None)
         if not s is None:
-            state = self.simgr.one_active if self.active else self.simgr.deadended[0] if self.finished else None
-            if state:
-                return state.solver.eval(s)
+            return s
         raise DebuggerCommandError(f"Symbol {name} not found.")
         
     def reset_state(self):
@@ -367,23 +365,22 @@ class Debugger:
         return paths
 
         
-    def get_return_values(self, stateID=0):
-        vals = []
+    def get_return_value(self, stateID=0)->int|None|claripy.ast.Base:
         prototype = self.get_stored_function(self._current_function)["prototype"]
         cc = self.get_stored_function(self._current_function)["cc"]
         if not cc or prototype.returnty is None:
-            return vals
+            return None
         loc = cc.return_val(prototype.returnty)
         if loc is None:
-            return vals # no return value
-
-        for state in self.simgr.deadended:
+            return None
+        if len(self.simgr.active) <= stateID:
+            state = self.simgr.deadended[stateID]
             val = loc.get_value(state, stack_base=state.regs.sp - cc.STACKARG_SP_DIFF)
             val = cast(claripy.ast.Base , state.solver.simplify(val))
             if val.concrete:
                 val = val.concrete_value
-            vals.append(val)
-        return vals
+            return val
+        return None
  
     def get_bb_end_address(self, state):
         bb = state.block()
@@ -419,7 +416,8 @@ class Debugger:
     def get_paths(self):
         return self.simgr.active + self.simgr.stashes["deferred"]
     
-    def set_memory(self,address,value,state = None):
+    def set_memory(self,address:int,value,state = None):
+
         if type(value) == int:
             # Account for endianness when storing integers
             if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le':
@@ -451,20 +449,36 @@ class Debugger:
         byte_value = state.memory.load(address, size)
         return byte_value
     
-    def get_int_memory(self, address, stateID=0):
-        state = self.get_current_state(stateID)
-        return self.get_memory(address, state.arch.bytes, stateID)
 
-    def cast_to(self, value, cast_to, stateID=0):
+    def cast_to(self, value:claripy.ast.BV, cast_to:DataType, stateID=0):
         if not value.concrete:
             raise DebuggerCommandError("Value is not concrete.")
         state = self.get_current_state(stateID=stateID)
+        if DataType.bytes:
+            return state.solver.eval(value, cast_to=bytes)
+        if DataType.hex:
+            return hex(self.cast_to(value, DataType.int, stateID=stateID)) # type: ignore
+        if DataType.str:
+            b = state.solver.eval(value, cast_to=bytes)
+            return b.decode('utf-8')
 
-        if cast_to == bytes:
-            return state.solver.eval(value, cast_to=cast_to)
-        elif cast_to == int:
-            return int.from_bytes(state.solver.eval(value, cast_to=bytes), byteorder="little" if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le' else 'big')
-    def cast_to_bytes(self, value):
+        switch = {
+            DataType.int: int,
+            DataType.bool: bool,
+            DataType.double: float,
+        }
+        cast_to_ = switch.get(cast_to, None)
+        if cast_to_ in switch:
+            if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le':
+                endianness = 'little'
+            else:
+                endianness = 'big'
+            return state.solver.eval(value, cast_to=cast_to_, endness=endianness)
+        else:
+            raise DebuggerCommandError(f"Invalid data type: {cast_to}.")
+        
+
+    def to_bytes(self, value):
         if type(value) == int:
             # Account for endianness when storing integers
             if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le':
@@ -473,13 +487,14 @@ class Debugger:
                 endianness = 'big'
             byte_value = value.to_bytes(self.project.arch.bytes, byteorder=endianness)
         elif type(value) == str:
-            # Encode string to bytes
             byte_value = value.encode('utf-8')
         elif type(value) == bytes:
             byte_value = value
         else:
             raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
         return byte_value
+    
+
     def load_hooks(self, filename):
         mod = load_module_from_file(filename)
         hooks = hook_simprocedures(self.project,mod)
@@ -531,22 +546,16 @@ class Debugger:
                     constants.append((hex(string_address), string_value))
 
         return constants
-    def list_path_history(self):
+    def list_path_history(self, index:int = 0, stash="active"):
         # list basic blocks of states in the path history for both active and deadended states
-        states = {}
-        cur = "active"
-        i = 0
-        for index, state in enumerate(self.simgr.active + self.simgr.deadended):
-            if index == len(self.simgr.active):
-                cur = "deadended"
-                i = 0
-            if cur + str(i) not in states:
-                states[cur + str(i)] = []
-            for a in state.history.recent_bbl_addrs:
+        st = self.simgr.stashes[stash]
+        if index >= len(st):
+            raise DebuggerCommandError("Failed to find state")
+        state = st[index]
+
+        for a in state.history.recent_bbl_addrs:
                 bb = self.project.factory.block(a)
-                states[cur + str(i)].append(BasicBlock(bb.addr,bb.size,bb.instructions,bb.capstone))
-            i = i + 1
-        return states
+                yield BasicBlock(bb.addr,bb.size,bb.instructions,bb.capstone)
     
     def _get_string_memory_from_state(self, address, state):
         string_array = []

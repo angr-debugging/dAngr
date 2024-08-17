@@ -1,8 +1,8 @@
-from .base import BaseCommand
-from .memory import *
-from .functions import *
-from .execution import *
-from .execution.breakpoints import *
-from .info import *
-from .viewer import *
-from .execution.filters import *
+from .base import BaseCommand, CommandSpec, IBaseCommand
+from .breakpoints import BreakpointCommands
+from .filters import FilterCommands
+from .memory import MemoryCommands
+from .execution import ExecutionCommands
+from .functions import FunctionCommands
+from .info import InformationCommands
+from .viewer import ViewerCommands

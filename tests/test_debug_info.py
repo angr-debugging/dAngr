@@ -78,6 +78,6 @@ class TestDebugInfoCommands:
     @pytest.mark.asyncio
     async def test_list_breakpoints(self, dbg, conn):
         assert await dbg.handle("list_breakpoints")
-        assert "Breakpoint(s): [0] Breakpoint at 0x400566" == str(conn.send_result.call_args[0][0])
+        assert "Breakpoint(s): [0] Address Filter: 0x400566" == str(conn.send_result.call_args[0][0])
     
     

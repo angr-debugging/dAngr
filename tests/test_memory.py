@@ -43,7 +43,7 @@ class TestMemoryCommands:
     @pytest.mark.asyncio
     async def test_get_memory(self, dbg, conn):
         assert await dbg.handle("get_memory 0x1000 3")
-        assert "Memory at 0x1000: b'abc' (bytes)" == str(conn.send_result.call_args[0][0])
+        assert "b'abc'" == str(conn.send_result.call_args[0][0])
     
     # @pytest.mark.asyncio
     # async def test_get_int_memory(self, dbg, conn):
@@ -52,12 +52,12 @@ class TestMemoryCommands:
     #     assert "Memory at 0x2000: 0 (int)" == str(conn.send_info.call_args[0][0])
     @pytest.mark.asyncio
     async def test_get_string_memory(self, dbg, conn):
-        assert await dbg.handle("get_string_memory 0x1000")
-        assert "Memory at 0x1000: abc (str)" == str(conn.send_result.call_args[0][0])
+        assert await dbg.handle("get_memory_string 0x1000")
+        assert "abc" == str(conn.send_result.call_args[0][0])
     @pytest.mark.asyncio
     async def test_get_register(self, dbg, conn):
         assert await dbg.handle("get_register ip")
-        assert "ip: 0x4d." == str(conn.send_result.call_args[0][0])
+        assert "0x4d" == str(conn.send_result.call_args[0][0])
 
     @pytest.mark.asyncio
     async def test_get_register_invalid(self, dbg, conn):
@@ -77,7 +77,7 @@ class TestMemoryCommands:
     @pytest.mark.asyncio
     async def test_set_register(self, dbg, conn):
         assert await dbg.handle("set_register ip 0x4e")
-        assert "ip set to 0x4e." == str(conn.send_info.call_args[0][0])
+        assert "Register ip: 0x4e." == str(conn.send_info.call_args[0][0])
 
     @pytest.mark.asyncio
     async def test_set_memory_int(self, dbg, conn):
@@ -107,4 +107,4 @@ class TestMemoryCommands:
         assert await dbg.handle("continue")
         assert await dbg.handle("continue")
         assert await dbg.handle("get_return_value")
-        assert "Return value: 6" == str(conn.send_result.call_args[0][0])
+        assert "6" == str(conn.send_result.call_args[0][0])

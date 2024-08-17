@@ -45,8 +45,8 @@ async def test_check_shortnames(server):
 
             # get duplicate short commands and print short and fullname
     for cmd in DEBUGGER_COMMANDS.values():
-        c = cmd(dbg)
-        if c.cmd_name in ["start","continue"]:
+        
+        if cmd.name in ["start","continue"]:
             break
-        assert not any([o(dbg).short_cmd_name == c.short_cmd_name for o in DEBUGGER_COMMANDS.values() if o != cmd]), f"Duplicate short command {c.short_cmd_name}"
+        assert not any([o.short_name == cmd.short_name for o in DEBUGGER_COMMANDS.values() if o != cmd]), f"Duplicate short command {cmd.short_name}"
 

@@ -12,7 +12,9 @@
     "python.languageServer": "Pylance",
     "python.analysis.typeCheckingMode": "standard",
     "python.analysis.diagnosticSeverityOverrides": {
-        "reportIncompatibleMethodOverride": "information"  // or "information", "warning", "error"
+        "reportIncompatibleMethodOverride": "information", 
+        "reportRedeclaration": "information",
+        "reportCallIssue": "information"
     },
 
     "python.testing.pytestArgs": [

@@ -1,7 +1,10 @@
 # MUST
 
 # WANT
+
+- support cfg for range
 # Symbolic Execution
+
 Required for ctf:
 - set reg/mem/symbol to other reg/mem/symbol
 - create symbol from memory/register

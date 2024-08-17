@@ -1,7 +1,6 @@
 from typing import List, Tuple
 from prompt_toolkit import HTML, print_formatted_text
 import html
-import re
 
 from dAngr.angr_ext.connection import Connection
 from prompt_toolkit.styles import Style

@@ -34,8 +34,7 @@ class Server:
         logger.info("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
 
         self.commands = DEBUGGER_COMMANDS
-        dbg = CommandLineDebugger(CliConnection())
-        dd = {c: f">{c} ({self.commands[c](dbg).short_cmd_name})" for c in self.commands.keys()}
+        dd = {c: f">{c} ({self.commands[c].short_name})" for c in self.commands.keys()}
         self.completer = merge_completers([WordCompleter(sorted(dd.keys()),display_dict=dd),PathCompleter(get_paths=lambda: [os.getcwd()])])
         self.debug_file_path = debug_file_path
         self.script_path = script_path

@@ -7,3 +7,4 @@ asynctest==0.13.0
 angr-utils==0.5.0
 nest_asyncio==1.6.0
 setuptools==72.1.0
+multimethod==1.12

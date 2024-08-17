@@ -59,7 +59,7 @@ class TestCommands:
 
     @pytest.mark.asyncio
     async def test_exit_with_args(self, dbg, conn):
-        assert not await dbg.handle("exit args")
+        assert await dbg.handle("exit args")
         conn.send_info.assert_not_called()
         conn.send_error.assert_called_once_with(InvalidArgumentError('Too many arguments. Expected 0 but got 1'))
 
