@@ -19,7 +19,7 @@ from dAngr.exceptions import CommandError
 from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
 
 from dAngr.angr_ext.debugger import Debugger
-from dAngr.utils.utils import get_union_members, parse_arguments
+from dAngr.utils.utils import convert_argument, get_union_members, parse_arguments
 from .cli_connection import CliConnection
 from .debugger_commands import *
 
@@ -329,7 +329,7 @@ class CommandLineDebugger(Debugger,StepHandler):
             if arg_value is None:
                 break # must be because of optional arguments
             # Convert the argument value to the specified type
-            parsed_args_list.append(self._convert_argument(arg_spec.name, arg_spec.type, arg_value))
+            parsed_args_list.append(convert_argument(arg_spec.type, arg_value))
 
         # If there's remaining input, join it into a single string and assign it to the last argument
         if len(parsed_args_list) < len(required):
@@ -338,35 +338,7 @@ class CommandLineDebugger(Debugger,StepHandler):
             parsed_args_list.append(' '.join(parsed_args[len(required) - 1:]))
         return parsed_args_list
 
-    def _convert_argument(self, arg_name: str, arg_type: type, arg_value: str):
-        try:
-            # Handle Enums
-            if isinstance(arg_type, type) and issubclass(arg_type, Enum):
-                return arg_type[arg_value.upper()]
-
-            # Handle Union types
-            types = [arg_type]
-            if members := get_union_members(arg_type):
-                types = members
-            if bool in types and arg_value.lower() in ['true', 'false']:
-                return arg_value.lower() == 'true'
-            if bytes in types:
-                if (arg_value.startswith('b"') and arg_value.endswith('"')) or (arg_value.startswith("b'") and arg_value.endswith("'")):
-                    return bytes(arg_value[2:-1], 'utf-8')
-            if int in types:
-                if arg_value.startswith('0x'):
-                    return int(arg_value, 16)
-                if arg_value.isnumeric():
-                    return int(arg_value)
-            if str in types:
-                if arg_value.startswith(('\'', '"')) and arg_value.endswith(('\'', '"')):
-                    return arg_value[1:-1]
-                return arg_value
-
-            # If no type matched
-            raise InvalidArgumentError(f"Failed to convert argument '{arg_name}' to any of the expected types {types} from '{arg_value}'")
-        except ValueError:
-            raise InvalidArgumentError(f"Failed to convert argument '{arg_name}' to type '{arg_type}' from '{arg_value}'")
+    
     
     async def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False):
         u = check_until

@@ -8,6 +8,8 @@ from typing import Union, get_args
 from claripy import List
 import re
 
+from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
+
 
 DEBUG:bool = os.getenv("BUILD_TYPE","Release").lower() == "debug"
 
@@ -83,6 +85,36 @@ def parse_docstring(docstring:str):
     args = parse_args(args)
 
     return {"description":description, "args":args, "short_name":short_name, "extra_info":example, "return_value":return_value}
+
+def convert_argument(arg_type: type, arg_value: str):
+    try:
+        # Handle Enums
+        if isinstance(arg_type, type) and issubclass(arg_type, Enum):
+            return arg_type[arg_value.upper()]
+
+        # Handle Union types
+        types = [arg_type]
+        if members := get_union_members(arg_type):
+            types = members
+        if bool in types and arg_value.lower() in ['true', 'false']:
+            return arg_value.lower() == 'true'
+        if bytes in types:
+            if (arg_value.startswith('b"') and arg_value.endswith('"')) or (arg_value.startswith("b'") and arg_value.endswith("'")):
+                return bytes(arg_value[2:-1], 'utf-8')
+        if int in types:
+            if arg_value.startswith('0x'):
+                return int(arg_value, 16)
+            if arg_value.isnumeric():
+                return int(arg_value)
+        if str in types:
+            if arg_value.startswith(('\'', '"')) and arg_value.endswith(('\'', '"')):
+                return arg_value[1:-1]
+            return arg_value
+
+        # If no type matched
+        raise InvalidArgumentError(f"Failed to convert argument to any of the expected types {types} from '{arg_value}'")
+    except ValueError:
+        raise InvalidArgumentError(f"Failed to convert argument to type '{arg_type}' from '{arg_value}'")
 
 def convert_args(args, signature):
     # convert the args to the correct type

@@ -6,7 +6,9 @@ import angr
 from angr import SimCC, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
+import angr.storage
 import claripy
+import claripy.strings
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
@@ -58,8 +60,8 @@ class Debugger:
         self._cfg:CFGFast|None = None
         self.stop_reason = StopReason.NONE
         self._entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None = None
-        self._symbols:Dict[str,int] = {}
-        self._synbols_cache:Dict[str,claripy.ast.BV] = {}
+        self._symbols:Dict[str,Dict[str,Any]] = {}
+        self._synbols_cache:Dict[str,claripy.ast.BV|claripy.FP|claripy.ast.String] = {}
 
     @property
     def project(self)->angr.project.Project:
@@ -256,17 +258,31 @@ class Debugger:
         self._entry_point = address
         self.reset_state()
     
-    def add_symbol(self, name, size):
-        self._symbols[name] = size
+    def add_symbol(self, name, info:Dict[str,Any]):
+        self._symbols[name] = info
     
     def remove_symbol(self,name):
         self._symbols.pop(name)
     
-    def get_new_symbol_object(self, name):
-        if size := self._symbols.get(name):
-            s = claripy.BVS(name, size=size)
+    def get_new_symbol_object(self, name) -> claripy.ast.BV | claripy.ast.String | claripy.ast.FP:
+        if info := self._symbols.get(name):
+            type = info["type"]
+            if type == str:
+                # s= claripy.BVS(name, info.get("size",0)*8)
+                s = claripy.StringS(name, info.get("size", 0))
+            elif type == int:
+                # get size of int from the project
+                int_size = self.project.arch.bits
+                s = claripy.BVS(name, size=int_size)
+            elif type == bytes:
+                s = claripy.BVS(name, size=info.get("size",0)*8)
+            elif type == float:
+                s = claripy.FPS(name, sort=info.get("sort",claripy.fp.FSORT_FLOAT)) # type: ignore
+            else:
+                raise DebuggerCommandError(f"Type {type} not supported.")
             self._synbols_cache[name] = s
             return s
+        #set state to StringS value
         raise DebuggerCommandError(f"Symbol {name} not found.")
     
     def get_symbol(self, name):
@@ -274,7 +290,17 @@ class Debugger:
         if not s is None:
             return s
         raise DebuggerCommandError(f"Symbol {name} not found.")
-        
+    def set_symbol(self, name, value):
+        self._synbols_cache[name] = value
+
+    def add_to_stack(self, value:int|bytes|str|claripy.ast.BV|claripy.ast.FP|claripy.String):
+        if isinstance(value, int):
+            value = self.to_bytes(value)
+        elif isinstance(value, str):
+            value = value.encode('utf-8')
+        state = self.get_current_state()
+        state.stack_push(value)
+    
     def reset_state(self):
         self._simgr = None # state is reset upone requesting simgr
         self.stop_reason = StopReason.NONE
@@ -410,7 +436,9 @@ class Debugger:
         state = self.get_current_state()
         return state.posix.dumps(stream.value)
      
-        
+    def create_symbolic_file(self, name:str, content:str|claripy.ast.BV|claripy.ast.String|None=None, size:int=0):
+        file = angr.storage.file.SimFile(name, content=content, size=size)
+        self.get_current_state().fs.insert(name, file)
     
             
     def get_paths(self):
@@ -450,17 +478,37 @@ class Debugger:
         return byte_value
     
 
-    def cast_to(self, value:claripy.ast.BV, cast_to:DataType, stateID=0):
+    def cast_to(self, value:claripy.ast.BV|claripy.FP|claripy.String, cast_to:DataType, stateID=0):
         if not value.concrete:
             raise DebuggerCommandError("Value is not concrete.")
         state = self.get_current_state(stateID=stateID)
         if DataType.bytes:
-            return state.solver.eval(value, cast_to=bytes)
+            if isinstance(value, claripy.String):
+                bytes_values = []
+                for i in range(32):  # Loop over each byte
+                    byte = value.args[0][i]
+                    concrete_byte_value = state.solver.eval(byte)
+                    bytes_values.append(concrete_byte_value)
+                return bytes_values
+                # concrete_string = bytes(bytes_values).decode('utf-8')
+                # return value.args[0]
+            else:
+                return state.solver.eval(value, cast_to=bytes)
         if DataType.hex:
             return hex(self.cast_to(value, DataType.int, stateID=stateID)) # type: ignore
         if DataType.str:
-            b = state.solver.eval(value, cast_to=bytes)
-            return b.decode('utf-8')
+            if isinstance(value, claripy.String):
+                bytes_values = []
+                for i in range(32):  # Loop over each byte
+                    byte = value.args[0][i]
+                    concrete_byte_value = state.solver.eval(byte)
+                    bytes_values.append(concrete_byte_value)
+                return bytes(bytes_values).decode('utf-8')
+                # concrete_string = bytes(bytes_values).decode('utf-8')
+                # return value.args[0]
+            else:
+                b = state.solver.eval(value, cast_to=bytes)
+                return b.decode('utf-8')
 
         switch = {
             DataType.int: int,
@@ -469,6 +517,8 @@ class Debugger:
         }
         cast_to_ = switch.get(cast_to, None)
         if cast_to_ in switch:
+            if isinstance(value, claripy.String):
+                raise DebuggerCommandError("Cannot cast a string to an integer/bool/float.")
             if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le':
                 endianness = 'little'
             else:

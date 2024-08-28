@@ -21,7 +21,7 @@ class FunctionCommands(BaseCommand):
         Short name: fgr
         """
         val = self.debugger.get_return_value() 
-        return str(val) if val else ""
+        return str(val) if not val is None else ""
 
     async def set_function_call(self, function_call: str):
         """

@@ -6,3 +6,4 @@ from .execution import ExecutionCommands
 from .functions import FunctionCommands
 from .info import InformationCommands
 from .viewer import ViewerCommands
+from .symbols import SymbolCommands

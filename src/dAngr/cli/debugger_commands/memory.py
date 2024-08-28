@@ -1,6 +1,7 @@
+import claripy
 from multimethod import multimethod
 from dAngr.cli.models import Memory, Register
-from dAngr.utils.utils import DataType, StreamType
+from dAngr.utils.utils import DataType, StreamType, convert_argument
 from .base import BaseCommand
 
 class MemoryCommands(BaseCommand):
@@ -8,63 +9,80 @@ class MemoryCommands(BaseCommand):
         super().__init__(debugger_core)
 
 
-    async def add_symbol(self, name:str, size:int):
+    async def assign(self, target:str, value:int|bytes|str):
         """
-        Add a symbol with name and size.
+        Assign a value to some target
 
         Args:
-            name (str): Name of the symbol
-            size (int): Bitsize of the symbol.
+            target (str): Name of the symbol. Prefix with $reg for register, $mem for memory, $sym for symbol.
+            value (str): Value to set. Either a value or a prefixed register, memory or symbol.
         
-        Short name: sa
-        
-        """
-        self.debugger.add_symbol(name, size)
-            
-    async def remove_symbol(self, name:str):
-        """
-        Remove a symbol with name.
-
-        Args:
-            name (str): Name of the symbol
-        
-        Short name: sr
+        Short name: as
         
         """
-        self.debugger.remove_symbol(name)
-    
-    async def get_symbol(self, name:str, type:DataType = DataType.bytes):
-        """
-        Get a symbol with name.
-
-        Args:
-            name (str): Name of the symbol
-            type (DataType): Type of the symbol. Default is bytes.
-        
-        Short name: sg
-        
-        """
-        val = self.debugger.get_symbol(name)
-        if val is None:
-            await self.send_error(f"Symbol {name} not found.")
-            return
-        if val.concrete:
-            cvalue = self.debugger.cast_to(val, type)
-            await self.send_result(f"Symbol {name} is {cvalue}.")
+        val = value
+        if isinstance(value, int):
+            val = self.debugger.to_bytes(value)
+        elif isinstance(value, bytes):
+            pass
+        elif isinstance(value, str):
+            if value.startswith("$"):
+                t,v = value.split(".", 1)
+                if t == "$reg":
+                    val = self.debugger.get_register(int(v))
+                elif t == "$mem":
+                    val = self.debugger.get_memory(v)
+                elif t == "$sym":
+                    val = self.debugger.get_symbol(v)
+                else:
+                    raise ValueError("Invalid value. Use $reg, $mem or $sym.")
+            else:
+                val = self.debugger.to_bytes(value)
+        if target.startswith("$") and "," in target:
+            vv, n = target.split(".", 1)
+            if vv == "$reg":
+                if not isinstance(val, int) or not isinstance(n, claripy.ast.BV):
+                    raise ValueError("Invalid value. Use an integer value or symbol.")
+                self.debugger.set_register(n, val)
+                await self.send_info(f"Register {n} set to {value}.")
+            elif vv == "$mem":
+                address = convert_argument(int, n)
+                self.debugger.set_memory(address, val) # type: ignore
+                await self.send_info(f"Memory at {n} set to {value}.")
+            elif vv == "$sym":
+                self.debugger.set_symbol(n, val)
+                await self.send_info(f"Symbol {n} set to {value}.")
+            else:
+                await self.send_error("Invalid target. Use $reg, $mem or $sym.")
         else:
-            await self.send_result(f"Symbol {name} is {val}.")
+            raise ValueError("Invalid target. Use $reg, $mem or $sym.")
 
-    async def dump_stdstream(self, stream_type: StreamType = StreamType.stdout):
+    async def add_to_stack(self, value:int|bytes|str):
         """
-        Dump the standard stream.
+        Add a value to the stack.
 
         Args:
-            stream_type (StreamType): The type of the stream to dump. Default is stdout.
+            value (int|bytes|str): Value to set at the stack.
         
-        Short name: ds
+        Short name: ast
         
         """
-        await self.send_info(self.debugger.get_stdstream(stream_type))
+        val = value
+        if isinstance(value, int):
+            val = self.debugger.to_bytes(value)
+        elif isinstance(value, bytes):
+            pass
+        elif isinstance(value, str):
+            if value.startswith("$"):
+                t,v = value.split(".", 1)
+                if t == "$sym":
+                    val = self.debugger.get_symbol(v)
+                else:
+                    raise ValueError("Invalid value. Use $sym.")
+            else:
+                val = self.debugger.to_bytes(value)
+        self.debugger.add_to_stack(val)
+        await self.send_info(f"Value {value} added to the stack.")
 
 
     async def get_memory_string(self, address:int):
@@ -142,6 +160,8 @@ class MemoryCommands(BaseCommand):
         
         """
         v = self.debugger.get_new_symbol_object(value)
+        if isinstance(v, claripy.ast.FP) or isinstance(v, claripy.ast.String):
+            raise ValueError("Symbol cannot be a floating point or string value.")
         self.debugger.set_register(name, v)
         await self.send_info(f"Register {name}: {value}.")
 

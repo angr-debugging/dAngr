@@ -11,6 +11,12 @@ from angr import Project, SimCC, SimProcedure, SimState, SimulationManager, type
 from dAngr.angr_ext.std_tracker import StdTracker
 from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
 
+def evaluate_symbolic_string(symbolic_str, solver, length):
+    result = []
+    for i in range(length):
+        byte = symbolic_str.get_byte(i)
+        result.append(solver.eval(byte, cast_to=int))
+    return bytes(result)
 
 def create_entry_state(project:Project, 
                        entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None= None, 
