@@ -1,4 +1,5 @@
 
+from html import unescape
 from typing import List, Tuple
 from prompt_toolkit import HTML
 from prompt_toolkit.application import Application
@@ -35,7 +36,7 @@ class Less:
         self.search_field = SearchToolbar()
         info = Label(HTML("<darkgray>Press 'ctrl-d' to exit, 'ctrl-f' to forward search, 'ctrl-r' for reverse search</darkgray>"))
         # TODO: display formatted text with styles
-        txts = [remove_xml_tags(t[0]) for t in texts]
+        txts = [unescape(remove_xml_tags(t[0])) for t in texts]
         self.inner = TextArea("\n".join(txts),scrollbar=True,read_only=True, search_field=self.search_field, multiline=True, wrap_lines=True, focus_on_click=True)
         return Layout(
                 HSplit([ 

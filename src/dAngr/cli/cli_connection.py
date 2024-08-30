@@ -10,16 +10,29 @@ class CliConnection(Connection):
     def __init__(self):
         super().__init__()
         self.indent = 4
-        self._output:List[Tuple[str,Style|None]] = []
+        self._history:List[List[Tuple[str,Style|None]]] = [[]]
+        # self._output:List[Tuple[str,Style|None]] = []
         self._first = True
 
     @property
     def output(self)->List[Tuple[str,Style|None]]:
-        return self._output
+        return self._history[-1]
     
+    @output.setter
+    def output(self, value:List[Tuple[str,Style|None]]):
+        self._history[-1] = value
     
+    @property
+    def history(self)->List[List[Tuple[str,Style|None]]]:
+        return self._history
+    
+    def clear_history(self):
+        self._history = [[]]
+        self._first = True
+
     def clear_output(self):
-        self._output = []
+        if len(self._history[-1])!=0:
+            self._history.append([])
         self._first = True
         
     # async def send(self, data):
@@ -39,11 +52,13 @@ class CliConnection(Connection):
     
     
     async def send_result(self, data, style=None):
+        if not data:
+            return
         _data = data
         #replace newlines with newlines and 4 spaces
         data = self._escape(data, style is None)
         #get total length of entries in self._output
-        l = sum([len(x) for x in self._output]+[len(data)])
+        l = sum([len(x) for x in self.output]+[len(data)])
 
         if not style and l > 1000:
             if self._first:
@@ -52,7 +67,7 @@ class CliConnection(Connection):
                 print_formatted_text(HTML("<gray>Output too long, use 'less' to view</gray>"),style=style)
         else:
             print_formatted_text(HTML(data),style=style)
-        self._output.append((data,style))
+        self.output.append((data.lstrip(),style))
 
     async def send_output(self, data, style=None):
         #replace newlines with newlines and 4 spaces

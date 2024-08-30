@@ -57,7 +57,7 @@ class TestMemoryCommands:
     @pytest.mark.asyncio
     async def test_get_register(self, dbg, conn):
         assert await dbg.handle("get_register ip")
-        assert "0x4d" == str(conn.send_result.call_args[0][0])
+        assert "0x40054d" == str(conn.send_result.call_args[0][0])
 
     @pytest.mark.asyncio
     async def test_get_register_invalid(self, dbg, conn):
@@ -72,7 +72,7 @@ class TestMemoryCommands:
     @pytest.mark.asyncio
     async def test_list_registers(self, dbg, conn):
         assert await dbg.handle("list_registers")
-        assert "Registers and their current values:" in str(conn.send_result.call_args[0][0])
+        assert "Register rax " in str(conn.send_result.call_args[0][0])
 
     @pytest.mark.asyncio
     async def test_set_register(self, dbg, conn):

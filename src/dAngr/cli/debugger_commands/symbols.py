@@ -20,6 +20,7 @@ class SymbolCommands(BaseCommand):
         
         """
         self.debugger.add_symbol(name, {"size":size, "type":bytes})
+
     async def add_int_symbol(self, name:str, size:int):
         """
         Add a symbol with name and size.
@@ -32,6 +33,7 @@ class SymbolCommands(BaseCommand):
         
         """
         self.debugger.add_symbol(name, {"size":size, "type":int})
+
     async def add_str_symbol(self, name:str, size:int):
         """
         Add a symbol with name and size.
@@ -72,13 +74,9 @@ class SymbolCommands(BaseCommand):
         if val is None:
             await self.send_error(f"Symbol {name} not found.")
             return
-        if val.concrete:
-            cvalue = self.debugger.cast_to(val, type)
-            await self.send_result(f"Symbol {name} is {cvalue}.")
-        else:
-            await self.send_result(f"Symbol {name} is {val}.")
+        return self.debugger.cast_to(val, type)
 
-    async def add_constraints(self, constraint:str):
+    async def add_constraints(self, symbol:str, constraint:str):
         """
         Add a constraint to a symbol.
 
@@ -90,6 +88,7 @@ class SymbolCommands(BaseCommand):
         
         """
         sym = self.debugger.get_symbol(symbol)
+        # TODO
         # parse constriant string to claripy constraint
 
-        self.debugger.add_constraint(cs)
+        # self.debugger.add_constraint(cs)

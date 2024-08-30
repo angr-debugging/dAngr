@@ -111,3 +111,70 @@ class FunctionCommands(BaseCommand):
         await self.send_info(f"Function signature set for {function_name}")
 
 
+
+    async def decompiled_function(self, function:str):  # type: ignore
+        """
+        Show the decompiled function.
+
+        Args:
+            function (str): The name of the function.
+
+        Returns:
+            str: The decompiled function.
+
+        Raises:
+            DebuggerCommandError: If no function is found with the given name.
+        
+        Short name: fd
+        """
+        b = self.debugger.get_decompiled_function(function)
+        if b is None:
+            raise DebuggerCommandError("No basic block found.")
+        return f"{b}"
+    
+    
+
+    async def decompiled_function_at_address(self, address:int, end:int):  # type: ignore
+        """
+        Show the decompiled function at a given address.
+
+        Args:
+            address (int): The address to decompile the function at.
+            end (int): The end address of the function.
+
+        Returns:
+            str: The decompiled function.
+
+        Raises:
+            DebuggerCommandError: If no function or basic block is found at the given address.
+        Short name: fda
+        """
+        # func = address
+        # func = self.debugger.get_function_info(address)
+        # if func is None:
+        #     raise DebuggerCommandError("No function found at this address.")
+        b = self.debugger.get_decompiled_function_at_address(address, end)
+        if b is None:
+            raise DebuggerCommandError("No basic block found.")
+        return f"{b}"
+
+    async def get_function_info(self, function_name: str):
+        """
+        Get information about a function.
+
+        Args:
+            function_name (str): The name of the function.
+
+        Returns:
+            str: Information about the function.
+
+        Raises:
+            DebuggerCommandError: If no function is found with the given name.
+        
+        Short name: fi
+        """
+        func = self.debugger.get_function_info(function_name)
+        if func is None:
+            raise DebuggerCommandError("No function found with this name.")
+        return f"{func}"
+    

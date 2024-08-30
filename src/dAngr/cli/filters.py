@@ -1,6 +1,6 @@
 
 from abc import abstractmethod
-from typing import List
+from typing import List, override
 
 from angr import SimState
 
@@ -183,6 +183,27 @@ class SourceFilter(AddressFilter):
         
     def __str__(self) -> str:
         return f"Source Filter: {self.source_file}:{self.line_nr} ({hex(self.address)})"
+    
+class SymbolicFilter(AddressFilter):
+    def __init__(self, address:int):
+        super().__init__(address=address)
+        self._enabled = True
+    
+    @property
+    def enabled(self)->bool:
+        return self._enabled
+    
+    @enabled.setter
+    def enabled(self, value:bool):
+        self._enabled = value
+
+    @override
+    def _filter(self, state:SimState):
+        a = state.mem[self.address].int.resolved
+        return state.solver.symbolic(a)
+    
+    def __str__(self) -> str:
+        return f"Symbolic Filter: memory address {hex(self.address)}"
     
 # class BreakpointFilter(AddressFilter):
 #     def __init__(self, address:int, source_file:str|None=None, line_nr:int|None = None, enabled:bool = True):

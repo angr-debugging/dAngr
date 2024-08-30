@@ -32,7 +32,7 @@ class IBaseCommand(metaclass=AutoRunMeta):
     
     def get_cmd_specs(self, command:str):
         specs = self.cmd_specs()
-        return next((specs[s] for s in specs if specs[s].name.strip() == command), None)
+        return next((specs[s] for s in specs if specs[s].name.strip() == command or specs[s].short_name == command), None)
     
     @abstractmethod
     async def execute(self, cmd, *args):

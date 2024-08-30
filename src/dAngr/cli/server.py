@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.application import get_app
@@ -75,7 +76,11 @@ class Server:
                         try:
                             inp = await session.prompt_async(prmpt2, completer=self.completer)
                             if not line.strip().startswith("#"):
-                                if not await dbg.handle(line.strip()):
+                                line = self._preprocess_input(conn, line)
+                                if not line:
+                                    continue
+                                
+                                if not await dbg.handle(line):
                                     self.stop = True
                         except KeyboardInterrupt:
                             self.stop = True
@@ -98,6 +103,9 @@ class Server:
                 with patch_stdout() as po:
                     inp = await session.prompt_async(prmpt, completer=self.completer)
                     for user_input in inp.splitlines():
+                        user_input = self._preprocess_input(conn, user_input)
+                        if not user_input:
+                            continue
                         if not await dbg.handle(user_input):
                             self.stop = True
             except KeyboardInterrupt:
@@ -109,7 +117,26 @@ class Server:
                     raise e
                 else:
                     await conn.send_error(f"An unexpected error occurred: {e}")
-
+    def _preprocess_input(self, conn:CliConnection,line:str):
+        """
+        Preprocess the input line.
+        """
+        # remove comments
+        line = line.split("#")[0]
+        # remove leading and trailing whitespaces
+        line = line.strip()
+        # line may contain references marked as $<int> with int being the index back in the history of conn.history
+        # replace them with the actual values
+        for match in re.finditer(r"\$([0-9]+)", line):
+            try:
+                ix = int(match.group(1))
+                if 0 <= ix < len(conn.history):
+                    val = conn.history[ix][0][0]
+                    line = line.replace(match.group(0), val)
+            except IndexError:
+                pass    
+        return line
+    
     def start_server(self):
         asyncio.run(self.loop())
 

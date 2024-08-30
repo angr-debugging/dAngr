@@ -76,7 +76,7 @@ class FilterCommands(BaseCommand):
             list.append(FunctionFilter(name))
         await self.send_info(f"Function {name} {'added to' if add else 'removed from'} {'exclusions' if avoid else 'breakpoints'}.")
 
-    async def filter_for_stream(self, text:str, avoid:bool=False, add:bool = True, stream:StreamType=StreamType.stdout):
+    async def filter_stream(self, text:str, avoid:bool=False, add:bool = True, stream:StreamType=StreamType.stdout):
         """
         Set a stream filter.
 

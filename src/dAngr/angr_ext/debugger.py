@@ -1,6 +1,7 @@
 import asyncio
 import os
 import re
+import subprocess
 from typing import Any, Callable, Dict, List, Tuple, cast
 import angr
 from angr import SimCC, SimulationManager, types
@@ -9,10 +10,11 @@ from angr.knowledge_plugins.functions.function import Function
 import angr.storage
 import claripy
 import claripy.strings
+import cle
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
-from dAngr.utils.utils import DEBUG, DataType, StreamType
+from dAngr.utils.utils import DEBUG, DataType, StreamType, remove_ansi_escape_codes
 
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, get_function_by_addr, hook_simprocedures, load_module_from_file
@@ -61,7 +63,7 @@ class Debugger:
         self.stop_reason = StopReason.NONE
         self._entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None = None
         self._symbols:Dict[str,Dict[str,Any]] = {}
-        self._synbols_cache:Dict[str,claripy.ast.BV|claripy.FP|claripy.ast.String] = {}
+        self._symbols_cache:Dict[str,claripy.ast.BV|claripy.FP|claripy.ast.String] = {}
 
     @property
     def project(self)->angr.project.Project:
@@ -251,8 +253,43 @@ class Debugger:
         self._project = angr.Project(binary_path, load_options={'auto_load_libs': False, 'load_debug_info': True}) #,'main_opts':{'base_addr': 0x400000}})
         self.project.kb.dvars.load_from_dwarf()
     
+    def get_binary_info(self):
+        # get general info such as path, name, arch, entry point, etc
+        self.throw_if_not_initialized()
+        if self._binary_path is None:
+            raise DebuggerCommandError("Binary path not set.")
+        
+        return {
+            "path":self._binary_path, 
+            "arch":f" {self.project.arch.name}  ({str(self.project.arch.bits)} bits)", 
+            "endian":self.project.arch.memory_endness.replace('Iend_', ''),
+            "entry_point":hex(self.project.entry), 
+            "base_addr": hex(self.project.loader.main_object.mapped_base)
+        }
     
-    
+    def get_binary_security_features(self):
+        # get security features such as canary, nx, pie, etc
+        self.throw_if_not_initialized()
+        # run checksec as a process and parse the output
+        features = {}
+        try:
+            checksec = subprocess.run(f"checksec --file={self._binary_path}", cwd=os.path.abspath(os.curdir), capture_output=True, text=True, shell=True)
+            if checksec.returncode != 0:
+                raise DebuggerCommandError(f"Failed to run checksec: {checksec.stdout}")
+            output = checksec.stdout
+            lines = output.split("\n")
+            headers = re.split(r'\s{2,}|\t',lines[0])
+            values = [x for x in (remove_ansi_escape_codes(r) for r in re.split(r'\s{2,}|\t',lines[1])) if x.strip()]
+            for i in range(len(headers)):
+                features[headers[i]] = values[i]
+
+        except Exception as e:
+            raise DebuggerCommandError(f"Failed to run checksec: {e}")
+        return features
+        
+
+
+
     def set_start_address(self, address:int):
         self._simgr = None
         self._entry_point = address
@@ -280,18 +317,20 @@ class Debugger:
                 s = claripy.FPS(name, sort=info.get("sort",claripy.fp.FSORT_FLOAT)) # type: ignore
             else:
                 raise DebuggerCommandError(f"Type {type} not supported.")
-            self._synbols_cache[name] = s
+            self._symbols_cache[name] = s
             return s
         #set state to StringS value
         raise DebuggerCommandError(f"Symbol {name} not found.")
     
     def get_symbol(self, name):
-        s = self._synbols_cache.get(name, None)
+        s = self._symbols_cache.get(name, None)
         if not s is None:
             return s
-        raise DebuggerCommandError(f"Symbol {name} not found.")
+        else:
+            return self.get_new_symbol_object(name)
+
     def set_symbol(self, name, value):
-        self._synbols_cache[name] = value
+        self._symbols_cache[name] = value
 
     def add_to_stack(self, value:int|bytes|str|claripy.ast.BV|claripy.ast.FP|claripy.String):
         if isinstance(value, int):
@@ -300,6 +339,9 @@ class Debugger:
             value = value.encode('utf-8')
         state = self.get_current_state()
         state.stack_push(value)
+    def get_stack(self, length, offset = 0, stateID=0):
+        state = self.get_current_state(stateID)
+        return state.stack_read(offset,length)
     
     def reset_state(self):
         self._simgr = None # state is reset upone requesting simgr
@@ -436,7 +478,7 @@ class Debugger:
         state = self.get_current_state()
         return state.posix.dumps(stream.value)
      
-    def create_symbolic_file(self, name:str, content:str|claripy.ast.BV|claripy.ast.String|None=None, size:int=0):
+    def create_symbolic_file(self, name:str, content:str|claripy.ast.BV|claripy.ast.String|None=None, size:int|None=None):
         file = angr.storage.file.SimFile(name, content=content, size=size)
         self.get_current_state().fs.insert(name, file)
     
@@ -444,45 +486,31 @@ class Debugger:
     def get_paths(self):
         return self.simgr.active + self.simgr.stashes["deferred"]
     
-    def set_memory(self,address:int,value,state = None):
-
-        if type(value) == int:
-            # Account for endianness when storing integers
-            if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le':
-                endianness = 'little'
-            else:
-                endianness = 'big'
-            byte_value = value.to_bytes(self.project.arch.bits // 8, byteorder=endianness)
-        elif type(value) == str:
+    def set_memory(self,address:int,value:int|str|bytes|claripy.ast.BV, state = None):
+        if isinstance(value,str):
             # Encode string to bytes
-            byte_value = value.encode('utf-8')
-        elif type(value) == bytes:
-            # Evaluate the bytes literal
-            if type(value) == str:
-                byte_value = eval(value)
-            else:
-                byte_value = value
-            if not isinstance(byte_value, bytes):
-                raise DebuggerCommandError("Value is not a byte array.")
+            val = value.encode('utf-8')
         else:
-            raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
-        
+            val = value
+
         # Store the byte value in memory
         if not state:
             state = self.get_current_state()
-        state.memory.store(address, byte_value)
+        state.memory.store(address, val)
     
-    def get_memory(self, address, size, stateID=0):
+    def get_memory(self, address, size = 0, stateID=0):
         state = self.get_current_state(stateID)
+        if size == 0:
+            size = self.project.arch.bits
         byte_value = state.memory.load(address, size)
         return byte_value
     
 
-    def cast_to(self, value:claripy.ast.BV|claripy.FP|claripy.String, cast_to:DataType, stateID=0):
-        if not value.concrete:
-            raise DebuggerCommandError("Value is not concrete.")
+    def cast_to(self, value:claripy.ast.BV|claripy.ast.FP|claripy.String, cast_to:DataType, stateID=0):
+        # if not value.concrete:
+        #     raise DebuggerCommandError("Value is not concrete.")
         state = self.get_current_state(stateID=stateID)
-        if DataType.bytes:
+        if cast_to == DataType.bytes:
             if isinstance(value, claripy.String):
                 bytes_values = []
                 for i in range(32):  # Loop over each byte
@@ -494,9 +522,9 @@ class Debugger:
                 # return value.args[0]
             else:
                 return state.solver.eval(value, cast_to=bytes)
-        if DataType.hex:
+        if cast_to == DataType.hex:
             return hex(self.cast_to(value, DataType.int, stateID=stateID)) # type: ignore
-        if DataType.str:
+        if cast_to == DataType.str:
             if isinstance(value, claripy.String):
                 bytes_values = []
                 for i in range(32):  # Loop over each byte
@@ -516,14 +544,14 @@ class Debugger:
             DataType.double: float,
         }
         cast_to_ = switch.get(cast_to, None)
-        if cast_to_ in switch:
+        if cast_to_:
             if isinstance(value, claripy.String):
                 raise DebuggerCommandError("Cannot cast a string to an integer/bool/float.")
             if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le':
                 endianness = 'little'
             else:
                 endianness = 'big'
-            return state.solver.eval(value, cast_to=cast_to_, endness=endianness)
+            return state.solver.eval(value, cast_to=cast_to_)
         else:
             raise DebuggerCommandError(f"Invalid data type: {cast_to}.")
         
@@ -569,6 +597,13 @@ class Debugger:
             return decompiled.codegen.text if decompiled.codegen else None
         return None
 
+    def get_decompiled_function_at_address(self, start, end):
+        if not self._cfg:
+            cfg = self.project.analyses.CFGFast(start=start,end=end, force_complete_scan=False, normalize=True)
+        else:
+            cfg = self._cfg
+        decompiled = self.project.analyses.Decompiler(start)
+        return decompiled.codegen.text if decompiled.codegen else None
 
     def get_binary_string_constants(self,min_length=4):
         _ = self.cfg
@@ -624,6 +659,8 @@ class Debugger:
         if len(self.simgr.active) > stateID:
             state = self.simgr.active[stateID]
         else:
+            if len(self.simgr.deadended) <= stateID:
+                raise DebuggerCommandError("Failed to find state")
             state = self.simgr.deadended[stateID]
         return state
     def get_string_memory(self, address, stateID=0):
@@ -636,9 +673,10 @@ class Debugger:
         registers = self.project.arch.registers
         return registers
     
-    def get_register_value(self, register, size, stateID=0):
+    def get_register_value(self, register, stateID=0):
+        size = self.get_register(register)[1]
         state = self.get_current_state(stateID)
-        value = state.registers.load(register, size // 8)
+        value = state.registers.load(register, size)
         return value
     
     def get_register(self, register):
@@ -648,8 +686,4 @@ class Debugger:
 
     def set_register(self, register, value:int|claripy.ast.BV, stateID=0):
         state = self.get_current_state(stateID)
-        r = self.get_register(register)
-        if isinstance(value, int):
-            state.registers.store(r[0], value)
-        else:
-            state.registers.store(r[0], value)
+        state.registers.store(register, value)

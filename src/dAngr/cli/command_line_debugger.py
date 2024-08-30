@@ -34,7 +34,6 @@ def _auto_register_commands() -> Dict[str, CommandSpec]:
                     spec = specs[command]
                     # Add the command to the list of available commands
                     commands[spec.name] = spec
-                    commands[spec.short_name] = spec
     return commands
 DEBUGGER_COMMANDS = _auto_register_commands()
 
@@ -109,7 +108,7 @@ class CommandLineDebugger(Debugger,StepHandler):
                 if spec is None:
                     raise InvalidArgumentError(f"Command '{command_name}' not found. Type 'help' or '?' for a list of available commands.")
                 #if cmd not in viewer package, clear output
-                if not spec.name =="less":
+                if not spec.package == "viewer":
                     cast(CliConnection,self.conn).clear_output()
 
                 inp = self._parse_arguments(spec, command_args)
@@ -152,6 +151,8 @@ class CommandLineDebugger(Debugger,StepHandler):
     def _get_command_spec(self, command:str)->CommandSpec|None:
         if command in DEBUGGER_COMMANDS:
             return DEBUGGER_COMMANDS[command].cmd(self).get_cmd_specs(command)
+        elif c:= next((c for c in DEBUGGER_COMMANDS if DEBUGGER_COMMANDS[c].short_name == command), None):
+              return DEBUGGER_COMMANDS[c].cmd(self).get_cmd_specs(c)
         else:
             help_str = f"Command '{command}' not found. Type 'help' or '?' for a list of available commands.\nWith help <command> you can get more information on a specific command."
             raise InvalidArgumentError(help_str)
@@ -248,7 +249,28 @@ class CommandLineDebugger(Debugger,StepHandler):
             table_data[i] = indent + table_data[i]
         return table_data, style
     
-
+    def render_argument(self, value:int|bytes|str):
+        val = value
+        if isinstance(value, int):
+            val = self.to_bytes(value)
+        elif isinstance(value, bytes):
+            pass
+        elif isinstance(value, str):
+            if value.startswith("$"):
+                t,v = value.split(".", 1)
+                if t == "$reg":
+                    val = self.get_register_value(v)
+                elif t == "$mem":
+                    val = self.get_memory(v)
+                elif t == "$sym":
+                    val = self.get_symbol(v)
+                else:
+                    raise ValueError("Invalid value. Use $reg, $mem or $sym.")
+                if val.concrete:
+                    val = val.concrete_value
+            else:
+                val = self.to_bytes(value)
+        return val
     async def _list_commands(self, withArgs:bool = False):
 
         table_data, style = self.list_commands_data(withArgs)

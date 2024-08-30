@@ -49,23 +49,23 @@ def parse_docstring(docstring:str):
             line = line.strip()
             if not line:
                 continue
-            if line.startswith("Args:"):
+            if line.lower().startswith("args:"):
                 state = 1
                 if line.endswith(":"):
                     continue
-            elif line.startswith("Short name:"):
+            elif line.lower().startswith("short name:"):
                 if line.endswith(":"):
                     continue
                 state = 2
-            elif line.startswith("Returns:"):
+            elif line.lower().startswith("returns:"):
                 state = 3
                 if line.endswith(":"):
                     continue
-            elif line.startswith("Raises:"):
+            elif line.lower().startswith("raises:"):
                 state = 4
                 if line.endswith(":"):
                     continue
-            elif line.startswith("Example:"):
+            elif line.lower().startswith("example:"):
                 state = 5
                 if line.endswith(":"):
                     continue
@@ -90,7 +90,7 @@ def convert_argument(arg_type: type, arg_value: str):
     try:
         # Handle Enums
         if isinstance(arg_type, type) and issubclass(arg_type, Enum):
-            return arg_type[arg_value.upper()]
+            return arg_type[arg_value]
 
         # Handle Union types
         types = [arg_type]
@@ -106,6 +106,8 @@ def convert_argument(arg_type: type, arg_value: str):
                 return int(arg_value, 16)
             if arg_value.isnumeric():
                 return int(arg_value)
+            if arg_value.startswith('-') and arg_value[1:].isnumeric():
+                return - int(arg_value[1:])
         if str in types:
             if arg_value.startswith(('\'', '"')) and arg_value.endswith(('\'', '"')):
                 return arg_value[1:-1]
@@ -128,7 +130,9 @@ def convert_args(args, signature):
         if a.annotation == inspect._empty:
             raise ValueError(f"Function {signature} parameter {name} does not have a type annotation")
         if tp != a.annotation:
-            raise ValueError(f"Function {signature} parameter {name} has type {a.annotation} but expected {tp}")
+            # check if the type is a union
+            if not (tp in get_args(a.annotation)):
+                raise ValueError(f"Function {signature} parameter {name} has type {a.annotation} but expected {tp}")
         description = arg["description"]
         default = a.default if a.default != inspect._empty else None
         pargs.append(ArgumentSpec(name,tp,description, default))  # type: ignore
@@ -194,7 +198,7 @@ def parse_arguments(input:str, splitter):
         parsed_args = []
         i = 0
         while i < len(tokens):
-            if tokens[i].startswith(('\'','"')):
+            if tokens[i].startswith(('\'','"', 'b"','b\'')):
                 t = tokens[i][0]
                 j = i
                 while j<len(tokens) and  not tokens[j].endswith(t):
@@ -239,3 +243,8 @@ def get_classes_from_file(file_path):
         except:
             pass
     return classes
+
+
+def remove_ansi_escape_codes(text):
+    ansi_escape = re.compile(r'(?:\x1B[@-_]|[\\x1B\x9B])[0-?]*[ -/]*[@-~]')
+    return ansi_escape.sub('', text)

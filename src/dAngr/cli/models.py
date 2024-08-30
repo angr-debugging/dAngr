@@ -19,13 +19,14 @@ class Breakpoint:
             return f"Breakpoint at {hex(self.address)} in {self.source} line  {self.line_nr}{status}"
         
 class Register:
-    def __init__(self,name,size,value):
+    def __init__(self,name,size,offset,value):
         self.name = name
         self.size = size
         self.value = value
+        self.offset = offset
     def __str__(self) -> str:
         v = self.value if not self.value.concrete else self.value.concrete_value
-        return f"Register {self.name} ({self.size} bits): {v}"
+        return f"Register {self.name} (offset: {hex(self.offset)}, size: {self.size} bytes): {v}"
 
 class Memory:
     def __init__(self,address,value,value_type):

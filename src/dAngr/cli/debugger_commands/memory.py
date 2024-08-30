@@ -1,3 +1,5 @@
+from typing import Tuple
+from archinfo import RegisterOffset
 import claripy
 from multimethod import multimethod
 from dAngr.cli.models import Memory, Register
@@ -11,7 +13,7 @@ class MemoryCommands(BaseCommand):
 
     async def assign(self, target:str, value:int|bytes|str):
         """
-        Assign a value to some target
+        Assign a value to some target symbol
 
         Args:
             target (str): Name of the symbol. Prefix with $reg for register, $mem for memory, $sym for symbol.
@@ -20,28 +22,12 @@ class MemoryCommands(BaseCommand):
         Short name: as
         
         """
-        val = value
-        if isinstance(value, int):
-            val = self.debugger.to_bytes(value)
-        elif isinstance(value, bytes):
-            pass
-        elif isinstance(value, str):
-            if value.startswith("$"):
-                t,v = value.split(".", 1)
-                if t == "$reg":
-                    val = self.debugger.get_register(int(v))
-                elif t == "$mem":
-                    val = self.debugger.get_memory(v)
-                elif t == "$sym":
-                    val = self.debugger.get_symbol(v)
-                else:
-                    raise ValueError("Invalid value. Use $reg, $mem or $sym.")
-            else:
-                val = self.debugger.to_bytes(value)
-        if target.startswith("$") and "," in target:
+        val = self.debugger.render_argument(value)
+
+        if target.startswith("$") and "." in target:
             vv, n = target.split(".", 1)
             if vv == "$reg":
-                if not isinstance(val, int) or not isinstance(n, claripy.ast.BV):
+                if not isinstance(val, int) and not isinstance(val, claripy.ast.BV):
                     raise ValueError("Invalid value. Use an integer value or symbol.")
                 self.debugger.set_register(n, val)
                 await self.send_info(f"Register {n} set to {value}.")
@@ -67,23 +53,25 @@ class MemoryCommands(BaseCommand):
         Short name: ast
         
         """
-        val = value
-        if isinstance(value, int):
-            val = self.debugger.to_bytes(value)
-        elif isinstance(value, bytes):
-            pass
-        elif isinstance(value, str):
-            if value.startswith("$"):
-                t,v = value.split(".", 1)
-                if t == "$sym":
-                    val = self.debugger.get_symbol(v)
-                else:
-                    raise ValueError("Invalid value. Use $sym.")
-            else:
-                val = self.debugger.to_bytes(value)
+        val = self.debugger.render_argument(value)
+        if isinstance(val, tuple):
+            raise ValueError("Invalid value. Use an integer value or symbol.")
         self.debugger.add_to_stack(val)
         await self.send_info(f"Value {value} added to the stack.")
 
+    async def get_stack(self, length:int, offset:int=0):
+        """
+        Get the stack values.
+
+        Args:
+            length (int): Length of the stack.
+            offset (int): Offset from the current stack pointer. Default is 0.
+
+        Short name: gst
+        
+        """
+        stack = self.debugger.get_stack(length, offset)
+        return f"{stack}"
 
     async def get_memory_string(self, address:int):
         """
@@ -96,7 +84,8 @@ class MemoryCommands(BaseCommand):
         
         """
         m = self.debugger.get_string_memory(address)
-        return str(m)
+        return f"{m}"
+        
     async def get_memory(self, address:int, size:int, type:DataType = DataType.bytes):
         """
         Get the memory value at a specific address.
@@ -129,9 +118,14 @@ class MemoryCommands(BaseCommand):
 
         Short name: ms
         """
-        byte_value = self.debugger.to_bytes(value)
-        self.debugger.set_memory(address, byte_value)
-        await self.send_info(f"Memory at {hex(address)}: {byte_value}.")
+        if isinstance(value, str):
+            val = self.debugger.render_argument(value)
+            if isinstance(val, claripy.ast.FP):
+                raise ValueError("Symbol cannot be a floating point value.")
+        else:
+            val = self.debugger.to_bytes(value)
+        self.debugger.set_memory(address, val) # type: ignore
+        await self.send_info(f"Memory at {hex(address)}: {val}.")
     
     
     async def set_register(self, name:str, value:int):
@@ -145,6 +139,8 @@ class MemoryCommands(BaseCommand):
         Short name: rs
         
         """
+        if name.startswith("$reg."):
+            name = name[5:]
         self.debugger.set_register(name, value)
         await self.send_info(f"Register {name}: {hex(value)}.")
     
@@ -175,8 +171,9 @@ class MemoryCommands(BaseCommand):
         Short name: rg
         
         """
-        size = self.debugger.get_register(name)[1]
-        value = self.debugger.get_register_value(name, size)
+        if name.startswith("$reg."):
+            name = name[5:]
+        value = self.debugger.get_register_value(name)
         if value.concrete:
             value = hex(value.concrete_value)
         return f"{value}"
@@ -192,10 +189,10 @@ class MemoryCommands(BaseCommand):
         registers = self.debugger.list_registers()
         for reg, (offset, size) in registers.items():
             # Reading register value; size is in bits, need to convert to bytes
-            value = self.debugger.get_register_value(reg, size)
-            regs.append(Register(reg,size,value))
+            value = self.debugger.get_register_value(reg)
+            regs.append(Register(reg,size,offset,value))
         
-        return  f"Registers and their current values:{" ".join([str(r) for r in regs])}"
+        return  f"{"\n".join([str(r) for r in regs])}"
 
     async def zero_fill(self, enable:bool=True):
         """
