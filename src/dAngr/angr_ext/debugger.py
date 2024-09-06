@@ -244,13 +244,17 @@ class Debugger:
             return self.from_src_path + path[len(self.to_src_path):]
         return path
     
-    def init(self, binary_path:str, entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None=None, from_src_path=None, to_src_path=None): #support passing custom angr arguments to project
+    def init(self, binary_path:str, base_addr:int=0, from_src_path=None, to_src_path=None): #support passing custom angr arguments to project
         self._binary_path = binary_path
         self.from_src_path = os.path.abspath(os.path.expanduser(os.path.normpath(from_src_path))) if from_src_path else ''
         self.to_src_path = os.path.abspath(os.path.expanduser(os.path.normpath(to_src_path))) if to_src_path else ''
         if not os.path.exists(binary_path):
             raise InvalidArgumentError(f"File {binary_path} does not exist")
-        self._project = angr.Project(binary_path, load_options={'auto_load_libs': False, 'load_debug_info': True}) #,'main_opts':{'base_addr': 0x400000}})
+        if base_addr:
+            main_opts = {'base_addr': base_addr}
+        else:
+            main_opts = {}
+        self._project = angr.Project(binary_path, load_options={'auto_load_libs': False, 'load_debug_info': True,'main_opts':main_opts})
         self.project.kb.dvars.load_from_dwarf()
     
     def get_binary_info(self):
@@ -331,6 +335,9 @@ class Debugger:
 
     def set_symbol(self, name, value):
         self._symbols_cache[name] = value
+    def add_constraint(self, cs, stateID=0):
+        state = self.get_current_state(stateID)
+        state.add_constraints(cs)
 
     def add_to_stack(self, value:int|bytes|str|claripy.ast.BV|claripy.ast.FP|claripy.String):
         if isinstance(value, int):
@@ -498,10 +505,10 @@ class Debugger:
             state = self.get_current_state()
         state.memory.store(address, val)
     
-    def get_memory(self, address, size = 0, stateID=0):
+    def get_memory(self, address:int, size = 0, stateID=0):
         state = self.get_current_state(stateID)
         if size == 0:
-            size = self.project.arch.bits
+            size = self.project.arch.bits // 8
         byte_value = state.memory.load(address, size)
         return byte_value
     
@@ -606,7 +613,7 @@ class Debugger:
         return decompiled.codegen.text if decompiled.codegen else None
 
     def get_binary_string_constants(self,min_length=4):
-        _ = self.cfg
+        # _ = self.cfg
         constants = []
         for section in self.project.loader.main_object.sections:
             if section.is_readable:  # Usually data sections

@@ -1,5 +1,6 @@
 import claripy
 from multimethod import multimethod
+from dAngr.cli.constraint_handler import convert
 from dAngr.cli.models import Memory, Register
 from dAngr.utils.utils import DataType, StreamType, convert_argument
 from .base import BaseCommand
@@ -70,24 +71,28 @@ class SymbolCommands(BaseCommand):
         Short name: sg
         
         """
+        if name[:5] == "$sym.":
+            name = name[5:]
+        if "^" in name:
+            name, _ = name.split("^")
         val = self.debugger.get_symbol(name)
         if val is None:
             await self.send_error(f"Symbol {name} not found.")
             return
         return self.debugger.cast_to(val, type)
 
-    async def add_constraints(self, symbol:str, constraint:str):
+    async def add_constraints(self, constraint:str):
         """
         Add a constraint to a symbol.
 
         Args:
-            symbol (str): Name of the symbol
             constraint (str): Constraint to add.
         
         Short name: sc
         
         """
-        sym = self.debugger.get_symbol(symbol)
+        cs = convert(constraint, self.debugger.render_argument)
+        self.debugger.add_constraint(cs)
         # TODO
         # parse constriant string to claripy constraint
 

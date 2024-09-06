@@ -10,6 +10,8 @@ import re
 
 from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
 
+#create a undefined type
+undefined = type("Undefined", (), {})
 
 DEBUG:bool = os.getenv("BUILD_TYPE","Release").lower() == "debug"
 
@@ -103,6 +105,9 @@ def convert_argument(arg_type: type, arg_value: str):
                 return bytes(arg_value[2:-1], 'utf-8')
         if int in types:
             if arg_value.startswith('0x'):
+                if "^" in arg_value:
+                    arg_value,_ = arg_value.split("^")
+                    return int(arg_value, 16) ^ int(arg_value.split("^")[1], 16)
                 return int(arg_value, 16)
             if arg_value.isnumeric():
                 return int(arg_value)
@@ -134,7 +139,7 @@ def convert_args(args, signature):
             if not (tp in get_args(a.annotation)):
                 raise ValueError(f"Function {signature} parameter {name} has type {a.annotation} but expected {tp}")
         description = arg["description"]
-        default = a.default if a.default != inspect._empty else None
+        default = a.default if a.default != inspect._empty else undefined
         pargs.append(ArgumentSpec(name,tp,description, default))  # type: ignore
     return pargs
 

@@ -8,6 +8,7 @@ import typing
 
 import angr
 
+import claripy
 from prompt_toolkit.styles import Style
 from prompt_toolkit.styles.named_colors import NAMED_COLORS
 
@@ -249,11 +250,15 @@ class CommandLineDebugger(Debugger,StepHandler):
             table_data[i] = indent + table_data[i]
         return table_data, style
     
-    def render_argument(self, value:int|bytes|str):
-        val = value
+    def render_argument(self, value:int|bytes|str, make_concrete:bool ):
+        val = None
         if isinstance(value, int):
             val = self.to_bytes(value)
+            if not make_concrete:
+                val = claripy.BVV(value, len(val)*8)
         elif isinstance(value, bytes):
+            if not make_concrete:
+                val = claripy.BVV(value)
             pass
         elif isinstance(value, str):
             if value.startswith("$"):
@@ -261,15 +266,28 @@ class CommandLineDebugger(Debugger,StepHandler):
                 if t == "$reg":
                     val = self.get_register_value(v)
                 elif t == "$mem":
-                    val = self.get_memory(v)
+                    if "^" in v:
+                        addr, size = v.split("^", 1)
+                        addr = int(addr, 16) if addr.startswith("0x") else int(addr, 0) 
+                        if size:
+                            size = int(size, 0)
+                        else: size = 0
+                        val = self.get_memory(addr, size)
+                    else:   
+                        addr = int(v, 16) if v.startswith("0x") else int(v, 0) 
+                        val = self.get_memory(addr)
                 elif t == "$sym":
                     val = self.get_symbol(v)
                 else:
                     raise ValueError("Invalid value. Use $reg, $mem or $sym.")
-                if val.concrete:
+                if make_concrete and val.concrete:
                     val = val.concrete_value
             else:
                 val = self.to_bytes(value)
+                if not make_concrete:
+                    val = claripy.BVV(val)
+        if val == None:
+            raise ValueError(f"Could not convert value {value}")
         return val
     async def _list_commands(self, withArgs:bool = False):
 

@@ -8,3 +8,6 @@ set_register r2 0
 set_register r3 0x9000
 step
 fda 0x52709 0x52a8a
+
+# decompile function
+# fd 0x00056495 0x000565a1

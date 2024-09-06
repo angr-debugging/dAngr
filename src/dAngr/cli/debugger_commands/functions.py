@@ -64,7 +64,7 @@ class FunctionCommands(BaseCommand):
                 tp = prototype.args[ix]
                 v = convert_string(tp, value)
                 ix = ix + 1
-                if type(tp) is angr.types.SimTypePointer:
+                if type(tp) is angr.types.SimTypePointer and not type(v) is int:
                     v = 0x1000 * ix
                 arguments.append(v)
 
@@ -77,8 +77,8 @@ class FunctionCommands(BaseCommand):
                 tp = prototype.args[ix]
                 v = convert_string(tp, value)
                 ix = ix + 1
-                if type(tp) is angr.types.SimTypePointer:
-                    self.debugger.set_memory(0x1000 * ix, v, state)
+                if type(tp) is angr.types.SimTypePointer and not type(v) is int:
+                    self.debugger.set_memory(0x1000 * ix, v, state) # type: ignore
                     v = 0x1000 * ix
                     info.append(f"Value {value} stored at {hex(v)}")
             

@@ -61,6 +61,7 @@ def get_function_address(project, function_name):
 #     else:
 #         raise InvalidArgumentError(f"arg_type {type(value)} not implemented")
 def convert_string(sim_type, value):
+    #TODO: support references to mem, symbols, etc
     if isinstance(sim_type, types.SimTypeInt):
         return int(value,0)
     elif isinstance(sim_type, types.SimTypePointer) :

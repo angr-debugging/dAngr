@@ -22,7 +22,7 @@ class MemoryCommands(BaseCommand):
         Short name: as
         
         """
-        val = self.debugger.render_argument(value)
+        val = self.debugger.render_argument(value,False)
 
         if target.startswith("$") and "." in target:
             vv, n = target.split(".", 1)
@@ -53,9 +53,9 @@ class MemoryCommands(BaseCommand):
         Short name: ast
         
         """
-        val = self.debugger.render_argument(value)
-        if isinstance(val, tuple):
-            raise ValueError("Invalid value. Use an integer value or symbol.")
+        val = self.debugger.render_argument(value,False)
+        # if isinstance(val, tuple):
+        #     raise ValueError("Invalid value. Use an integer value or symbol.")
         self.debugger.add_to_stack(val)
         await self.send_info(f"Value {value} added to the stack.")
 
@@ -119,7 +119,7 @@ class MemoryCommands(BaseCommand):
         Short name: ms
         """
         if isinstance(value, str):
-            val = self.debugger.render_argument(value)
+            val = self.debugger.render_argument(value,False)
             if isinstance(val, claripy.ast.FP):
                 raise ValueError("Symbol cannot be a floating point value.")
         else:

@@ -26,7 +26,7 @@ class Register:
         self.offset = offset
     def __str__(self) -> str:
         v = self.value if not self.value.concrete else self.value.concrete_value
-        return f"Register {self.name} (offset: {hex(self.offset)}, size: {self.size} bytes): {v}"
+        return f"Register {self.name} (offset: {hex(self.offset)}, size: {self.size} bytes): {hex(v)}"
 
 class Memory:
     def __init__(self,address,value,value_type):

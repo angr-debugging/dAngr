@@ -95,17 +95,18 @@ class ExecutionCommands(BaseCommand):
         await self.send_info(f"Hooks '{filename}' successfully attached.")
    
 
-    async def load(self, binary_path:str):
+    async def load(self, binary_path:str, base_addr:int=0):
         """
         Load a binary into the debugger.
 
         Args:
             binary_path (str): The path to the binary to load.
+            base_addr (int): The base address of the binary. Default is 0, means the binary is loaded at its default base address.
 
         Short name: l
         """
         try:
-            self.debugger.init(binary_path)
+            self.debugger.init(binary_path, base_addr)
         except Exception as e:
             raise DebuggerCommandError(f"Failed to load binary: {e}")
         f = os.path.basename(binary_path)

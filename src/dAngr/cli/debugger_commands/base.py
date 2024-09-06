@@ -7,7 +7,7 @@ from claripy import List
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.angr_ext.step_handler import StopReason
 from dAngr.exceptions import ExecutionError
-from dAngr.utils.utils import ArgumentSpec, convert_args, parse_docstring
+from dAngr.utils.utils import ArgumentSpec, convert_args, parse_docstring, undefined
 
 # def get_cmd_name(cls):
 #     return ''.join(['_'+i.lower() if i.isupper() else i for i in cls.__name__.replace('Command', '')]).lstrip('_')
@@ -49,10 +49,10 @@ class CommandSpec:
         self.short_name = short_name
         self.example = example
     def get_required_args(self) -> List[ArgumentSpec]:
-        return [a for a in self.args if a.default == None]
+        return [a for a in self.args if a.default == undefined]
     
     def get_optional_args(self)-> List[ArgumentSpec]:
-        return [a for a in self.args if a.default != None]
+        return [a for a in self.args if a.default != undefined]
     def __str__(self):
         return f"{self.name} - {self.description}"
     

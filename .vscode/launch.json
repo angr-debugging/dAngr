@@ -28,7 +28,9 @@
                 // "${workspaceFolder}/examples/malware.oregonctf.org/04_angr_symbolic_stack.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/05_angr_symbolic_memory.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/06_angr_symbolic_dynamic_memory.md"
-                "${workspaceFolder}/examples/malware.oregonctf.org/07_angr_symbolic_file.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/07_angr_symbolic_file.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/08_angr_constraints.md"
+                "${workspaceFolder}/examples/malware.oregonctf.org/14_angr_shared_library.md"
                 // "${workspaceFolder}/examples/basic_example/example.dangr"
             ],
             "console": "integratedTerminal",

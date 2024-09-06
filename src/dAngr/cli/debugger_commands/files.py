@@ -34,7 +34,7 @@ class FileCommands(BaseCommand):
         
         """
         if content is not None:
-            c = self.debugger.render_argument(content)
+            c = self.debugger.render_argument(content, True)
             if isinstance(c, claripy.ast.FP):
                 raise DebuggerCommandError("Cannot create symbolic file with floating point content.")
         self.debugger.create_symbolic_file(name, c, size) # type: ignore
