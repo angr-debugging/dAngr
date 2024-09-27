@@ -3,20 +3,18 @@ import os
 import re
 
 from prompt_toolkit import PromptSession
-from prompt_toolkit.application import get_app
-from prompt_toolkit.application import Application
-from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.layout import Layout, Window, ScrollablePane
-from prompt_toolkit.layout.containers import HSplit, VSplit
-from prompt_toolkit.widgets import TextArea, SearchToolbar
+
 from prompt_toolkit.completion import WordCompleter, merge_completers, PathCompleter
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit import HTML
-from prompt_toolkit.keys import Keys
+
 from prompt_toolkit.search import start_search, stop_search
 
-from dAngr.cli import DEBUGGER_COMMANDS, CommandLineDebugger
+
+from dAngr.cli import  CommandLineDebugger
 from dAngr.cli.cli_connection import CliConnection
+from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS
+
 from dAngr.cli.script_processor import ScriptProcessor
 
 # add logger
@@ -49,6 +47,8 @@ class Server:
     #         self.stop=True
     #         event.app.exit()
 
+
+    
     async def loop(self):
         conn = CliConnection()
         dbg = CommandLineDebugger(conn)
@@ -64,9 +64,9 @@ class Server:
                 proc:ScriptProcessor = ScriptProcessor(os.path.basename(self.script_path))
                 first = True
                 for line in proc.process_file():
-                    #read script line by line and execute commands
-                    if line.strip() == "":
+                    if not line:
                         continue
+                    #read script line by line and execute commands
                     with patch_stdout() as po:
                         if first:
                             prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {line.strip()} <gray>(hit enter to proceed, Ctrl-c to end script)</gray>')
@@ -76,9 +76,7 @@ class Server:
                         try:
                             inp = await session.prompt_async(prmpt2, completer=self.completer)
                             if not line.strip().startswith("#"):
-                                line = self._preprocess_input(conn, line)
-                                if not line:
-                                    continue
+                                # line = self._preprocess_input(conn, line)
                                 
                                 if not await dbg.handle(line):
                                     self.stop = True
@@ -94,7 +92,10 @@ class Server:
                     if self.stop:
                         break
             except Exception as e:
-                await conn.send_error(f"Error during script handling of {self.script_path}: {str(e)}")
+                if DEBUG:
+                    raise e
+                else:
+                    await conn.send_error(f"Error during script handling of {self.script_path}: {str(e)}")
                 return
         self.stop = False
         self.script_path = None
@@ -102,12 +103,22 @@ class Server:
             try:
                 with patch_stdout() as po:
                     inp = await session.prompt_async(prmpt, completer=self.completer)
-                    for user_input in inp.splitlines():
-                        user_input = self._preprocess_input(conn, user_input)
-                        if not user_input:
-                            continue
-                        if not await dbg.handle(user_input):
-                            self.stop = True
+                    lines = inp
+                    if inp.strip() == "":
+                        continue
+                    if inp.rstrip().endswith(":"):
+                        # process multiline input
+                        while True:
+                            inp = await session.prompt_async(" "*8, completer=self.completer)
+                            if inp.strip() == "":
+                                break
+                            lines += "\n" + inp
+
+                    # lines = self._preprocess_input(conn, lines)
+                    if not lines:
+                        continue
+                    if not await dbg.handle(lines):
+                        self.stop = True
             except KeyboardInterrupt:
                 return # Ctrl-C to exit
             except EOFError:
@@ -117,25 +128,25 @@ class Server:
                     raise e
                 else:
                     await conn.send_error(f"An unexpected error occurred: {e}")
-    def _preprocess_input(self, conn:CliConnection,line:str):
-        """
-        Preprocess the input line.
-        """
-        # remove comments
-        line = line.split("#")[0]
-        # remove leading and trailing whitespaces
-        line = line.strip()
-        # line may contain references marked as $<int> with int being the index back in the history of conn.history
-        # replace them with the actual values
-        for match in re.finditer(r"\$([0-9]+)", line):
-            try:
-                ix = int(match.group(1))
-                if 0 <= ix < len(conn.history):
-                    val = conn.history[ix][0][0]
-                    line = line.replace(match.group(0), val)
-            except IndexError:
-                pass    
-        return line
+    # def _preprocess_input(self, conn:CliConnection,line:str):
+    #     """
+    #     Preprocess the input line.
+    #     """
+    #     # remove comments
+    #     line = line.split("#")[0]
+    #     # remove leading and trailing whitespaces
+    #     line = line.strip()
+    #     # line may contain references marked as $<int> with int being the index back in the history of conn.history
+    #     # replace them with the actual values
+    #     for match in re.finditer(r"\$([0-9]+)", line):
+    #         try:
+    #             ix = int(match.group(1))
+    #             if 0 <= ix < len(conn.history):
+    #                 val = conn.history[ix][0][0]
+    #                 line = line.replace(match.group(0), val)
+    #         except IndexError:
+    #             pass    
+    #     return line
     
     def start_server(self):
         asyncio.run(self.loop())

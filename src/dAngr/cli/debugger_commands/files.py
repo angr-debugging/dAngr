@@ -1,7 +1,7 @@
 
 import claripy
 from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils.utils import StreamType, convert_argument
+from dAngr.utils.utils import StreamType, SymBitVector, SymString, Variable, convert_argument
 from .base import BaseCommand
 
 class FileCommands(BaseCommand):
@@ -21,21 +21,20 @@ class FileCommands(BaseCommand):
         return self.debugger.get_stdstream(stream_type)
 
 
-    async def create_symbolic_file(self, name:str, content:str|None=None, size:int|None=None):
+    async def create_symbolic_file(self, name:str, content:str|SymBitVector|SymString|Variable|None=None, size:int|None=None):
         """
         Create a symbolic file with name and size.
 
         Args:
             name (str): Name of the file
-            content (str): Content of the file. Default is None. If content starts with $sym.SYM, the content is replaced with the symbol named SYM.
+            content (str|SymBitVector|SymString|Variable|None): Content of the file. Default is None. If content starts with $sym.SYM, the content is replaced with the symbol named SYM.
             size (int|None): Size of the file. Default is None.
         
         Short name: cs
         
         """
-        if content is not None:
-            c = self.debugger.render_argument(content, True)
-            if isinstance(c, claripy.ast.FP):
-                raise DebuggerCommandError("Cannot create symbolic file with floating point content.")
+        c = None
+        if not content is None:
+            c = self.to_value(content)
         self.debugger.create_symbolic_file(name, c, size) # type: ignore
         await self.send_info(f"Symbolic file {name} created.")

@@ -1,6 +1,6 @@
 import pathlib
 import pkg_resources
-from setuptools import setup, find_packages
+from setuptools import setup
 
 with pathlib.Path('requirements.txt').open() as requirements_txt:
     install_requires = [

@@ -1,13 +1,21 @@
 from abc import abstractmethod
 import inspect
-from typing import Callable, cast
+from typing import Any, Callable, cast, get_args
 from angr import SimulationManager
 from claripy import List
 
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.angr_ext.step_handler import StopReason
-from dAngr.exceptions import ExecutionError
-from dAngr.utils.utils import ArgumentSpec, convert_args, parse_docstring, undefined
+from dAngr.cli.grammar.definitions import ArgumentSpec, FunctionDefinition
+from dAngr.cli.grammar.execution_context import Variable
+from dAngr.exceptions import ExecutionError, InvalidArgumentError,DebuggerCommandError
+from dAngr.utils.utils import str_to_type, undefined, StreamType, DataType, ObjectStore, SymBitVector, SymString, Constraint
+
+# required for str_to_type - do not remove
+from dAngr.cli.grammar.expressions import *
+
+
+
 
 # def get_cmd_name(cls):
 #     return ''.join(['_'+i.lower() if i.isupper() else i for i in cls.__name__.replace('Command', '')]).lstrip('_')
@@ -17,11 +25,11 @@ def get_short_cmd_name(name):
     return ''.join([i.lower() for i in name if i.isupper()])
 
 class AutoRunMeta(type):
-    def __init__(cls_, name, bases, dct):
+    def __init__(self, name, bases, dct):
         super().__init__(name, bases, dct)
         # Automatically trigger the static method
-        if hasattr(cls_, '__render_commands__'):
-            cls_.__render_commands__(cls_) # type: ignore
+        if hasattr(self, '__render_commands__'):
+            self.__render_commands__(self) # type: ignore
 
 class IBaseCommand(metaclass=AutoRunMeta):
     def __init__(self, debugger:Debugger):
@@ -38,36 +46,146 @@ class IBaseCommand(metaclass=AutoRunMeta):
     async def execute(self, cmd, *args):
         pass
 
-class CommandSpec:
-    def __init__(self, cmd:type[IBaseCommand], name:str, func:Callable, description:str, args:list, short_name:str, example:str, package:str): 
-        self.cmd = cmd
-        self.package = package
-        self.name = name
-        self.func = func
-        self.description = description
-        self.args = args
-        self.short_name = short_name
-        self.example = example
-    def get_required_args(self) -> List[ArgumentSpec]:
-        return [a for a in self.args if a.default == undefined]
+
+
+class BuiltinFunctionDefinition(FunctionDefinition):
+    def __init__(self, name:str, cmd_class:type[IBaseCommand], func: Callable,  description:str, args:List[ArgumentSpec], short_name:str, example:str, package:str):
+        super().__init__(name, args)
+        self._cmd_class = cmd_class
+        self._func = func
+        self._description = description
+        self._short_name = short_name
+        self._example = example
+        self._package = package
+    @property
+    def name(self):
+        return self._name
+    @property
+    def func(self):
+        return self._func
+    @property
+    def cmd_class(self):
+        return self._cmd_class
+    @property
+    def description(self):
+        return self._description
+    @property
+    def short_name(self):
+        return self._short_name
+    @property
+    def example(self):
+        return self._example
+    @property
+    def package(self):
+        return self._package
     
-    def get_optional_args(self)-> List[ArgumentSpec]:
-        return [a for a in self.args if a.default != undefined]
-    def __str__(self):
-        return f"{self.name} - {self.description}"
-    
-    def execute(self, debugger:Debugger, *args):
-        # call func with the debugger and the arguments
-        o = self.cmd(debugger)
+    async def __call__(self, context:ExecutionContext,*args, **named_args) -> Any:
+        from dAngr.cli.command_line_debugger import dAngrExecutionContext
+        o = self._cmd_class(cast(dAngrExecutionContext,context).debugger)
         # get the function from the class
-        f = getattr(o, self.name, None)
+        f = getattr(o, self._name, None)
         if not f:
-            f = getattr(o, self.name + '_')
-        return f(*args)
+            f = getattr(o, self._name + '_')
+
+        return await f(*args, **named_args)
+    
+def convert_args(args, signature):
+    # convert the args to the correct type
+    pargs = []
+    for name in args:
+        a = signature.parameters.get(name)
+        if not a:
+            raise InvalidArgumentError(f"Function {signature} does not have a parameter named {name}")
+        arg = args[name]
+        tp = arg["type"]
+        #check if the type matches the function definitions arg type
+        if a.annotation == inspect._empty:
+            raise InvalidArgumentError(f"Function {signature} parameter {name} does not have a type annotation")
+        if tp != a.annotation:
+            # check if the type is a union
+            if not (tp in get_args(a.annotation)):
+                raise InvalidArgumentError(f"Function {signature} parameter {name} has type {a.annotation} but expected {tp}")
+        description = arg["description"]
+        default = a.default if a.default != inspect._empty else undefined
+        pargs.append(ArgumentSpec(name,tp, default, description))  # type: ignore
+    return pargs
+
+
+def parse_docstring(docstring:str):
+    # parse the description, args, short name, and extra info, return value from the docstring, Don't care about the errors raised
+    description = ""
+    args = []
+    example = ""
+    short_name = ""
+    return_value = ""
+
+    state = 0
+    if docstring:
+        lines = docstring.split("\n")
+        description = lines[0]
+        for line in lines[1:]:
+            line = line.strip()
+            if not line:
+                continue
+            if line.lower().startswith("args:"):
+                state = 1
+                if line.endswith(":"):
+                    continue
+            elif line.lower().startswith("short name:"):
+                if line.endswith(":"):
+                    continue
+                state = 2
+            elif line.lower().startswith("returns:"):
+                state = 3
+                if line.endswith(":"):
+                    continue
+            elif line.lower().startswith("raises:"):
+                state = 4
+                if line.endswith(":"):
+                    continue
+            elif line.lower().startswith("example:"):
+                state = 5
+                if line.endswith(":"):
+                    continue
+            if state == 0:
+                description += line
+            elif state == 1:
+                args.append(line)
+            elif state == 2:
+                short_name = line.split(":")[1].strip()
+            elif state == 3:
+                return_value = line
+            elif state == 4:
+                # parse the raises
+                pass
+            if state == 5:
+                example += line
+    args = parse_args(args)
+
+    return {"description":description, "args":args, "short_name":short_name, "example":example, "return_value":return_value}
+
+
+
+def parse_args(args):
+    # parse the args
+    parsed_args = {}
+    for arg in args:
+        arg = arg.strip()
+        if arg:
+            if ":" in arg:
+                name_type, description = arg.split(":")
+                name, dtype = name_type.strip().split(' ')
+                dtype = dtype.strip('(').strip(')').strip()
+                #convert string dtype to typings type
+                tp = str_to_type(dtype)
+                parsed_args[name] = {"type":tp, "description":description.strip()}
+            else:
+                # TODO add multiline support
+                raise InvalidArgumentError(f"Invalid argument specification: {arg}")  
+    return parsed_args
+
 
 class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
-
-
     @staticmethod
     def __render_commands__(base_class):
         # through reflection get each function from the class
@@ -88,16 +206,16 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
         for name, fun in functions:
             name = name.strip('_')
             if name == 'execute':
-                raise ValueError("Function name 'execute' is reserved.")
+                raise DebuggerCommandError("Function name 'execute' is reserved.")
             doc = fun.__doc__
             if not doc:
-                raise ValueError(f"Function {name} does not have a docstring")
+                raise DebuggerCommandError(f"Function {name} does not have a docstring")
             #parse the docstring
             info = parse_docstring(doc)
             args = convert_args(info["args"], signature=inspect.signature(fun))
             package = base_class.__module__.split('.')[-1]
             #parse the arguments
-            specs.append(CommandSpec(base_class, name, fun, info["description"], args, info["short_name"], info["extra_info"], package))
+            specs.append(BuiltinFunctionDefinition(name,base_class, fun, info["description"], args, info["short_name"], info["example"], package))
         setattr(base_class, "__cmd_specs__", {s.name: s for s in specs})
         # args = []
         # oargs = []
@@ -136,7 +254,13 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
             raise ExecutionError("Debugger not set.")
         # return self._debugger
         return cast(CommandLineDebugger,self._debugger)
-
+    
+    def to_value(self, value: int|bytes|str|SymBitVector|SymString|Variable):
+        if value is None:
+            return None
+        if isinstance(value, Variable):
+            return value.value
+        return value
 
     async def run_angr(self, until:Callable[[SimulationManager],StopReason] = lambda _: StopReason.NONE):
         u = until

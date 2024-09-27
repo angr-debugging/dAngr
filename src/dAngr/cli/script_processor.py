@@ -1,5 +1,6 @@
 import os
 import re
+import dAngr.exceptions.FileNotFoundError
 
 class ScriptProcessor:
     def __init__(self, script_path):
@@ -20,16 +21,42 @@ class ScriptProcessor:
             else:
                 yield from self.process_text(f)
 
-    def process_text(self, file_obj):
-        for line in file_obj:
-            # Yield each line in a non-markdown file
-            if line.strip() == "":
+    def process_text(self, file_obj, until=lambda line: False):
+        # if definition or control flow (end with :), read until back to 0 indentation
+        l = ""
+        while True:
+            line = next(file_obj, None)
+            if line is None:
+                break
+            if until(line):
+                break
+            l = line.rstrip()
+            if line == "":
                 continue
-            yield line.strip()  # Yield each line without leading/trailing whitespace
+            if line.endswith(":"):
+                # Read until indentation is back to 0
+                indentation = line.find(line.lstrip())
+                while True:
+                    line = next(file_obj, None)
+                    if line is None:
+                        break
+                    line = line.rstrip()
+                    if line == "":
+                        continue
+                    if line.find(line.lstrip()) == indentation:
+                        break
+                    l += "\n" + line
+            if l is not None:
+                yield l
+
+        # for line in file_obj:
+        #     # Yield each line in a non-markdown file
+
+        #     if line.strip() == "":
+        #         continue
+        #     yield line.strip()  # Yield each line without leading/trailing whitespace
 
     def process_markdown(self, file_obj):
-        inside_code_block = False
-        code_block_lines = []
 
         for line in file_obj:
             line = line.rstrip()
@@ -41,28 +68,11 @@ class ScriptProcessor:
                 yield f"{code}"
 
             # Handle code blocks (between triple backticks or triple single quotes)
-            if line.startswith('```') or line.startswith('```'):
-                if inside_code_block:
-                    inside_code_block = False
-                    # Yield the collected code block lines
-                    for code_line in code_block_lines:
-                        yield f"{code_line}"
-                    code_block_lines = []
-                else:
-                    inside_code_block = True
-            elif inside_code_block:
-                if line.startswith('```') or line.startswith('```'):
-                    inside_code_block = False
-                    # Yield the collected code block lines
-                    for code_line in code_block_lines:
-                        yield f"{code_line}"
-                    code_block_lines = []
-                else:
-                    # Collect code block lines
-                    code_block_lines.append(line)
-                    
-        # Handle any remaining code block lines if file ends
-        if inside_code_block:
-            for code_line in code_block_lines:
-                yield f"Code block line: {code_line}"
+            prefix = line[:3]
+            if prefix in ['```', "[[["]:
+                postfix = '```' if prefix == '```' else ']]]'
+                # Yield the collected code block lines
+                for l in self.process_text(file_obj, lambda line:line.startswith(postfix)):
+                    yield l
+
 

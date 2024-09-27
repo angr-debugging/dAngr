@@ -50,7 +50,7 @@ class TestCommands:
     async def test_command_not_found(self, dbg, conn):
         assert await dbg.handle("not_a_command")
         conn.send_error.assert_called_once()
-        assert "Command 'not_a_command' not found." in str(conn.send_error.call_args[0][0])
+        assert "Unknown dAngr command:" in str(conn.send_error.call_args[0][0])
 
     @pytest.mark.asyncio
     async def test_exit(self, dbg, conn):

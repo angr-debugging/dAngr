@@ -1,3 +1,4 @@
+import codecs
 from enum import Enum, auto
 import importlib
 import os
@@ -8,12 +9,16 @@ from typing import Union, get_args
 from claripy import List
 import re
 
-from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
+import claripy
+
+from dAngr.exceptions import InvalidArgumentError, ValueError
+
+
 
 #create a undefined type
 undefined = type("Undefined", (), {})
 
-DEBUG:bool = os.getenv("BUILD_TYPE","Release").lower() == "debug"
+DEBUG:bool = True #os.getenv("BUILD_TYPE","Release").lower() == "debug"
 
 class DataType(Enum):
     int = auto()
@@ -27,67 +32,93 @@ class StreamType(Enum):
     stdin = 0
     stdout = 1
     stderr = 2
+    
+class ObjectStore(Enum):
+    mem = auto()
+    sym = auto()
+    reg = auto()
+    io = auto()
 
-class ArgumentSpec():
-    def __init__(self, name:str, dtype:type, description:str, default = None):
+
+Constraint = claripy.ast.Bool
+SymBitVector = claripy.ast.BV
+SymString = claripy.ast.String
+AngrValueType = SymBitVector | SymString | int | str | bytes
+
+class Variable:
+    def __init__(self, name:str, value):
         self.name = name
-        self.type = dtype
-        self.description = description
-        self.default = default
+        self._value = value
 
-def parse_docstring(docstring:str):
-    # parse the description, args, short name, and extra info, return value from the docstring, Don't care about the errors raised
-    description = ""
-    args = []
-    example = ""
-    short_name = ""
-    return_value = ""
+    @property
+    def value(self) ->AngrValueType:   
+        return self._value
+    @value.setter
+    def value(self, value:AngrValueType):
+        self._value = value
+    
+    def __repr__(self):
+        return f"{self.name}={self._value}"
 
-    state = 0
-    if docstring:
-        lines = docstring.split("\n")
-        description = lines[0]
-        for line in lines[1:]:
-            line = line.strip()
-            if not line:
-                continue
-            if line.lower().startswith("args:"):
-                state = 1
-                if line.endswith(":"):
-                    continue
-            elif line.lower().startswith("short name:"):
-                if line.endswith(":"):
-                    continue
-                state = 2
-            elif line.lower().startswith("returns:"):
-                state = 3
-                if line.endswith(":"):
-                    continue
-            elif line.lower().startswith("raises:"):
-                state = 4
-                if line.endswith(":"):
-                    continue
-            elif line.lower().startswith("example:"):
-                state = 5
-                if line.endswith(":"):
-                    continue
-            if state == 0:
-                description += line
-            elif state == 1:
-                args.append(line)
-            elif state == 2:
-                short_name = line.split(":")[1].strip()
-            elif state == 3:
-                return_value = line
-            elif state == 4:
-                # parse the raises
-                pass
-            if state == 5:
-                example += line
-    args = parse_args(args)
+def str_to_type(dtype:str):
+    #convert string dtype to typings type
+    tp = None
+    if dtype == "int":
+        tp = int
+    elif dtype == "str":
+        tp = str
+    elif dtype == "bytes":
+        tp = bytes
+    elif dtype == "bool":
+        tp = bool
+    elif dtype == "double":
+        tp = float
+    elif dtype == "hex":
+        tp = int
+    else:
+        try:
+            tp = eval(dtype)
+        except:
+            raise ValueError(f"Invalid data type {dtype}")
+    return tp
 
-    return {"description":description, "args":args, "short_name":short_name, "extra_info":example, "return_value":return_value}
+def check_signature_matches(func, o, args, kwargs):
+    # Get the function's signature
+    signature = inspect.signature(func)
+    
+    try:
+        # Bind the provided arguments to the function's signature
+        bound_args = signature.bind(o, *args, **kwargs)
+        bound_args.apply_defaults()  # Apply default values if any
+    except TypeError as e:
+        raise InvalidArgumentError(str(e))
+    
+    # Optionally: Perform type checking if the function has type hints
+    annotations = func.__annotations__
+    for param_name, param_value in bound_args.arguments.items():
+        if param_name in annotations:
+            expected_type = annotations[param_name]
+            
+            if inspect.isclass(expected_type) and  issubclass(expected_type ,Enum) and isinstance(param_value, str):
+                #get the value of the expected enum type given the str
+                param_value = expected_type[param_value]
+            if not isinstance(param_value, expected_type):
+                raise InvalidArgumentError(f"Argument '{param_name}' should be of type {expected_type.__name__}, got {type(param_value).__name__}")
+    
+def parse_binary_string(binary_string_text):
+    # Strip the `b'` prefix and trailing `'`
+    if binary_string_text.startswith("b'") and binary_string_text.endswith("'"):
+        binary_string_text = binary_string_text[2:-1]
+    else:
+        raise ValueError("Invalid binary string format")
+    
+    # Handle escape sequences (e.g., \0, \n, \\)
+    parsed_string = codecs.decode(binary_string_text, 'unicode_escape')
 
+    # Convert to bytes using 'latin1' to preserve the byte-to-byte mapping
+    binary_data = parsed_string.encode('latin1')
+
+    return binary_data
 def convert_argument(arg_type: type, arg_value: str):
     try:
         # Handle Enums
@@ -123,65 +154,12 @@ def convert_argument(arg_type: type, arg_value: str):
     except ValueError:
         raise InvalidArgumentError(f"Failed to convert argument to type '{arg_type}' from '{arg_value}'")
 
-def convert_args(args, signature):
-    # convert the args to the correct type
-    pargs = []
-    for name in args:
-        a = signature.parameters.get(name)
-        if not a:
-            raise ValueError(f"Function {signature} does not have a parameter named {name}")
-        arg = args[name]
-        tp = arg["type"]
-        if a.annotation == inspect._empty:
-            raise ValueError(f"Function {signature} parameter {name} does not have a type annotation")
-        if tp != a.annotation:
-            # check if the type is a union
-            if not (tp in get_args(a.annotation)):
-                raise ValueError(f"Function {signature} parameter {name} has type {a.annotation} but expected {tp}")
-        description = arg["description"]
-        default = a.default if a.default != inspect._empty else undefined
-        pargs.append(ArgumentSpec(name,tp,description, default))  # type: ignore
-    return pargs
+def str_to_address(address:str):
+    if address.startswith("0x"):
+        return int(address, 16)
+    return int(address)
 
-def str_to_type(dtype:str):
-    #convert string dtype to typings type
-    tp = None
-    if dtype == "int":
-        tp = int
-    elif dtype == "str":
-        tp = str
-    elif dtype == "bytes":
-        tp = bytes
-    elif dtype == "bool":
-        tp = bool
-    elif dtype == "double":
-        tp = float
-    elif dtype == "hex":
-        tp = int
-    else:
-        try:
-            tp = eval(dtype)
-        except:
-            raise ValueError(f"Invalid data type {dtype}")
-    return tp
 
-def parse_args(args):
-    # parse the args
-    parsed_args = {}
-    for arg in args:
-        arg = arg.strip()
-        if arg:
-            if ":" in arg:
-                name_type, description = arg.split(":")
-                name, dtype = name_type.strip().split(' ')
-                dtype = dtype.strip('(').strip(')').strip()
-                #convert string dtype to typings type
-                tp = str_to_type(dtype)
-                parsed_args[name] = {"type":tp, "description":description.strip()}
-            else:
-                # TODO add multiline support
-                raise ValueError(f"Invalid argument specification: {arg}")  
-    return parsed_args
 
 def remove_xml_tags(text):
     # Use a regular expression to match and remove all tags

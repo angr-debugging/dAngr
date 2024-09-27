@@ -14,7 +14,8 @@ import cle
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
-from dAngr.utils.utils import DEBUG, DataType, StreamType, remove_ansi_escape_codes
+from dAngr.cli.grammar.execution_context import Variable
+from dAngr.utils.utils import DEBUG, AngrValueType, DataType, StreamType, SymBitVector, SymString, remove_ansi_escape_codes
 
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, get_function_by_addr, hook_simprocedures, load_module_from_file
@@ -62,8 +63,7 @@ class Debugger:
         self._cfg:CFGFast|None = None
         self.stop_reason = StopReason.NONE
         self._entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None = None
-        self._symbols:Dict[str,Dict[str,Any]] = {}
-        self._symbols_cache:Dict[str,claripy.ast.BV|claripy.FP|claripy.ast.String] = {}
+        self._symbols:Dict[str,SymBitVector|SymString] = {}
 
     @property
     def project(self)->angr.project.Project:
@@ -215,7 +215,8 @@ class Debugger:
     
     def get_function_callstate(self, function_name:str, prototype:types.SimTypeFunction, cc:SimCC,arguments:List[Any]):
         self._entry_point = (function_name,prototype,cc,arguments)
-        self.reset_state()
+        if self._simgr is not None:
+            self.reset_state()
         return self.simgr.one_active
 
     def get_variables(self, func_addr):
@@ -295,64 +296,48 @@ class Debugger:
 
 
     def set_start_address(self, address:int):
-        self._simgr = None
+        if self._simgr is not None:
+            self.reset_state()
         self._entry_point = address
-        self.reset_state()
+        
     
-    def add_symbol(self, name, info:Dict[str,Any]):
-        self._symbols[name] = info
-    
-    def remove_symbol(self,name):
+    def add_symbol(self, name:str, sym:SymBitVector|SymString):
+        self._symbols[name] = sym
+
+    def removeSymbol(self, name:str):
         self._symbols.pop(name)
-    
-    def get_new_symbol_object(self, name) -> claripy.ast.BV | claripy.ast.String | claripy.ast.FP:
-        if info := self._symbols.get(name):
-            type = info["type"]
-            if type == str:
-                # s= claripy.BVS(name, info.get("size",0)*8)
-                s = claripy.StringS(name, info.get("size", 0))
-            elif type == int:
-                # get size of int from the project
-                int_size = self.project.arch.bits
-                s = claripy.BVS(name, size=int_size)
-            elif type == bytes:
-                s = claripy.BVS(name, size=info.get("size",0)*8)
-            elif type == float:
-                s = claripy.FPS(name, sort=info.get("sort",claripy.fp.FSORT_FLOAT)) # type: ignore
-            else:
-                raise DebuggerCommandError(f"Type {type} not supported.")
-            self._symbols_cache[name] = s
-            return s
-        #set state to StringS value
-        raise DebuggerCommandError(f"Symbol {name} not found.")
-    
-    def get_symbol(self, name):
-        s = self._symbols_cache.get(name, None)
-        if not s is None:
-            return s
-        else:
-            return self.get_new_symbol_object(name)
+
+    def get_symbol_value(self, name:str):
+        if name in self._symbols:
+            return self._symbols[name]
+        else : raise DebuggerCommandError(f"Symbol {name} not found.")
 
     def set_symbol(self, name, value):
-        self._symbols_cache[name] = value
+        self._symbols[name] = value
+
     def add_constraint(self, cs, stateID=0):
         state = self.get_current_state(stateID)
         state.add_constraints(cs)
 
-    def add_to_stack(self, value:int|bytes|str|claripy.ast.BV|claripy.ast.FP|claripy.String):
+    def add_to_stack(self, value:int|bytes|str|SymBitVector|SymString|Variable):
         if isinstance(value, int):
             value = self.to_bytes(value)
         elif isinstance(value, str):
             value = value.encode('utf-8')
+        elif isinstance(value, Variable):
+            value = value.value
         state = self.get_current_state()
         state.stack_push(value)
+        
     def get_stack(self, length, offset = 0, stateID=0):
         state = self.get_current_state(stateID)
         return state.stack_read(offset,length)
     
     def reset_state(self):
         self._simgr = None # state is reset upone requesting simgr
+        self._symbols = {}
         self.stop_reason = StopReason.NONE
+        logging.info("State reset.")
     
     def stop(self):
         self._project = None
@@ -493,7 +478,9 @@ class Debugger:
     def get_paths(self):
         return self.simgr.active + self.simgr.stashes["deferred"]
     
-    def set_memory(self,address:int,value:int|str|bytes|claripy.ast.BV, state = None):
+    def set_memory(self,address:int,value:AngrValueType, state = None):
+        if isinstance(value,claripy.String):
+            raise DebuggerCommandError("Cannot set memory to string.")
         if isinstance(value,str):
             # Encode string to bytes
             val = value.encode('utf-8')
@@ -512,8 +499,13 @@ class Debugger:
         byte_value = state.memory.load(address, size)
         return byte_value
     
+    def get_stream(self, stream:StreamType) -> str:
+        state = self.get_current_state()
+        mapped = stream.name.lower()
+        std:StdTracker = state.get_plugin(f'{mapped}_tracker')
+        return std.get_prev_string()
 
-    def cast_to(self, value:claripy.ast.BV|claripy.ast.FP|claripy.String, cast_to:DataType, stateID=0):
+    def cast_to(self, value:SymBitVector|SymString, cast_to:DataType, stateID=0):
         # if not value.concrete:
         #     raise DebuggerCommandError("Value is not concrete.")
         state = self.get_current_state(stateID=stateID)
@@ -686,10 +678,11 @@ class Debugger:
         value = state.registers.load(register, size)
         return value
     
-    def get_register(self, register):
+    def get_register(self, register, stateID=0):
         if register not in self.project.arch.registers:
             raise DebuggerCommandError(f"Register '{register}' not found.")
-        return self.list_registers()[register]
+        state = self.get_current_state(stateID=stateID)
+        return state.registers.load(register)
 
     def set_register(self, register, value:int|claripy.ast.BV, stateID=0):
         state = self.get_current_state(stateID)

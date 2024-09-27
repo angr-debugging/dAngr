@@ -32,8 +32,8 @@ class TestMemoryCommands:
         dbg = CommandLineDebugger(conn)
         assert await dbg.handle("load example")
         assert await dbg.handle("add_breakpoint 0x400566")
-        assert await dbg.handle("set_function_prototype int processMessage(char*, int, char**)")
-        assert await dbg.handle("set_function_call processMessage('abc',2,b'0000000000')")
+        assert await dbg.handle("set_function_prototype 'int processMessage(char*, int, char**)'")
+        assert await dbg.handle("set_function_call 'processMessage(\"abc\",2,b\"0000000000\")'")
 
         conn.send_info = AsyncMock()
         conn.send_error = AsyncMock()
@@ -67,7 +67,7 @@ class TestMemoryCommands:
     @pytest.mark.asyncio
     async def test_get_register_invalid_args(self, dbg, conn):
         assert await dbg.handle("get_register")
-        assert "Invalid input format. Expected arguments: name" == str(conn.send_error.call_args[0][0])
+        assert "missing a required argument: 'name'" == str(conn.send_error.call_args[0][0])
     
     @pytest.mark.asyncio
     async def test_list_registers(self, dbg, conn):
@@ -82,12 +82,12 @@ class TestMemoryCommands:
     @pytest.mark.asyncio
     async def test_set_memory_int(self, dbg, conn):
         assert await dbg.handle("set_memory 0x1000 0x61")
-        assert "Memory at 0x1000: b'a\\x00\\x00\\x00\\x00\\x00\\x00\\x00'." == str(conn.send_info.call_args[0][0])
+        assert "Memory at 0x1000: 97." == str(conn.send_info.call_args[0][0])
         
     @pytest.mark.asyncio
     async def test_set_memory_str(self, dbg, conn):
         assert await dbg.handle("set_memory 0x1000 'abs'")
-        assert "Memory at 0x1000: b'abs'." == str(conn.send_info.call_args[0][0])
+        assert "Memory at 0x1000: abs." == str(conn.send_info.call_args[0][0])
 
     @pytest.mark.asyncio
     async def test_set_memory_bytes(self, dbg, conn):

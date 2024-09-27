@@ -27,7 +27,7 @@ class TestBasicExecutionCommands:
     @pytest.fixture
     async def dbg(self,conn):
         dbg = CommandLineDebugger(conn)
-        await dbg.handle("load example")
+        await dbg.handle("load 'example'")
         #reset functions
         conn.send_info = AsyncMock()
         conn.send_error = AsyncMock()
@@ -45,7 +45,7 @@ class TestBasicExecutionCommands:
 
     @pytest.mark.asyncio
     async def test_load_hooks(self, dbg, conn):
-        assert await dbg.handle("load_hooks example_hooks.py")
+        assert await dbg.handle("load_hooks 'example_hooks.py'")
         conn.send_info.assert_called_with("Hooks 'example_hooks.py' successfully attached.")
 
     # pause needs further testing
@@ -89,9 +89,9 @@ class TestBasicExecutionCommands:
     
     @pytest.mark.asyncio
     async def test_exclude_function(self, dbg, conn):
-        assert await dbg.handle("filter_at_function main True")
+        assert await dbg.handle("filter_at_function 'main' True")
         conn.send_info.assert_called_with("Function main added to exclusions.")
-        assert await dbg.handle("filter_at_function main True False")
+        assert await dbg.handle("filter_at_function 'main' True False")
         conn.send_info.assert_called_with("Function main removed from exclusions.")
     
     @pytest.mark.asyncio

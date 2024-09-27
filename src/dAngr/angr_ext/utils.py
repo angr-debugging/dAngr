@@ -9,7 +9,7 @@ from angr import Project, SimCC, SimProcedure, SimState, SimulationManager, type
 
 
 from dAngr.angr_ext.std_tracker import StdTracker
-from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
+from dAngr.exceptions import DebuggerCommandError, InvalidArgumentError, FileNotFoundError
 
 def evaluate_symbolic_string(symbolic_str, solver, length):
     result = []
@@ -89,7 +89,7 @@ def load_module_from_file(file_path):
     if spec is None:
         raise FileNotFoundError(f"File '{file_path}' not found.")
     if spec.loader is None:
-        raise ImportError(f"Failed to load '{file_path}'.")
+        raise DebuggerCommandError(f"Failed to load '{file_path}'.")
     # Load the module
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

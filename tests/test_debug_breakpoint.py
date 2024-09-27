@@ -50,7 +50,7 @@ class TestDebugBreakpointCommands:
     
     @pytest.mark.asyncio
     async def test_add_breakpoint_at_line(self, dbg, conn):
-        assert await dbg.handle("add_breakpoint_at_line /dangr/tests/example.c 5")
+        assert await dbg.handle("add_breakpoint_at_line '/dangr/tests/example.c' 5")
         conn.send_info.assert_called_with("Address 0x400560 added to breakpoints.")
         assert await dbg.handle("continue")
         conn.send_info.assert_called_with("Break: Source Filter: /dangr/tests/example.c:5 (0x400560).")
