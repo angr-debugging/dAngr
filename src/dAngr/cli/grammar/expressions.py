@@ -1,6 +1,6 @@
 from enum import Enum
-import logging
-from typing import Dict, List, Any, cast
+from types import UnionType
+from typing import Dict, List, Any, Union, cast, get_args, get_origin
 from abc import abstractmethod
 import subprocess
 import claripy
@@ -8,15 +8,15 @@ import claripy
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.exceptions import CommandError, InvalidArgumentError, ValueError, KeyError
 from dAngr.utils import AngrValueType, StreamType, str_to_address
-from dAngr.utils.utils import check_signature_matches
+from dAngr.utils.utils import DataType, Endness, check_signature_matches
 
-log = logging.getLogger(__name__)
+from dAngr.utils.loggers import get_logger
+log = get_logger(__name__)
 
 class Expression:
     def debugger(self, context):
         from dAngr.cli.command_line_debugger import CommandLineDebugger
-
-        return cast(CommandLineDebugger, context.debugger)
+        return cast(CommandLineDebugger, context.root.debugger)
 
     @abstractmethod
     async def __call__(self, context:ExecutionContext):
@@ -185,7 +185,7 @@ class SymbolicValue(ReferenceObject):
 
     def get_value(self, context):
         #get variable value and 
-        return self.debugger(context).get_symbol_value(self.name)
+        return self.debugger(context).get_symbol(self.name)
     
     def set_value(self, context, value):
         assert isinstance(value,AngrValueType)
@@ -207,10 +207,10 @@ class Memory(ReferenceObject):
 
     def set_value(self, context, value):
         assert isinstance(value,AngrValueType)
-        self.debugger(context).set_memory(self.address, value)
+        self.debugger(context).set_memory(self.address, value, None,Endness.DEFAULT)
     
     def __str__(self):
-        return f"&mem.{self.address}->{self.size}"
+        return f"&mem[{hex(self.address)}->{self.size}]"
     def __eq__(self, other):
         return isinstance(other, Memory) and self.address == other.address and self.size == other.size
     
@@ -235,17 +235,22 @@ class Register(ReferenceObject):
         return isinstance(other, Register) and self.register == other.register
 
 class VariableRef(ReferenceObject):
-    def __init__(self, name):
+    def __init__(self, name:str, is_static=False):
         self.name = name
+        self._is_static = is_static
+    
+    @property
+    def is_static(self):
+        return self._is_static
 
     def __str__(self):
-        return f"&vars.{self.name}"
+        return f"{self.name}"
 
     def __eq__(self, other):
         return isinstance(other, VariableRef) and self.name == other.name
     
     def get_value(self, context):
-        return context[self.name]
+        return context[self.name].value
     def set_value(self, context, value):
         context[self.name] = value
 
@@ -335,8 +340,30 @@ class Comparison(Expression):
     
     def __eq__(self, value: object) -> bool:
         return isinstance(value, Comparison) and self.left == value.left and self.operator == value.operator and self.right == value.right
+    
+class Constraint(Expression):
+    pass
+class IfConstraint(Constraint):
+    def __init__(self, condition:Expression, true_constraint:Constraint, false_constraint:Constraint):
+        self.condition = condition
+        self.true_constraint = true_constraint
+        self.false_constraint = false_constraint
 
-
+    async def __call__(self, context:ExecutionContext):
+        cthen =  await self.true_constraint(context)
+        if not isinstance(cthen, claripy.ast.Base):
+            cthen = await self.debugger(context).render_argument(cthen,False)
+        celse = await self.false_constraint(context)
+        if not isinstance(celse, claripy.ast.Base):
+            celse = await self.debugger(context).render_argument(celse,False)
+        return claripy.If(await self.condition(context), cthen, celse)
+    
+    def __str__(self):
+        return f"if {self.condition} then {self.true_constraint} else {self.false_constraint}"
+    
+    def __eq__(self, value: object) -> bool:
+        return isinstance(value, IfConstraint) and self.condition == value.condition and self.true_constraint == value.true_constraint and self.false_constraint == value.false_constraint
+    
 class Command(Expression):
     def _merge_consecutive_literals(self, content:List[Literal|Expression]) ->List[Expression]:
         cc = []
@@ -356,13 +383,25 @@ class PythonCommand(Command):
         self.cmds:List[Expression] = self._merge_consecutive_literals(cc)
         self.kwargs:Dict[str,Expression] = kwargs
 
+    async def _to_val(self, arg, context:ExecutionContext):
+        v = await arg(context)
+        if isinstance(v, claripy.ast.BV):
+            if v.symbolic:
+                return  self.debugger(context).cast_to(v, DataType.str)
+
+                # raise ValueError(f"Symbolic value {v} cannot be used in a Python command")
+            return v.cv
+        elif isinstance(arg, VariableRef) and isinstance(v, str):
+            return '"' + v + '"'
+        else:
+            return v
     
     async def __call__(self, context:ExecutionContext):
         # copy the commands locally
         # execute the commands if it is an Expression and replace the entry in the copy with the result
         c = context.clone()
-        results = [await a(c) for a in self.cmds] + [f"{k}={await v(c)}" for k,v in self.kwargs.items()]
-        context.return_value = await eval(" ".join(results))
+        results = [await self._to_val(a,c) for a in self.cmds] + [f"{k}={await v(c)}" for k,v in self.kwargs.items()]
+        context.return_value = eval("".join([str(r) for r in results]))
         return context.return_value
     
     def __str__(self):
@@ -421,12 +460,30 @@ class DangrCommand(Command):
     #                 raise InvalidArgumentError(f"Invalid argument type: {arg} expected {spec.args[i].dtype}")
     async def _check_arg(self, arg, context:ExecutionContext, spec):
         try:
-            return await arg(context) 
+            #TODO, what if  dtype is a tuple
+            if isinstance(spec.dtype, type) and issubclass(spec.dtype, ReferenceObject):
+                return arg
+            elif isinstance(spec.dtype, type) and issubclass(spec.dtype,Enum):
+                return spec.dtype[arg.name]
+            else:
+                return await arg(context) 
         except KeyError as e:
             if "Unknown variable: " in e.args[0]:
-                if isinstance(spec.dtype, (str,Enum)):
-                    return arg.name
-                log.info(f"{arg.name} not found in variables, using value as is")
+                # if dtype is a typle, get list of types
+                # check if dtype is a tuple
+                if get_origin(spec.dtype) is UnionType:
+                    types = get_args(spec.dtype)
+                else:
+                    types = [spec.dtype]
+ 
+                if isinstance(arg, VariableRef) and (str in types or Enum in types):
+                    for t in types:
+                        if issubclass(t, Enum):
+                            if arg.name in t.__members__: # type: ignore
+                                return t[arg.name] # type: ignore
+                    if str in types:
+                        return arg.name
+                log.debug(f"{arg.name} not found in variables, using value as is")
                 return arg.name
             else:
                 raise e
@@ -434,20 +491,33 @@ class DangrCommand(Command):
 
     async def __call__(self, context:ExecutionContext):
         from dAngr.cli.command_line_debugger import BuiltinFunctionDefinition
-        if self.cmd in context.functions:
-            spec = cast(BuiltinFunctionDefinition,context.functions[self.cmd])
-            if len(spec.args) < len(self.args):
+        spec = None
+        if self.cmd in context.functions :
+            spec = context.functions[self.cmd]
+        elif self.cmd in [f.short_name for f in context.functions.values() if isinstance(f, BuiltinFunctionDefinition)]:
+            spec = next((f for f in context.functions.values() if cast(BuiltinFunctionDefinition,f).short_name == self.cmd), None)
+        if not spec:
+            raise CommandError(f"Unknown command: {self.cmd}")
+        s_args = spec.args
+        if len(spec.args) < len(self.args):
+            if spec.args and  spec.args[-1].dtype == tuple:
+                # copy the last argument until there are enough arguments
+                while len(s_args) < len(self.args):
+                    s_args.append(s_args[-1])
+            else:
                 raise CommandError(f"Too many arguments. Expected {len(spec.args)} but got {len(self.args)}")
-            func = spec.func
-            arguments = [ await self._check_arg(arg, context, spec.args[i]) for i,arg in enumerate(self.args) ]
-            named_args = {k: await self._check_arg(v,context, spec.get_arg_by_name(k)) for k,v in self.kwargs.items()}   
-            # self._check_args(arguments, named_args, spec)
-            o = context.definitions[self.cmd]
-            check_signature_matches(func, o, arguments, named_args)     
-            context.return_value = await o(context, *arguments, **named_args)
-            return context.return_value
-        else:
-            raise CommandError(f"Unknown dAngr command: {self.cmd}")
+        spec = cast(BuiltinFunctionDefinition, spec)
+        func = spec.func
+        arguments = [ await self._check_arg(arg, context, s_args[i]) for i,arg in enumerate(self.args) ]
+        named_args = {k: await self._check_arg(v,context, spec.get_arg_by_name(k)) for k,v in self.kwargs.items()}   
+        # self._check_args(arguments, named_args, spec)
+
+        check_signature_matches(func, spec, arguments, named_args)
+        log.debug(lambda:f"Calling {self.cmd} with {arguments} {named_args}")
+        context.return_value = await spec(context, *arguments, **named_args)
+        return context.return_value
+
+            
 
     def __str__(self):
         return f"{self.cmd} {[str(a) for a in self.args]}"

@@ -89,8 +89,6 @@ class AddressFilter(Filter):
         # check if in range of block
         start:int = state.addr # type: ignore
         #check if start is in binary
-        if state.addr == 0x80485f4:
-            pass
         if not state.project.loader.main_object.contains_addr(start): # type: ignore
             return False
         instrs = state.block().instruction_addrs

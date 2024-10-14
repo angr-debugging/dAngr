@@ -2,14 +2,15 @@
 from typing import List, Sequence
 
 from antlr4 import TerminalNode
+import claripy
 from dAngr.exceptions import ParseError, ValueError
 from dAngr.cli.grammar.antlr.dAngrParser import dAngrParser
 from dAngr.cli.grammar.antlr.dAngrVisitor import dAngrVisitor
-from dAngr.cli.grammar.statements import Assignment,  Statement,  Object, VariableRef
+from dAngr.cli.grammar.statements import Assignment,  Statement
 from dAngr.cli.grammar.control_flow import IfThenElse, WhileLoop, ForLoop
 from dAngr.cli.grammar.script import Script, Body
 from dAngr.cli.grammar.definitions import CustomFunctionDefinition
-from dAngr.cli.grammar.expressions import DangrCommand, Dictionary, Listing, Memory, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice
+from dAngr.cli.grammar.expressions import Constraint, DangrCommand, Dictionary, IfConstraint, Listing, Memory, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, VariableRef
 from dAngr.utils.utils import parse_binary_string
 
 
@@ -84,9 +85,7 @@ class dAngrVisitor_(dAngrVisitor):
     #     raise ValueError(f"Invalid command {ctx.getText()}")
 
     def visitStatement(self, ctx: dAngrParser.StatementContext):
-        if ctx.dangr_command():
-            return self.visit(ctx.dangr_command())
-        elif ctx.assignment():
+        if ctx.assignment():
             return self.visit(ctx.assignment())
         elif ctx.control_flow():
             return self.visit(ctx.control_flow())
@@ -94,21 +93,67 @@ class dAngrVisitor_(dAngrVisitor):
             return self.visit(ctx.expression())
         elif ctx.ext_command():
             return self.visit(ctx.ext_command())
+        elif ctx.static_var(): # static variable
+            return VariableRef(ctx.static_var().identifier().getText(),True)
         raise ParseError(f"Invalid statement {ctx.getText()}")
     
     def visitExpression(self, ctx: dAngrParser.ExpressionContext):
-        if ctx.range_():
-            return self.visit(ctx.range_())
-        elif ctx.object_():
-            return self.visit(ctx.object_())
+        if ctx.identifier():
+            cmd = ctx.identifier(0).getText()
+            args = []
+            kwargs  = {}
+            if ctx.expression_part():
+                children = ctx.children[1:]
+                for i in range(0, len(children)):
+                    #check if c is a terminalnode drop it
+                    c = children[i]
+                    if isinstance(c, TerminalNode):
+                        continue
+
+                    #if c is an identifier, it is a named argument
+                    if isinstance(c, dAngrParser.IdentifierContext):
+                        name = c.getText()
+                        for j in range(i+1, len(children)):
+                            if isinstance(children[j], TerminalNode):
+                                continue
+                            if isinstance(children[j], dAngrParser.IdentifierContext):
+                                name = children[j].getText()
+                            elif isinstance(children[j], dAngrParser.Expression_partContext):
+                                kwargs[name] = self.visit(children[j])
+                        break
+                    else:
+                        assert kwargs == {}
+                        args.append(self.visit(c))
+            return DangrCommand(cmd, *args, **kwargs)
+        elif ctx.constraint():
+            return self.visit(ctx.constraint())
+        elif ctx.expression_part():
+            return self.visit(ctx.expression_part(0))
         else:
-            return self.visit(ctx.expression_part())
+            raise ParseError(f"Invalid expression {ctx.getText()}")
+    
+    def visitConstraint(self, ctx: dAngrParser.ConstraintContext):
+        if ctx.CIF(): # if constraint
+            iif = self.visit(ctx.condition().expression())
+            cthen = self.visit(ctx.expression_part(0))
+            celse = self.visit(ctx.expression_part(1))
+            return IfConstraint(iif, cthen, celse)
+        else:
+            raise ParseError(f"Invalid constraint {ctx.getText()}")
     def visitExpression_part(self, ctx: dAngrParser.Expression_partContext):
-        if ctx.object_():
+        if ctx.LPAREN():
+            if isinstance(ctx.expression(), list):
+                x=1
+            return self.visit(ctx.expression())
+        elif ctx.range_():
+            return self.visit(ctx.range_())
+        elif ctx.reference():
+            return self.visit(ctx.reference())
+        elif ctx.object_():
             lhs = self.visit(ctx.object_())
             if ctx.operation():
                 op =  self.getOperator(ctx.operation().getText())
-                rhs = self.visit(ctx.expression_part())
+                rhs = self.visit(ctx.expression())
                 return Comparison(lhs, op, rhs)
             else:
                 return lhs
@@ -116,48 +161,53 @@ class dAngrVisitor_(dAngrVisitor):
             return self.visit(ctx.range_())
 
     def visitAssignment(self, ctx: dAngrParser.AssignmentContext):
-        var = self.visit(ctx.object_())
+        if ctx.static_var():
+            var = VariableRef(ctx.static_var().identifier().getText(), True)
+        else:
+            var = self.visit(ctx.object_())
+
         val = self.visit(ctx.expression())
         return Assignment(var, val)
     
-    def visitDangr_command(self, ctx: dAngrParser.Dangr_commandContext):
-        if ctx.add_constraint():
-            return self.visit(ctx.add_constraint())
-        else:
-            cmd = ctx.identifier(0).getText()
-            args = []
-            kwargs  = {}
-            if ctx.expression():
-                children = ctx.children[1:]
-                for i in range(0, len(children)):
-                    #check if c is a terminalnode drop it
-                    c = children[i]
-                    if isinstance(c, TerminalNode):
-                        continue
-                    #if c is an identifier, it is a named argument
-                    if isinstance(c, dAngrParser.IdentifierContext):
-                        kwargs[c.getText()] = self.visit(children[i+2])
-                        i+=1
-                    else:
-                        assert kwargs == {}
-                        args.append(self.visit(c))
-            return DangrCommand(cmd, *args, **kwargs)
+    # def visitDangr_command(self, ctx: dAngrParser.Dangr_commandContext):
+    #     if ctx.add_constraint():
+    #         return self.visit(ctx.add_constraint())
+    #     else:
+    #         cmd = ctx.identifier(0).getText()
+    #         args = []
+    #         kwargs  = {}
+    #         if ctx.expression_part():
+    #             children = ctx.children[1:]
+    #             for i in range(0, len(children)):
+    #                 #check if c is a terminalnode drop it
+    #                 c = children[i]
+    #                 if isinstance(c, TerminalNode):
+    #                     continue
+    #                 #if c is an identifier, it is a named argument
+    #                 if isinstance(c, dAngrParser.IdentifierContext):
+    #                     kwargs[c.getText()] = self.visit(children[i+2])
+    #                     i+=1
+    #                 else:
+    #                     assert kwargs == {}
+    #                     args.append(self.visit(c))
+    #         return DangrCommand(cmd, *args, **kwargs)
     
-    def visitAdd_constraint(self, ctx: dAngrParser.Add_constraintContext):
-        cmd = "add_constraint"
-        target = self.visit(ctx.object_())
-        op = self.getOperator(ctx.operation().getText())
-        constraint = self.visit(ctx.expression())
-        arg = Comparison(target,op, constraint)
-        return DangrCommand(cmd, arg)
+    # def visitAdd_constraint(self, ctx: dAngrParser.Add_constraintContext):
+    #     cmd = "add_constraint"
+    #     target = self.visit(ctx.object_())
+    #     op = self.getOperator(ctx.operation().getText())
+    #     constraint = self.visit(ctx.expression_part())
+    #     arg = Comparison(target,op, constraint)
+    #     return DangrCommand(cmd, arg)
 
     def visitExt_command(self, ctx: dAngrParser.Ext_commandContext):
         if ctx.BANG():
             # name,args,kwargs = self.visit(ctx.py_content())
             # return PythonCommand(name,*args,**kwargs)
-            return PythonCommand(*self.visit(ctx.py_content()))
+            args = self.visit(ctx.py_basic_content())
+            return PythonCommand(*args[0],**args[1])
         elif ctx.AMP():
-            return self.visit(ctx.dangr_command())
+            return self.visit(ctx.expression())
         elif ctx.DOLLAR():
             return BashCommand(*self.visit(ctx.bash_content()))
         raise ParseError(f"Invalid command {ctx.getText()}")
@@ -236,8 +286,7 @@ class dAngrVisitor_(dAngrVisitor):
             return Literal(parse_binary_string(ctx.BINARY_STRING().getText()))
         elif ctx.BOOL():
             return Literal(ctx.BOOL().getText() == "True")
-        elif ctx.identifier() and not ctx.object_():
-            return VariableRef(ctx.identifier().getText())
+        
         elif ctx.object_():
             o = self.visit(ctx.object_(0))
             if ctx.DOT(): # Property
@@ -258,6 +307,8 @@ class dAngrVisitor_(dAngrVisitor):
                 elif ctx.COMMA(): # Listing
                     lst = [self.visit(o) for o in ctx.object_()]
                     return Listing(lst)
+        elif ctx.identifier():
+            return VariableRef(ctx.identifier().getText())
         raise ParseError("Invalid object")
     
 
@@ -315,21 +366,44 @@ class dAngrVisitor_(dAngrVisitor):
             return True
         return (self._isSTRING(ctx.children[0]) if len(ctx.children) == 1 else False)
 
-    def visitPy_content(self, ctx: dAngrParser.Py_contentContext):
+    def visitPy_basic_content(self, ctx: dAngrParser.Py_basic_contentContext):
         name = ctx.identifier().getText()
         args = []
+        kwargs = {}
         for c in ctx.children[1:]:
-            if isinstance(c, dAngrParser.ReferenceContext):
-                args.append(self.visit(c))
-            elif isinstance(c, dAngrParser.RangeContext):
-                args.append(self.visit(c))
+            if isinstance(c, dAngrParser.Py_contentContext):
+                py = self.visit(c)
+                args.extend(py.cmds)
+                kwargs.update(py.kwargs)
             else:
                 args.append(Literal(c.getText()))
-        return [name]+args
+        return [name]+args, kwargs
+    def visitPy_content(self, ctx: dAngrParser.Py_contentContext):
+
+        args = []
+        kwargs = {}
+        for c in ctx.children:
+            if isinstance(c, dAngrParser.RangeContext):
+                args.append(self.visit(c))
+            elif isinstance(c, dAngrParser.AnythingContext):
+                args.append(self.visit(c))
+            elif isinstance(c, dAngrParser.ReferenceContext):
+                args.append(self.visit(c))
+            elif isinstance(c, dAngrParser.Py_basic_contentContext):
+                a = self.visit(c)
+                args.extend(a[0])
+                kwargs.update(a[1])
+            elif isinstance(c, dAngrParser.Py_contentContext):
+                py:PythonCommand = self.visit(c)
+                args.extend(py.cmds)
+                kwargs.update(py.kwargs)
+            else:
+                args.append(Literal(c.getText()))
+        return PythonCommand(*args)
     def visitReference(self, ctx: dAngrParser.ReferenceContext):
         if ctx.MEM_DB():
             size = int(ctx.NUMBERS().getText()) if ctx.NUMBERS() else 0
-            return Memory(self.visit(ctx.numeric(0)), size)
+            return Memory(self.visit(ctx.numeric()), size)
         elif ctx.VARS_DB():
             return ReferenceObject.createNamedObject(ctx.VARS_DB().getText(), ctx.identifier().getText())
         elif ctx.REG_DB():
@@ -383,6 +457,6 @@ class dAngrVisitor_(dAngrVisitor):
         elif ctx.python_range():
             # name, args, kwargs = self.visit(ctx.python_range().py_content())
             # return PythonCommand(name, *args, **kwargs)
-            return PythonCommand(*self.visit(ctx.python_range().py_content()))
+            return self.visit(ctx.python_range().py_content())
         else:
-            return self.visit(ctx.dangr_range().statement())
+            return self.visit(ctx.dangr_range().expression())

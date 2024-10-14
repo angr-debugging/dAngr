@@ -8,6 +8,7 @@ from angr import SimCC, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
 import angr.storage
+import archinfo
 import claripy
 import claripy.strings
 import cle
@@ -15,15 +16,15 @@ import cle
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.cli.grammar.execution_context import Variable
-from dAngr.utils.utils import DEBUG, AngrValueType, DataType, StreamType, SymBitVector, SymString, remove_ansi_escape_codes
+from dAngr.utils.utils import AngrValueType, DataType, Endness, ObjectStore, StreamType, SymBitVector, SymString, remove_ansi_escape_codes
 
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, get_function_by_addr, hook_simprocedures, load_module_from_file
 from .connection import Connection
 
 from dAngr.exceptions import DebuggerCommandError
-import logging
-
+from dAngr.utils.loggers import get_logger
+log = get_logger(__name__)
 from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
 
 import nest_asyncio
@@ -33,25 +34,14 @@ nest_asyncio.apply()
 
 
 
-l = logging.getLogger(name=__name__)
-#angr logging is way too verbose
-log_things = ["angr", "pyvex", "claripy", "cle"]
-for log in log_things:
-    logger = logging.getLogger(log)
-    logger.disabled = False
-    logger.propagate = True
-    if DEBUG:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.ERROR)
-
-
 class Debugger:
     def __init__(self, conn:Connection) -> None:
         self.conn = conn
+
         self._binary_path:str|None = None
         self._project:angr.project.Project|None = None
         self._simgr:angr.sim_manager.SimulationManager|None = None
+        self._current_state:angr.SimState|None = None
         self._default_state_options = set([angr.options.ZERO_FILL_UNCONSTRAINED_MEMORY,angr.options.ZERO_FILL_UNCONSTRAINED_REGISTERS])
 
         self._pause:bool = False
@@ -85,7 +75,7 @@ class Debugger:
     def simgr(self)->SimulationManager:
         if self._simgr is None:
             self.throw_if_not_initialized()
-            self._simgr,_ = create_entry_state(self.project,self._entry_point,self._default_state_options)
+            self._simgr,_ = create_entry_state(self.project,self._entry_point,self._default_state_options, self._current_state)
         return self._simgr
     
     @property
@@ -105,31 +95,51 @@ class Debugger:
             return self._simgr and self._simgr.deadended
     
 
-    async def zero_fill(self, enable:bool=True):
-        if enable is None or enable:
-            self._default_state_options.add(angr.options.ZERO_FILL_UNCONSTRAINED_MEMORY)
-            self._default_state_options.add(angr.options.ZERO_FILL_UNCONSTRAINED_REGISTERS)
+    async def unconstrained_fill(self, symbolic:bool ):
+        if not symbolic:
+            self._default_state_options = set([angr.options.ZERO_FILL_UNCONSTRAINED_MEMORY,angr.options.ZERO_FILL_UNCONSTRAINED_REGISTERS])            
         else:
-            if angr.options.ZERO_FILL_UNCONSTRAINED_MEMORY in self._default_state_options:
-                self._default_state_options.remove(angr.options.ZERO_FILL_UNCONSTRAINED_MEMORY)
-                self._default_state_options.remove(angr.options.ZERO_FILL_UNCONSTRAINED_REGISTERS)
+            self._default_state_options = set([angr.options.SYMBOL_FILL_UNCONSTRAINED_MEMORY,angr.options.SYMBOL_FILL_UNCONSTRAINED_REGISTERS])            
 
     async def pause(self,value=True):
         async with self._condition:
             self._pause = value
-    
-    # def pause_async(self,value:bool):
-    #     async def _set_pause(value:bool):
-    #         async with self._condition:
-    #             self._pause = value
-    #     loop = asyncio.get_event_loop()
-    #     if loop.is_running():
-    #         # If the event loop is already running, use create_task and run it in the loop
-    #         future = asyncio.ensure_future(_set_pause(value))
-    #         return loop.run_until_complete(future)
-    #     else:
-    #         return asyncio.run(_set_pause(value))
+    @property
+    def current_state(self):
+        self.throw_if_not_initialized()
+        if not self._current_state:
+            if self.simgr.active:
+                self._current_state = self.simgr.one_active          
+            elif self.simgr.deadended:
+                self._current_state = self.simgr.one_deadended
+            else:
+                raise DebuggerCommandError("No active or deadended states.")
+        return self._current_state
+    @current_state.setter
+    def current_state(self, state):
+        self._current_state = state
 
+    def set_current_state(self, stateID:int, stash="active"):
+        if stash not in self.simgr.stashes:
+            raise DebuggerCommandError(f"Stash {stash} not found.")
+        if stateID >= len(self.simgr.stashes[stash]):
+            raise DebuggerCommandError(f"State with ID {stateID} not found in stash {stash}.")
+        self._current_state = self.simgr.stashes[stash][stateID]
+
+    def _set_current_state(self, state):
+        self._current_state = state
+
+    def move_state_to_stash(self, stateID:int, from_stash:str, to_stash:str):
+        if from_stash not in self.simgr.stashes:
+            raise DebuggerCommandError(f"Stash {from_stash} not found.")
+        if to_stash not in self.simgr.stashes:
+            raise DebuggerCommandError(f"Stash {to_stash} not found.")
+        if stateID >= len(self.simgr.stashes[from_stash]):
+            raise DebuggerCommandError(f"State with ID {stateID} not found in stash {from_stash}.")
+        state = self.simgr.stashes[from_stash][stateID]
+        self.simgr.move(from_stash, to_stash, state)
+        return state
+    
     @property  
     def is_paused(self):
         async def _is_paused_async():
@@ -178,6 +188,14 @@ class Debugger:
             return n[1]
         return None
     
+    def set_call_state(self, func_addr:int, arguments):
+        if self._simgr is not None:
+            self.reset_state()
+        # TODO: check add_options
+        self._current_state = self.project.factory.call_state(func_addr,*arguments,
+                    add_options = { angr.options.SYMBOL_FILL_UNCONSTRAINED_MEMORY,
+                                   angr.options.SYMBOL_FILL_UNCONSTRAINED_REGISTERS})
+
     def set_function_prototype(self, return_type:str, name:str, args:List[str]):  
         # Parse argument types
         sim_arg_types = [angr.types.parse_type(arg.strip()) for arg in args]
@@ -246,6 +264,7 @@ class Debugger:
         return path
     
     def init(self, binary_path:str, base_addr:int=0, from_src_path=None, to_src_path=None): #support passing custom angr arguments to project
+        self.reset_state()
         self._binary_path = binary_path
         self.from_src_path = os.path.abspath(os.path.expanduser(os.path.normpath(from_src_path))) if from_src_path else ''
         self.to_src_path = os.path.abspath(os.path.expanduser(os.path.normpath(to_src_path))) if to_src_path else ''
@@ -255,7 +274,7 @@ class Debugger:
             main_opts = {'base_addr': base_addr}
         else:
             main_opts = {}
-        self._project = angr.Project(binary_path, load_options={'auto_load_libs': False, 'load_debug_info': True,'main_opts':main_opts})
+        self._project = angr.Project(binary_path, load_options={'load_debug_info': True, 'auto_load_libs': False, 'main_opts':main_opts}) 
         self.project.kb.dvars.load_from_dwarf()
     
     def get_binary_info(self):
@@ -304,10 +323,13 @@ class Debugger:
     def add_symbol(self, name:str, sym:SymBitVector|SymString):
         self._symbols[name] = sym
 
-    def removeSymbol(self, name:str):
-        self._symbols.pop(name)
+    def remove_symbol(self, name:str):
+        if name in self._symbols:
+            self._symbols.pop(name)
+        else:
+            raise DebuggerCommandError(f"Symbol {name} not found.")
 
-    def get_symbol_value(self, name:str):
+    def get_symbol(self, name:str):
         if name in self._symbols:
             return self._symbols[name]
         else : raise DebuggerCommandError(f"Symbol {name} not found.")
@@ -315,9 +337,8 @@ class Debugger:
     def set_symbol(self, name, value):
         self._symbols[name] = value
 
-    def add_constraint(self, cs, stateID=0):
-        state = self.get_current_state(stateID)
-        state.add_constraints(cs)
+    def add_constraint(self, cs):
+        self.current_state.add_constraints(cs)
 
     def add_to_stack(self, value:int|bytes|str|SymBitVector|SymString|Variable):
         if isinstance(value, int):
@@ -326,28 +347,35 @@ class Debugger:
             value = value.encode('utf-8')
         elif isinstance(value, Variable):
             value = value.value
-        state = self.get_current_state()
-        state.stack_push(value)
+        self.current_state.stack_push(value)
         
-    def get_stack(self, length, offset = 0, stateID=0):
-        state = self.get_current_state(stateID)
-        return state.stack_read(offset,length)
+    def get_stack(self, length, offset = 0):
+        return self.current_state.stack_read(offset,length)
     
     def reset_state(self):
         self._simgr = None # state is reset upone requesting simgr
-        self._symbols = {}
+        self._current_state = None
         self.stop_reason = StopReason.NONE
-        logging.info("State reset.")
+        self._pause = False
+        self._function_prototypes = {}
+        self._current_function = ''
+        self._cfg = None
+        self.stop_reason = StopReason.NONE
+        self._entry_point = None
+        self._symbols = {}
+
+        log.info("State reset.")
     
     def stop(self):
         self._project = None
         self._simgr = None
+        self._current_state = None
 
-    def select_active_path(self, index):
-        to_move = self.simgr.stashes["active"][index]
-        self.simgr.move(from_stash="active", to_stash="deferred")
-        self.simgr.move("deferred", to_stash="active", filter_func= lambda x: x==to_move)
-        return (to_move)  
+    # def select_active_path(self, index):
+    #     to_move = self.simgr.stashes["active"][index]
+    #     self.simgr.move(from_stash="active", to_stash="deferred")
+    #     self.simgr.move("deferred", to_stash="active", filter_func= lambda x: x==to_move)
+    #     return (to_move)  
 
 
     # @param handler: StepHandler
@@ -355,9 +383,25 @@ class Debugger:
     # @param exclude: callable returns True to exclude state from active stash
     
     async def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False):
+
+        # self.simgr.explore(find=0x400071c)
+        # self.stop_reason = StopReason.BREAKPOINT
+        # self._current_state = self.simgr.found[0]
+        # await handler.handle_step(self.stop_reason, self._current_state)
+        # return
         self.throw_if_not_initialized()
         await self.pause(False)
         self.stop_reason:StopReason = StopReason.NONE
+        #make sure current state is an active state and move it to the front if it is not
+        if self.simgr.active:
+            if self._current_state not in self.simgr.active:
+                self._current_state = self.simgr.one_active
+            else:
+                self.simgr.active.remove(self._current_state)
+                self.simgr.active.insert(0,self._current_state)
+        else:
+            raise DebuggerCommandError("No active states.")
+        
         def selector_func(state):
             #return true if state is the first in the active stash
             return state == self.simgr.one_active  # type: ignore
@@ -393,24 +437,15 @@ class Debugger:
             return self.stop_reason != StopReason.NONE
         
         self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func,step_func=step_func)
-        state = self.simgr.one_active if self.simgr.active else None
-        await handler.handle_step(self.stop_reason, state)
+        self._current_state = self.simgr.one_active if self.simgr.active else None
+        await handler.handle_step(self.stop_reason, self._current_state)
 
-            
-    # def get_state_id(self, a):
-    #     self.throw_if_not_active()
-    #     return next((ix for ix,state in enumerate(self.simgr.active) if state.addr == a), None)
-    
-    def get_current_addr(self,stateID=0):
-        state = self.get_current_state(stateID)
-        return state.addr if state else None
+  
+    def get_current_addr(self):
+        return self.current_state.addr
 
 
-    def get_callstack(self,id:int=0):
-        paths = []
-        if id >= len(self.simgr.active):
-            raise DebuggerCommandError("Failed to find state")
-        state:angr.SimState = self.simgr.active[id]
+    def get_callstack(self,state):
         paths = [] 
         prev = state.addr
         i = 0
@@ -425,7 +460,7 @@ class Debugger:
         return paths
 
         
-    def get_return_value(self, stateID=0)->int|None|claripy.ast.Base:
+    def get_return_value(self)->int|None|claripy.ast.Base:
         prototype = self.get_stored_function(self._current_function)["prototype"]
         cc = self.get_stored_function(self._current_function)["cc"]
         if not cc or prototype.returnty is None:
@@ -433,14 +468,12 @@ class Debugger:
         loc = cc.return_val(prototype.returnty)
         if loc is None:
             return None
-        if len(self.simgr.active) <= stateID:
-            state = self.simgr.deadended[stateID]
-            val = loc.get_value(state, stack_base=state.regs.sp - cc.STACKARG_SP_DIFF)
-            val = cast(claripy.ast.Base , state.solver.simplify(val))
-            if val.concrete:
-                val = val.concrete_value
-            return val
-        return None
+        state = self.current_state
+        val = loc.get_value(state, stack_base=state.regs.sp - cc.STACKARG_SP_DIFF)
+        val = cast(claripy.ast.Base , state.solver.simplify(val))
+        if val.concrete:
+            val = val.concrete_value
+        return val
  
     def get_bb_end_address(self, state):
         bb = state.block()
@@ -458,8 +491,8 @@ class Debugger:
     def get_bb_count(self):
         return len(self.cfg.graph.nodes())
         
-    def get_current_basic_block(self, stateID = 0):
-        state = self.get_current_state(stateID)
+    def get_current_basic_block(self):
+        state = self.current_state
         try:
             block = state.block()
             return BasicBlock(block.addr,block.size,block.instructions,block.capstone) # type: ignore
@@ -467,18 +500,21 @@ class Debugger:
             raise DebuggerCommandError(f"Failed to retrieve basic block: {e}")
         
     def get_stdstream(self, stream:StreamType):
-        state = self.get_current_state()
-        return state.posix.dumps(stream.value)
+        return self.current_state.posix.dumps(stream.value)
      
     def create_symbolic_file(self, name:str, content:str|claripy.ast.BV|claripy.ast.String|None=None, size:int|None=None):
         file = angr.storage.file.SimFile(name, content=content, size=size)
-        self.get_current_state().fs.insert(name, file)
+        self.current_state.fs.insert(name, file)
     
+    def get_stashes(self):
+        return list(self.simgr.stashes.keys())
             
-    def get_paths(self):
-        return self.simgr.active + self.simgr.stashes["deferred"]
+    def list_paths(self, stash:str = "active"):
+        if stash not in self.simgr.stashes:
+            raise DebuggerCommandError(f"Stash {stash} not found.")
+        return self.simgr.stashes[stash]
     
-    def set_memory(self,address:int,value:AngrValueType, state = None):
+    def set_memory(self,address:int|SymBitVector,value:AngrValueType,size:int|None = None, endness:Endness = Endness.DEFAULT):
         if isinstance(value,claripy.String):
             raise DebuggerCommandError("Cannot set memory to string.")
         if isinstance(value,str):
@@ -486,29 +522,33 @@ class Debugger:
             val = value.encode('utf-8')
         else:
             val = value
-
+        switch = {
+            Endness.LE: archinfo.Endness.LE,
+            Endness.BE: archinfo.Endness.BE,
+            Endness.BINARY: self.project.arch.memory_endness,
+            Endness.DEFAULT: archinfo.Endness.BE
+        }
+        en = switch.get(endness)
         # Store the byte value in memory
-        if not state:
-            state = self.get_current_state()
-        state.memory.store(address, val)
+        self.current_state.memory.store(address, val,size, endness=en,)
     
-    def get_memory(self, address:int, size = 0, stateID=0):
-        state = self.get_current_state(stateID)
+    def get_memory(self, address:int|SymBitVector, size = 0):
+        state = self.current_state
         if size == 0:
             size = self.project.arch.bits // 8
         byte_value = state.memory.load(address, size)
         return byte_value
     
     def get_stream(self, stream:StreamType) -> str:
-        state = self.get_current_state()
+        state = self.current_state
         mapped = stream.name.lower()
         std:StdTracker = state.get_plugin(f'{mapped}_tracker')
         return std.get_prev_string()
 
-    def cast_to(self, value:SymBitVector|SymString, cast_to:DataType, stateID=0):
+    def cast_to(self, value:SymBitVector|SymString, cast_to:DataType):
         # if not value.concrete:
         #     raise DebuggerCommandError("Value is not concrete.")
-        state = self.get_current_state(stateID=stateID)
+        state = self.current_state
         if cast_to == DataType.bytes:
             if isinstance(value, claripy.String):
                 bytes_values = []
@@ -522,7 +562,7 @@ class Debugger:
             else:
                 return state.solver.eval(value, cast_to=bytes)
         if cast_to == DataType.hex:
-            return hex(self.cast_to(value, DataType.int, stateID=stateID)) # type: ignore
+            return hex(self.cast_to(value, DataType.int)) # type: ignore
         if cast_to == DataType.str:
             if isinstance(value, claripy.String):
                 bytes_values = []
@@ -577,9 +617,11 @@ class Debugger:
         hooks = hook_simprocedures(self.project,mod)
         return hooks
     
-    def get_constraints(self, stateID=0):
-        state = self.get_current_state(stateID)
-        return state.solver.constraints
+    def add_hook(self, address:int, function:Callable, skip_length:int = 0):
+        self.project.hook(address, function, length=skip_length, replace=True)
+
+    def get_constraints(self):
+        return self.current_state.solver.constraints
     
     def get_binary_symbols(self):
         symbols = []
@@ -653,37 +695,24 @@ class Debugger:
             address += 1
         str_value = ''.join([chr(byte) for byte in string_array])
         return str_value
-    def get_current_state(self, stateID=0):
-        #hack to get the state
-        if len(self.simgr.active) > stateID:
-            state = self.simgr.active[stateID]
-        else:
-            if len(self.simgr.deadended) <= stateID:
-                raise DebuggerCommandError("Failed to find state")
-            state = self.simgr.deadended[stateID]
-        return state
-    def get_string_memory(self, address, stateID=0):
-        #hack to get the state
-        state = self.get_current_state(stateID)
-        return self._get_string_memory_from_state(address, state)
+
+    def get_string_memory(self, address):
+        return self._get_string_memory_from_state(address, self.current_state)
         
     
     def list_registers(self):
         registers = self.project.arch.registers
         return registers
     
-    def get_register_value(self, register, stateID=0):
+    def get_register_value(self, register):
         size = self.get_register(register)[1]
-        state = self.get_current_state(stateID)
-        value = state.registers.load(register, size)
+        value = self.current_state.registers.load(register, size)
         return value
     
-    def get_register(self, register, stateID=0):
+    def get_register(self, register):
         if register not in self.project.arch.registers:
             raise DebuggerCommandError(f"Register '{register}' not found.")
-        state = self.get_current_state(stateID=stateID)
-        return state.registers.load(register)
+        return self.current_state.registers.load(register)
 
-    def set_register(self, register, value:int|claripy.ast.BV, stateID=0):
-        state = self.get_current_state(stateID)
-        state.registers.store(register, value)
+    def set_register(self, register, value:int|claripy.ast.BV):
+        self.current_state.registers.store(register, value)

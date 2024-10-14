@@ -10,21 +10,23 @@ else:
 
 def serializedATN():
     return [
-        4,1,57,53,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,57,57,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,1,0,1,0,1,1,1,1,1,1,3,1,24,8,1,1,2,1,2,1,2,1,2,
         1,2,1,3,1,3,1,3,1,3,1,3,1,4,1,4,1,4,1,4,1,4,1,5,1,5,1,6,1,6,1,7,
-        1,7,1,7,1,7,3,7,49,8,7,1,8,1,8,1,8,0,0,9,0,2,4,6,8,10,12,14,16,0,
-        1,2,0,17,54,57,57,48,0,18,1,0,0,0,2,23,1,0,0,0,4,25,1,0,0,0,6,30,
-        1,0,0,0,8,35,1,0,0,0,10,40,1,0,0,0,12,42,1,0,0,0,14,48,1,0,0,0,16,
-        50,1,0,0,0,18,19,3,2,1,0,19,1,1,0,0,0,20,24,3,4,2,0,21,24,3,6,3,
-        0,22,24,3,8,4,0,23,20,1,0,0,0,23,21,1,0,0,0,23,22,1,0,0,0,24,3,1,
-        0,0,0,25,26,5,21,0,0,26,27,5,17,0,0,27,28,3,10,5,0,28,29,5,18,0,
-        0,29,5,1,0,0,0,30,31,5,20,0,0,31,32,5,17,0,0,32,33,3,0,0,0,33,34,
-        5,18,0,0,34,7,1,0,0,0,35,36,5,19,0,0,36,37,5,17,0,0,37,38,3,12,6,
-        0,38,39,5,18,0,0,39,9,1,0,0,0,40,41,3,14,7,0,41,11,1,0,0,0,42,43,
-        3,14,7,0,43,13,1,0,0,0,44,49,5,4,0,0,45,49,5,2,0,0,46,49,3,16,8,
-        0,47,49,5,10,0,0,48,44,1,0,0,0,48,45,1,0,0,0,48,46,1,0,0,0,48,47,
-        1,0,0,0,49,15,1,0,0,0,50,51,7,0,0,0,51,17,1,0,0,0,2,23,48
+        1,7,1,7,1,7,1,7,1,7,1,7,1,7,3,7,53,8,7,1,8,1,8,1,8,0,0,9,0,2,4,6,
+        8,10,12,14,16,0,1,2,0,19,54,57,57,53,0,18,1,0,0,0,2,23,1,0,0,0,4,
+        25,1,0,0,0,6,30,1,0,0,0,8,35,1,0,0,0,10,40,1,0,0,0,12,42,1,0,0,0,
+        14,52,1,0,0,0,16,54,1,0,0,0,18,19,3,2,1,0,19,1,1,0,0,0,20,24,3,4,
+        2,0,21,24,3,6,3,0,22,24,3,8,4,0,23,20,1,0,0,0,23,21,1,0,0,0,23,22,
+        1,0,0,0,24,3,1,0,0,0,25,26,5,21,0,0,26,27,5,17,0,0,27,28,3,10,5,
+        0,28,29,5,18,0,0,29,5,1,0,0,0,30,31,5,20,0,0,31,32,5,17,0,0,32,33,
+        3,0,0,0,33,34,5,18,0,0,34,7,1,0,0,0,35,36,5,19,0,0,36,37,5,17,0,
+        0,37,38,3,12,6,0,38,39,5,18,0,0,39,9,1,0,0,0,40,41,3,14,7,0,41,11,
+        1,0,0,0,42,43,3,14,7,0,43,13,1,0,0,0,44,53,5,4,0,0,45,53,5,2,0,0,
+        46,53,3,16,8,0,47,53,5,10,0,0,48,49,5,17,0,0,49,50,3,14,7,0,50,51,
+        5,18,0,0,51,53,1,0,0,0,52,44,1,0,0,0,52,45,1,0,0,0,52,46,1,0,0,0,
+        52,47,1,0,0,0,52,48,1,0,0,0,53,15,1,0,0,0,54,55,7,0,0,0,55,17,1,
+        0,0,0,2,23,52
     ]
 
 class rangesParser ( Parser ):
@@ -58,7 +60,7 @@ class rangesParser ( Parser ):
                       "GT", "LE", "GE", "AND", "OR", "QMARK", "TILDE", "TICK", 
                       "UNDERSCORE", "DASH", "SUB", "NEWLINE", "WS" ]
 
-    RULE_statement = 0
+    RULE_expression = 0
     RULE_range = 1
     RULE_bash_range = 2
     RULE_dangr_range = 3
@@ -68,7 +70,7 @@ class rangesParser ( Parser ):
     RULE_anything = 7
     RULE_symbol = 8
 
-    ruleNames =  [ "statement", "range", "bash_range", "dangr_range", "python_range", 
+    ruleNames =  [ "expression", "range", "bash_range", "dangr_range", "python_range", 
                    "bash_content", "py_content", "anything", "symbol" ]
 
     EOF = Token.EOF
@@ -139,7 +141,7 @@ class rangesParser ( Parser ):
 
 
 
-    class StatementContext(ParserRuleContext):
+    class ExpressionContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -151,29 +153,29 @@ class rangesParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return rangesParser.RULE_statement
+            return rangesParser.RULE_expression
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStatement" ):
-                listener.enterStatement(self)
+            if hasattr( listener, "enterExpression" ):
+                listener.enterExpression(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStatement" ):
-                listener.exitStatement(self)
+            if hasattr( listener, "exitExpression" ):
+                listener.exitExpression(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStatement" ):
-                return visitor.visitStatement(self)
+            if hasattr( visitor, "visitExpression" ):
+                return visitor.visitExpression(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def statement(self):
+    def expression(self):
 
-        localctx = rangesParser.StatementContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 0, self.RULE_statement)
+        localctx = rangesParser.ExpressionContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 0, self.RULE_expression)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 18
@@ -337,8 +339,8 @@ class rangesParser ( Parser ):
         def LPAREN(self):
             return self.getToken(rangesParser.LPAREN, 0)
 
-        def statement(self):
-            return self.getTypedRuleContext(rangesParser.StatementContext,0)
+        def expression(self):
+            return self.getTypedRuleContext(rangesParser.ExpressionContext,0)
 
 
         def RPAREN(self):
@@ -375,7 +377,7 @@ class rangesParser ( Parser ):
             self.state = 31
             self.match(rangesParser.LPAREN)
             self.state = 32
-            self.statement()
+            self.expression()
             self.state = 33
             self.match(rangesParser.RPAREN)
         except RecognitionException as re:
@@ -566,6 +568,16 @@ class rangesParser ( Parser ):
         def STRING(self):
             return self.getToken(rangesParser.STRING, 0)
 
+        def LPAREN(self):
+            return self.getToken(rangesParser.LPAREN, 0)
+
+        def anything(self):
+            return self.getTypedRuleContext(rangesParser.AnythingContext,0)
+
+
+        def RPAREN(self):
+            return self.getToken(rangesParser.RPAREN, 0)
+
         def getRuleIndex(self):
             return rangesParser.RULE_anything
 
@@ -591,7 +603,7 @@ class rangesParser ( Parser ):
         localctx = rangesParser.AnythingContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_anything)
         try:
-            self.state = 48
+            self.state = 52
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [4]:
@@ -604,7 +616,7 @@ class rangesParser ( Parser ):
                 self.state = 45
                 self.match(rangesParser.NUMBERS)
                 pass
-            elif token in [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 57]:
+            elif token in [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 57]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 46
                 self.symbol()
@@ -613,6 +625,15 @@ class rangesParser ( Parser ):
                 self.enterOuterAlt(localctx, 4)
                 self.state = 47
                 self.match(rangesParser.STRING)
+                pass
+            elif token in [17]:
+                self.enterOuterAlt(localctx, 5)
+                self.state = 48
+                self.match(rangesParser.LPAREN)
+                self.state = 49
+                self.anything()
+                self.state = 50
+                self.match(rangesParser.RPAREN)
                 pass
             else:
                 raise NoViableAltException(self)
@@ -635,12 +656,6 @@ class rangesParser ( Parser ):
 
         def WS(self):
             return self.getToken(rangesParser.WS, 0)
-
-        def LPAREN(self):
-            return self.getToken(rangesParser.LPAREN, 0)
-
-        def RPAREN(self):
-            return self.getToken(rangesParser.RPAREN, 0)
 
         def BANG(self):
             return self.getToken(rangesParser.BANG, 0)
@@ -777,9 +792,9 @@ class rangesParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 50
+            self.state = 54
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 180143985094688768) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 180143985094295552) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)

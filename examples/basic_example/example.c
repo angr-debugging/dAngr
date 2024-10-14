@@ -14,6 +14,7 @@ int processMessage(const char* in, int cnt, char* out){
    return cnt*in_len;
 }
 
+
 int main() {
    char out[2 * 3 + 1]; // Adjusted size to accommodate the result and null terminator
    int i = processMessage("abc", 2, out); // Adjusted cnt parameter to 2

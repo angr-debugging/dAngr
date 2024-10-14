@@ -60,6 +60,9 @@ class FunctionDefinition(Definition):
         self._name = name
         self._args:List[ArgumentSpec] = args
     @property
+    def name(self):
+        return self._name
+    @property
     def args(self):
         return self._args
     @property
@@ -85,19 +88,26 @@ class Body:
     async def __call__(self, context):
         raise NotImplementedError
     
+class FunctionContext(ExecutionContext):
+    def __init__(self, function:FunctionDefinition, parent=None):
+        super().__init__(parent)
+        self.function = function
+    
 class CustomFunctionDefinition(FunctionDefinition):
     def __init__(self, name, args:List[ArgumentSpec], body):
         super().__init__(name, args)
         self.body:Body = body
 
+
     async def __call__(self, context, *arg_values, **named_args):
         # add args
-        context = ExecutionContext()
+        context = FunctionContext(self, context)
         # match arg_values with required and optional args
         for i, arg in enumerate(arg_values):
             context[self.args[i]]= arg_values[i]
         for k,v in named_args.items():
             context[k] = v
+            
         result = await self.body(context)
         # remove args
         for arg in self.args:

@@ -10,7 +10,7 @@ from dAngr.cli.grammar.statements import Assignment
 from dAngr.exceptions import ParseError
 
 
-class TestDebugInfoCommands:
+class TestLexer:
 
     def setup_method(self):
         pass
@@ -55,7 +55,8 @@ if a != "Hello from Bash":
     !print("Printing from Python: ", a)
     x = 0
 """,
-"""[1,2,3,4,5]asd"""
+"""[1,2,3,4,5]asd""",
+'!("{:08x} {:08x} {:08x}".format(int(&sym.password0,16), int(&sym.password1,16), int(&sym.password2,16)))'
     ]
 
     lex_compound_tests = [
@@ -122,6 +123,10 @@ if a != "Hello from Bash":
 """:[IfThenElse(Comparison(VariableRef('a'), '__ne__', Literal('Hello from Bash')), Body([PythonCommand('print("Printing from Python: ", ', VariableRef("a"),')'), Assignment(VariableRef("x"),Literal(0))]))],
 """[1,2,3,4,5]""":[Listing([Literal(1), Literal(2), Literal(3), Literal(4), Literal(5)])],
 '!print("Printing from Python: ", &vars.a)': [PythonCommand('print("Printing from Python: ", ', VariableRef("a"),')')],
+"static i = 0": [Assignment(VariableRef('i',True), Literal(0))],
+'!("{:08x} {:08x} {:08x}".format(int(&vars.password0,16), int(&vars.password1,16), int(&vars.password2,16)))':[PythonCommand('"{:08x} {:08x} {:08x}"','.format(int(', VariableRef('password0'),',16), int(', VariableRef('password1'),',16), int(', VariableRef('password2'),',16))')],
+'a2 = (get_symbolic_value &vars.password2 "int")': [Assignment(VariableRef('a2'), DangrCommand('get_symbolic_value', VariableRef('password2'), Literal('int')))],
+'a2 = &(get_symbolic_value password2 "int")': [Assignment(VariableRef('a2'), DangrCommand('get_symbolic_value', VariableRef('password2'), Literal('int')))]
     }
 
     def test_parse_false(self):
@@ -162,14 +167,8 @@ my_function max x
 !print(x)
 !print(6*5)
 """
-    # while x < max:
-    #     !print("while: ",x)
-    #     x = x + 1
-
-    # !print("Printing from Python: ", a)
-    # $echo "Hello from Bash"
-
-        parse_input(input)
+        r = parse_input(input)
+        assert r is not None
 
 
                 

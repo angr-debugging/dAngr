@@ -4,6 +4,7 @@ from dAngr.cli.grammar.expressions import ReferenceObject
 from dAngr.cli.models import Register
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from dAngr.utils import  DataType, SymBitVector, SymString
+from dAngr.utils.utils import Endness
 from .base import BaseCommand
 
 
@@ -12,18 +13,18 @@ class MemoryCommands(BaseCommand):
         super().__init__(debugger_core)
 
 
-    async def assign(self, target:Variable, value:int|bytes|str|SymBitVector|SymString|Variable):
+    async def assign(self, target:ReferenceObject, value:int|bytes|str|SymBitVector|SymString|Variable):
         """
         Assign a value to some target symbol
 
         Args:
-            target (Variable): Name of the symbol. Prefix with $reg for register, $mem for memory, $sym for symbol.
+            target (ReferenceObject): Name of the symbol. Prefix with &reg for register, &mem for memory, &sym for symbol.
             value (int|bytes|str|SymBitVector|SymString|Variable): Value to set. Either a value or a prefixed register, memory or symbol.
         
         Short name: as
         
         """
-        target.value = self.to_value(value)
+        target.set_value(self.debugger.context,self.to_value(value))
         await self.send_info(f"Value {value} assigned to {target}.")
 
 
@@ -65,7 +66,7 @@ class MemoryCommands(BaseCommand):
         """
         return self.debugger.get_string_memory(address)
         
-    async def get_memory(self, address:int, size:int, type:DataType = DataType.bytes):
+    async def get_memory(self, address:int|SymBitVector, size:int, type:DataType = DataType.bytes):
         """
         Get the memory value at a specific address.
         Supported Types: int, bytes, bool, double, hex.
@@ -86,7 +87,7 @@ class MemoryCommands(BaseCommand):
         else:
             raise DebuggerCommandError(f"Invalid data type: {type}.")
     
-    async def set_memory(self, address:int, value:str|bytes|int|SymBitVector|SymString|Variable):
+    async def set_memory(self, address:int|SymBitVector, value:str|bytes|int|SymBitVector|SymString|Variable, size:int|None=None, endness:Endness=Endness.DEFAULT):
         """
         Set a memory value at a specific address.
         Supported Types: int, str, bytes.
@@ -94,13 +95,34 @@ class MemoryCommands(BaseCommand):
         Args:
             address (int): Address in the memory
             value (int|bytes|str|SymBitVector|SymString|Variable): Value to set at the address.
+            size (int): Size of the memory, default is None.
+            endness (Endness): Endianness of the value.
 
         Short name: ms
         """
         value = self.to_value(value)
-        self.debugger.set_memory(address, value)        
-        await self.send_info(f"Memory at {hex(address)}: {value}.")
+        self.debugger.set_memory(address, value,size=size, endness=endness)        
+        if isinstance(address, SymBitVector):
+            a = self.debugger.cast_to(address, DataType.hex)
+        else:
+            a = hex(address)
+        await self.send_info(f"Memory at {a}: {value}.")
     
+    async def add_static_pointer(self, name:str, value:int, size_bytes:int = 4):
+        """
+        Create a static pointer variable.
+
+        Args:
+            name (str): Name of the pointer
+            value (int): pointer value.
+            size_bytes (int): size of the variable in bytes, default 4.
+        
+        Short name: asp
+        
+        """
+        val = claripy.BVV(value, size_bytes*8)
+        self.debugger.context.add_variable(name, val)
+        await self.send_info(f"Pointer {name}: {value} added to variables.")
     
     async def set_register(self, name:str, value:int|SymBitVector|Variable):
         """
@@ -163,15 +185,15 @@ class MemoryCommands(BaseCommand):
         
         return  f"{"\n".join([str(r) for r in regs])}"
 
-    async def zero_fill(self, enable:bool=True):
+    async def unconstrained_fill(self, symbolic:bool=False):
         """
-        Fill the memory and registers with zero.
+        Fill the memory and registers with symbolic values.
 
         Args:
-            enable (bool): Enable or disable zero fill.
+            symbolic (bool): fill with symbolic values, else with zeros. Default is zeros.
         
-        Short name: zf
+        Short name: uf
         
         """
-        await self.debugger.zero_fill(enable)
-        await self.send_info( f"Zero fill {'enabled' if enable else 'disabled'}.")
+        await self.debugger.unconstrained_fill(symbolic)
+        await self.send_info( f"Fill {'with symbols' if symbolic else 'with zeros'}.")

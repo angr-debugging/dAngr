@@ -1,4 +1,5 @@
 import asyncio
+import html
 import os
 import re
 
@@ -18,16 +19,12 @@ from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS
 from dAngr.cli.script_processor import ScriptProcessor
 
 # add logger
-import logging
-
-from dAngr.utils.utils import DEBUG
-logger = logging.getLogger("dAngr")
-if DEBUG:
-    logger.setLevel(logging.DEBUG)
-else:
-    logger.setLevel(logging.ERROR)
 
 
+from dAngr.utils.loggers import get_logger
+logger = get_logger(__name__)
+
+DEBUG_COMMANDS = True
 class Server:
     def __init__(self, debug_file_path = None, script_path=None):
         logger.info("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
@@ -69,10 +66,10 @@ class Server:
                     #read script line by line and execute commands
                     with patch_stdout() as po:
                         if first:
-                            prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {line.strip()} <gray>(hit enter to proceed, Ctrl-c to end script)</gray>')
+                            prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {html.escape(line).strip()} <gray>(hit enter to proceed, Ctrl-c to end script)</gray>')
                             first = False
                         else:
-                            prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {line.strip()}')
+                            prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {html.escape(line.strip())}')
                         try:
                             inp = await session.prompt_async(prmpt2, completer=self.completer)
                             if not line.strip().startswith("#"):
@@ -85,14 +82,14 @@ class Server:
                         except EOFError:
                             return # Ctrl-D to exit
                         except Exception as e:
-                            if DEBUG:
+                            if DEBUG_COMMANDS:
                                 raise e
                             else:
                                 await conn.send_error(f"An unexpected error occurred: {e}")
                     if self.stop:
                         break
             except Exception as e:
-                if DEBUG:
+                if DEBUG_COMMANDS:
                     raise e
                 else:
                     await conn.send_error(f"Error during script handling of {self.script_path}: {str(e)}")
@@ -124,7 +121,7 @@ class Server:
             except EOFError:
                 return # Ctrl-D to exit
             except Exception as e:
-                if DEBUG:
+                if DEBUG_COMMANDS:
                     raise e
                 else:
                     await conn.send_error(f"An unexpected error occurred: {e}")

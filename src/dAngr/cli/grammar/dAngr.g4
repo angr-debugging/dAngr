@@ -31,30 +31,37 @@ script : ((QMARK|HELP) (WS identifier)? NEWLINE|
             (NEWLINE|statement| function_def)* ) EOF;
 
 statement:  control_flow |
-            dangr_command NEWLINE| 
+            // dangr_command NEWLINE| 
             assignment NEWLINE | 
             expression NEWLINE | 
+            static_var NEWLINE |
             ext_command NEWLINE ;
 
 expression
-    : object
-    | range
-    | expression_part
+    :     identifier (WS (identifier ASSIGN)?expression_part)* // dangr command
+    |     constraint
+    |     expression_part;
+
+constraint :
+           CIF WS? condition WS? CTHEN WS? expression_part WS? CELSE WS? expression_part;
+
+
+expression_part: LPAREN WS? expression WS? RPAREN
+    | range // python, bash, dangr
+    | reference
+    | object (WS? operation WS? expression)? 
     ;
 
-expression_part
-    : object (WS? operation WS? expression_part)?
-    | range
-    ;
 
 
-assignment : object WS? ASSIGN WS? expression ;
-dangr_command : identifier (WS (identifier ASSIGN)?expression)* | add_constraint;
-add_constraint : 'add_constraints' WS object WS? operation WS? expression ;
+assignment : (static_var| object) WS? ASSIGN WS? expression ;
+static_var : STATIC WS identifier ;
+// dangr_command : identifier (WS (identifier ASSIGN)?expression_part)* | add_constraint;
+// add_constraint : 'add_constraints' WS object WS? operation WS? expression ;
 
 ext_command
-    : BANG py_content // python
-    | AMP dangr_command // dAngr
+    : BANG py_basic_content // python
+    | AMP expression // dAngr
     | DOLLAR bash_content // bash
     ;
 
@@ -76,11 +83,13 @@ iterable : object | 'range' LPAREN WS? numeric WS? (COMMA WS?numeric WS?)?  RPAR
 parameters : identifier (WS? COMMA WS? identifier)* ;
 
 condition : expression ;
-operation : ADD | SUB | TIMES | DIV | PERC | POW | EQ | NEQ | GT | LT | LE | GE | AND | OR ;
+operation : ADD | DASH | TIMES | DIV | PERC | POW | EQ | NEQ | GT | LT | LE | GE | AND | OR ;
 
 
 
-py_content: identifier WS? LPAREN WS? (range|anything|reference)* RPAREN  ;
+py_basic_content: identifier WS? LPAREN WS? (py_content)* RPAREN  ;
+py_content: (reference |range | anything | LPAREN py_content RPAREN)+;
+
 reference: 
         (VARS_DB|REG_DB|SYM_DB) DOT identifier | // ReferenceObject
         MEM_DB BRA WS? numeric (WS? ARROW WS? NUMBERS)? KET // MemoryObject with size and length
@@ -93,11 +102,11 @@ bash_content: identifier (range|anything |reference)*;
 
 
 index : identifier | numeric;
-identifier : (LETTERS|UNDERSCORE)(LETTERS|NUMBERS|UNDERSCORE)*;
+identifier : (LETTERS|UNDERSCORE|special_words UNDERSCORE)(LETTERS|NUMBERS|UNDERSCORE|special_words)*;
 numeric : NUMBERS | HEX_NUMBERS;
 
 object : identifier | 
-    NUMBERS |
+    (ADD|SUB)? NUMBERS |
     HEX_NUMBERS | 
     BOOL |
     (VARS_DB|REG_DB|SYM_DB) DOT identifier | // ReferenceObject
@@ -112,6 +121,13 @@ object : identifier |
     BINARY_STRING
     ; 
 
+special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | NEWLINE;
+
+STATIC : 'static';
+
+CIF : 'IIF';
+CTHEN: 'THEN';
+CELSE: 'ELSE';
 
 DEF : 'def';
 IF : 'if';

@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-	"name": "Python 3",
+	"name": "dAngr",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	//"image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye"
 	"dockerFile": "Dockerfile.dev",
@@ -10,17 +10,19 @@
 			"extensions": [
 				"ms-azuretools.vscode-docker",
 				"ms-python.python",
-				"littlefoxteam.vscode-python-test-adapter",
 				"hbenl.vscode-test-explorer",
 				"ms-python.vscode-pylance",
 				"ms-python.debugpy",
-				"mike-lischke.vscode-antlr4"
+				"mike-lischke.vscode-antlr4",
+				"ms-vscode.cpptools-extension-pack"
 			]
 		}
 	},
 	"build": {
 		"context": "..",
-	}
+	},
+	
+
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},

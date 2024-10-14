@@ -8,10 +8,13 @@ from dAngr.cli.grammar.error_listener import ErrorListener
 from dAngr.cli.grammar.visitor import dAngrVisitor_
 from dAngr.cli.grammar.script import Script
 from dAngr.exceptions import ParseError
-from dAngr.utils.utils import DEBUG
+
+from dAngr.utils.loggers import AsyncLogger
+
+log = AsyncLogger(__file__)
 
 
-def printTokens(stream:CommonTokenStream, Parser:type[Any], lexer:Any):
+def logTokens(stream:CommonTokenStream, Parser:type[Any], lexer:Any):
     stream.fill()
     result:List[str] = []
     line = -1
@@ -47,8 +50,7 @@ def printTokens(stream:CommonTokenStream, Parser:type[Any], lexer:Any):
     #     else:
     #         token_type = lexer.ruleNames[token.type-1]
     #     result.append(f"Token: {token.text}, Type: {token_type}")
-    if DEBUG:
-        print("\n".join(result))
+    log.debug(lambda:"\n".join(result))
     return result
 
 def lex_input(input, Lexer:type[Any]=dAngrLexer, Parser:type[Any]=dAngrParser):
@@ -59,28 +61,28 @@ def lex_input(input, Lexer:type[Any]=dAngrLexer, Parser:type[Any]=dAngrParser):
     lexer.addErrorListener(error_listener)
     if error_listener._errors:
         raise ParseError("\n".join([e for e in error_listener.errors]))
-    return printTokens(stream, Parser, lexer)
+    return logTokens(stream, Parser, lexer)
 
 def parse_input(input:str, Lexer:type[Any]=dAngrLexer, Parser:type[Any] = dAngrParser, Visitor:type[Any]|None = dAngrVisitor_)-> Script:
     input_stream = InputStream(input)
     lexer = Lexer(input_stream)
     stream = CommonTokenStream(lexer)
-    if DEBUG:
-        printTokens(stream, Parser, lexer)
+    logTokens(stream, Parser, lexer)
     parser = Parser(stream)
     error_listener = ErrorListener()
     parser.removeErrorListeners()  # Remove default console error listener
     parser.addErrorListener(error_listener)
     tree = parser.script()
     if not tree:
+        log.error(lambda:"Could not parse input: %s", input)
         raise ParseError("No tree generated")
-    if DEBUG:
-        print(tree.toStringTree(recog=parser))
-    if error_listener._errors:
-        raise ParseError("\n".join([e for e in error_listener.errors]))
 
+    log.debug(lambda:tree.toStringTree(recog=parser))
+    if error_listener._errors:
+        log.error(lambda: "Error parsing '%s': %s", input, error_listener.errors)
+        raise ParseError("\n".join([e for e in error_listener.errors]))
     
-    if Visitor:
-        visitor = Visitor()
-        return visitor.visit(tree)
-    raise ParseError("No visitor provided")
+    if not Visitor:
+        raise ParseError("No visitor provided")
+    visitor = Visitor()
+    return visitor.visit(tree)

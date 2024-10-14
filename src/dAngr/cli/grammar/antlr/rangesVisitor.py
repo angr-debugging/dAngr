@@ -9,8 +9,8 @@ else:
 
 class rangesVisitor(ParseTreeVisitor):
 
-    # Visit a parse tree produced by rangesParser#statement.
-    def visitStatement(self, ctx:rangesParser.StatementContext):
+    # Visit a parse tree produced by rangesParser#expression.
+    def visitExpression(self, ctx:rangesParser.ExpressionContext):
         return self.visitChildren(ctx)
 
 

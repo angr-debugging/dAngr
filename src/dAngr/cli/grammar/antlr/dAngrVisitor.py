@@ -24,6 +24,11 @@ class dAngrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by dAngrParser#constraint.
+    def visitConstraint(self, ctx:dAngrParser.ConstraintContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by dAngrParser#expression_part.
     def visitExpression_part(self, ctx:dAngrParser.Expression_partContext):
         return self.visitChildren(ctx)
@@ -34,13 +39,8 @@ class dAngrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by dAngrParser#dangr_command.
-    def visitDangr_command(self, ctx:dAngrParser.Dangr_commandContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by dAngrParser#add_constraint.
-    def visitAdd_constraint(self, ctx:dAngrParser.Add_constraintContext):
+    # Visit a parse tree produced by dAngrParser#static_var.
+    def visitStatic_var(self, ctx:dAngrParser.Static_varContext):
         return self.visitChildren(ctx)
 
 
@@ -89,6 +89,11 @@ class dAngrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by dAngrParser#py_basic_content.
+    def visitPy_basic_content(self, ctx:dAngrParser.Py_basic_contentContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by dAngrParser#py_content.
     def visitPy_content(self, ctx:dAngrParser.Py_contentContext):
         return self.visitChildren(ctx)
@@ -121,6 +126,11 @@ class dAngrVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by dAngrParser#object.
     def visitObject(self, ctx:dAngrParser.ObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#special_words.
+    def visitSpecial_words(self, ctx:dAngrParser.Special_wordsContext):
         return self.visitChildren(ctx)
 
 

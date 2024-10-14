@@ -5,9 +5,7 @@ from textwrap import indent
 from claripy import List
 
 from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import Object, ReferenceObject, VariableRef
-
-
+from dAngr.cli.grammar.expressions import ReferenceObject
 
 #Statements
 class Statement:
@@ -39,7 +37,7 @@ class Assignment(Statement):
 
     async def __call__(self, context:ExecutionContext):
         value = await self.value(context)
-        context[self.variable.name] = value
+        self.variable.set_value(context, value)
         return None
 
     def __repr__(self):

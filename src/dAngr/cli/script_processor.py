@@ -5,6 +5,11 @@ import dAngr.exceptions.FileNotFoundError
 class ScriptProcessor:
     def __init__(self, script_path):
         self.script_path = script_path
+        self.curdir = os.path.realpath(os.curdir)
+    
+    #destructor
+    def __del__(self):
+        os.chdir(self.curdir)
     
     def is_markdown_file(self):
         return self.script_path.lower().endswith(('.md', '.markdown'))
@@ -33,7 +38,7 @@ class ScriptProcessor:
             l = line.rstrip()
             if line == "":
                 continue
-            if line.endswith(":"):
+            if line.strip('\r\n').endswith(":"):
                 # Read until indentation is back to 0
                 indentation = line.find(line.lstrip())
                 while True:
@@ -44,6 +49,8 @@ class ScriptProcessor:
                     if line == "":
                         continue
                     if line.find(line.lstrip()) == indentation:
+                        yield l
+                        l = line.rstrip()
                         break
                     l += "\n" + line
             if l is not None:
@@ -65,7 +72,7 @@ class ScriptProcessor:
             # Handle inline code (between single backticks)
             inline_code_matches = re.findall(r'`([^`]+)`', line)
             for code in inline_code_matches:
-                yield f"{code}"
+                yield f"{code}".strip()
 
             # Handle code blocks (between triple backticks or triple single quotes)
             prefix = line[:3]
@@ -73,6 +80,6 @@ class ScriptProcessor:
                 postfix = '```' if prefix == '```' else ']]]'
                 # Yield the collected code block lines
                 for l in self.process_text(file_obj, lambda line:line.startswith(postfix)):
-                    yield l
+                    yield l.strip()
 
 

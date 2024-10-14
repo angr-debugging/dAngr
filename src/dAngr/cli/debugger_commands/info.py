@@ -65,18 +65,29 @@ class InformationCommands(BaseCommand):
 
         return f"http://localhost:8000/{filename}.svg"
     
-   
+    async def get_stashes(self):
+        """
+        Get the available stashes.
 
-    async def list_active_paths(self):
+        Returns:
+            str: The available stashes.
+        
+        Short name: gs
+        """
+        return f"Stashes: {self.debugger.get_stashes()}"
+
+    async def list_states(self, stash:str = "active"):
         """
         List all active paths.
 
+        Args:
+            stash (str): The stash to use. Default active
         Returns:
             str: Information about the active paths.
         
         Short name: iap
         """
-        paths = self.debugger.get_paths()
+        paths = self.debugger.list_paths(stash)
         return f"Paths Found: {"\n".join( [str(State(index, path.addr)) for index, path in enumerate(paths)])}"
 
     async def list_binary_strings(self, min_length:int = 4):

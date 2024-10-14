@@ -95,12 +95,12 @@ class TestMemoryCommands:
         assert "Memory at 0x1000: b'1234'." == str(conn.send_info.call_args[0][0])
 
     @pytest.mark.asyncio
-    async def test_zero_fill_memory(self, dbg, conn):
-        assert await dbg.handle("zero_fill")
-        assert "Zero fill enabled." == str(conn.send_info.call_args[0][0])
+    async def test_unconstrained_fill_memory(self, dbg, conn):
+        assert await dbg.handle("unconstrained_fill")
+        assert "Fill with zeros." == str(conn.send_info.call_args[0][0])
 
-        assert await dbg.handle("zero_fill False")
-        assert "Zero fill disabled." == str(conn.send_info.call_args[0][0])
+        assert await dbg.handle("unconstrained_fill True")
+        assert "Fill with symbols." == str(conn.send_info.call_args[0][0])
             
     @pytest.mark.asyncio
     async def test_get_return_value(self, dbg, conn):

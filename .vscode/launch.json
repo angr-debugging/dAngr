@@ -19,22 +19,34 @@
             "program": "./src/app.py",
             // "cwd": "${workspaceFolder}/examples/malware.oregonctf.org",
             "args": [
-                // "-s",
+                "-s",
                 // "${workspaceFolder}/p2pcam.dangr"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/00_angr_find.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/01_angr_avoid.md"
-                // "${workspaceFolder}/examples/malware.oregonctf.org/02_angr_find_condition.dangr"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/02_angr_find_condition.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/03_angr_symbolic_registers.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/04_angr_symbolic_stack.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/05_angr_symbolic_memory.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/06_angr_symbolic_dynamic_memory.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/07_angr_symbolic_file.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/08_angr_constraints.md"
+                "${workspaceFolder}/examples/malware.oregonctf.org/09_angr_hooks.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/14_angr_shared_library.md"
                 // "${workspaceFolder}/examples/basic_example/example.dangr"
             ],
             "console": "integratedTerminal",
             "justMyCode": false,
+        },
+        {
+            "name": "Python: Debug Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "purpose": ["debug-test"],
+            "justMyCode": false,
+            "args": [
+                "--pdb"  // This will invoke the Python debugger on exceptions
+            ],         
+            "console": "integratedTerminal"
         }
     ]
 }

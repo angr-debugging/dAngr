@@ -8,12 +8,12 @@ else:
 # This class defines a complete listener for a parse tree produced by rangesParser.
 class rangesListener(ParseTreeListener):
 
-    # Enter a parse tree produced by rangesParser#statement.
-    def enterStatement(self, ctx:rangesParser.StatementContext):
+    # Enter a parse tree produced by rangesParser#expression.
+    def enterExpression(self, ctx:rangesParser.ExpressionContext):
         pass
 
-    # Exit a parse tree produced by rangesParser#statement.
-    def exitStatement(self, ctx:rangesParser.StatementContext):
+    # Exit a parse tree produced by rangesParser#expression.
+    def exitExpression(self, ctx:rangesParser.ExpressionContext):
         pass
 
 

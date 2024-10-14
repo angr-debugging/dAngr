@@ -47,13 +47,22 @@ class CliConnection(Connection):
     def _escape(self, data, esscape_html=True):
         # indent data
         data = " "*self.indent + str(data).replace("\n", "\n" + " "*self.indent).replace("\t", " "*self.indent)
+        # replace non-printable characters with their hex representation
+        data = "".join([c if c.isprintable() or c in ['\r','\n', '\t'] else f"\\x{ord(c):02x}" for c in data])
         return html.escape(data ) if esscape_html else data
         # return data.replace("&", "&amp").replace("<", "&lt").replace(">", "&gt").replace("\"", "&quot").replace("'", "&apos")
     
     
     async def send_result(self, data, style=None):
-        if not data:
+        if data is None:
             return
+        # if data is a list, print each element per line
+        data = "\n".join([str(x) for x in data]) if isinstance(data, list) else data
+        #if data is a dictionary, print each key value pair per line
+        data = "\n".join([f"{k}: {v}" for k,v in data.items()]) if isinstance(data, dict) else data
+        #if data is not a str  by now, convert it to a string
+        data = str(data) if not isinstance(data, str) else data
+
         _data = data
         #replace newlines with newlines and 4 spaces
         data = self._escape(data, style is None)
@@ -64,7 +73,7 @@ class CliConnection(Connection):
             if self._first:
                 self._first = False
                 print_formatted_text(HTML(self._escape(_data[:1000])),style=style)
-                print_formatted_text(HTML("<gray>Output too long, use 'less' to view</gray>"),style=style)
+                print_formatted_text(HTML("<gray>Output too long, type 'less' to view</gray>"),style=style)
         else:
             print_formatted_text(HTML(data),style=style)
         self.output.append((data.lstrip(),style))

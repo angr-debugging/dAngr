@@ -4,10 +4,14 @@ LABEL maintainer='DistriNet'
 #docker build -t <"name">
 #map the port being exposed at the bottom of this scripts to any ports of your choosing
 
-RUN apt-get update && apt-get install --no-install-recommends --yes python3
+RUN apt-get update 
+RUN apt-get install --no-install-recommends --yes python3
 RUN apt-get -y install git
-RUN apt-get -y install python3-pip python3.12-venv graphviz graphviz-dev default-jre
-
+RUN apt-get -y install python3-pip 
+RUN apt-get -y install python3.12-venv 
+RUN apt-get -y install graphviz 
+RUN apt-get -y install graphviz-dev 
+RUN apt-get -y install default-jre
 
 # Clone Repo..
 ENV VIRTUAL_ENV=/home/ubuntu/dAngr/venv

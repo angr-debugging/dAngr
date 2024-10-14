@@ -35,6 +35,15 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by dAngrParser#constraint.
+    def enterConstraint(self, ctx:dAngrParser.ConstraintContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#constraint.
+    def exitConstraint(self, ctx:dAngrParser.ConstraintContext):
+        pass
+
+
     # Enter a parse tree produced by dAngrParser#expression_part.
     def enterExpression_part(self, ctx:dAngrParser.Expression_partContext):
         pass
@@ -53,21 +62,12 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by dAngrParser#dangr_command.
-    def enterDangr_command(self, ctx:dAngrParser.Dangr_commandContext):
+    # Enter a parse tree produced by dAngrParser#static_var.
+    def enterStatic_var(self, ctx:dAngrParser.Static_varContext):
         pass
 
-    # Exit a parse tree produced by dAngrParser#dangr_command.
-    def exitDangr_command(self, ctx:dAngrParser.Dangr_commandContext):
-        pass
-
-
-    # Enter a parse tree produced by dAngrParser#add_constraint.
-    def enterAdd_constraint(self, ctx:dAngrParser.Add_constraintContext):
-        pass
-
-    # Exit a parse tree produced by dAngrParser#add_constraint.
-    def exitAdd_constraint(self, ctx:dAngrParser.Add_constraintContext):
+    # Exit a parse tree produced by dAngrParser#static_var.
+    def exitStatic_var(self, ctx:dAngrParser.Static_varContext):
         pass
 
 
@@ -152,6 +152,15 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by dAngrParser#py_basic_content.
+    def enterPy_basic_content(self, ctx:dAngrParser.Py_basic_contentContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#py_basic_content.
+    def exitPy_basic_content(self, ctx:dAngrParser.Py_basic_contentContext):
+        pass
+
+
     # Enter a parse tree produced by dAngrParser#py_content.
     def enterPy_content(self, ctx:dAngrParser.Py_contentContext):
         pass
@@ -212,6 +221,15 @@ class dAngrListener(ParseTreeListener):
 
     # Exit a parse tree produced by dAngrParser#object.
     def exitObject(self, ctx:dAngrParser.ObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#special_words.
+    def enterSpecial_words(self, ctx:dAngrParser.Special_wordsContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#special_words.
+    def exitSpecial_words(self, ctx:dAngrParser.Special_wordsContext):
         pass
 
 

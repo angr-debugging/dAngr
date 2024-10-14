@@ -1,4 +1,5 @@
 import claripy
+from dAngr.exceptions import DebuggerCommandError
 from dAngr.utils.utils import Constraint, DataType, SymBitVector, SymString, undefined
 from .base import BaseCommand
 
@@ -6,63 +7,144 @@ class SymbolCommands(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
 
-    async def add_symbolic_bitvector(self, name:str, size:int):
+    async def add_symbol(self, name:str, size:int = 0, dtype:DataType = DataType.bytes):
         """
         Add a symbol of bytes with name and size.
 
         Args:
             name (str): Name of the symbol
-            size (int): Size of the symbol.
+            size (int): Size of the symbol
+            dtype (DataType): type of the data, default is bytes.
         
-        Short name: sab
-        
-        """
-        self.debugger.add_symbol(name, claripy.BVS(name, size*8))
-        await self.send_info(f"Symbolic bitvector {name} created.")
-
-    
-    async def add_symbol_int(self, name:str):
-        """
-        Add a symbol with name and size.
-
-        Args:
-            name (str): Name of the symbol
-        
-        Short name: sai
+        Short name: sa
         
         """
-        int_size = self.debugger.project.arch.sizeof["int"]
+        if dtype == DataType.int:
+            int_size = self.debugger.project.arch.sizeof["int"]
+        else: int_size = size
         self.debugger.add_symbol(name, claripy.BVS(name, int_size*8))
-        await self.send_info(f"Symbolic integer {name} created.")
+        await self.send_info(f"Symbol {name} created.")
 
-    async def add_symbolic_string(self, name:str, size:int):
-        """
-        Add a symbol with name and size.
-
-        Args:
-            name (str): Name of the symbol
-            size (int): Size of the symbol.
-        
-        Short name: sas
-        
-        """
-        self.debugger.add_symbol(name, claripy.StringS(name, size*8))
-        await self.send_info(f"Symbolic string {name} created.")
     
-    async def get_symbolic_value(self, sym:str|SymBitVector|SymString, type:DataType = DataType.bytes):
+    # async def add_symbol_int(self, name:str):
+    #     """
+    #     Add a symbol with name and size.
+
+    #     Args:
+    #         name (str): Name of the symbol
+        
+    #     Short name: sai
+        
+    #     """
+    #     int_size = self.debugger.project.arch.sizeof["int"]
+    #     self.debugger.add_symbol(name, claripy.BVS(name, int_size*8))
+    #     await self.send_info(f"Symbolic integer {name} created.")
+
+    # async def add_symbolic_string(self, name:str, size:int):
+    #     """
+    #     Add a symbol with name and size.
+
+    #     Args:
+    #         name (str): Name of the symbol
+    #         size (int): Size of the symbol.
+        
+    #     Short name: sas
+        
+    #     """
+    #     # TODO: check what StringS can be used for, using it in e.g., file stream it fails to work, had to use bitvector.
+    #     self.debugger.add_symbol(name, claripy.StringS(name, size*8))
+    #     await self.send_info(f"Symbolic string {name} created.")
+
+    async def symbol_to_bytes(self, sym:str|SymBitVector|SymString):
         """
-        Get a symbol with name.
+        Solve and get concrete symbol value in bytes based on current state.
 
         Args:
             sym (str|SymBitVector|SymString): Name of the symbol
-            type (DataType): Type of the symbol. Default is bytes.
         
-        Short name: sg
+        Short name: stb
         
         """
         if isinstance(sym, str):
-            sym = self.debugger.get_symbol_value(sym)
-        return self.debugger.cast_to(sym, type)
+            sym = self.debugger.get_symbol(sym)
+        return self.debugger.cast_to(sym, DataType.bytes)
+    
+    async def symbol_to_int(self, sym:str|SymBitVector|SymString):
+        """
+        Solve and get concrete symbol value as int based on current state.
+
+        Args:
+            sym (str|SymBitVector|SymString): Name of the symbol
+        
+        Short name: sti
+        
+        """
+        if isinstance(sym, str):
+            sym = self.debugger.get_symbol(sym)
+        return self.debugger.cast_to(sym, DataType.int)
+    
+    async def symbol_to_str(self, sym:str|SymBitVector|SymString):
+        """
+        Convert symbol to a str.
+
+        Args:
+            sym (str|SymBitVector|SymString): Name of the symbol
+        
+        Short name: sts
+        
+        """
+        if isinstance(sym, str):
+            sym = self.debugger.get_symbol(sym)
+        return self.debugger.cast_to(sym, DataType.str)
+    
+    async def symbol_to_bool(self, sym:str|SymBitVector|SymString):
+        """
+        Solve and get concrete symbol value as bool based on current state.
+
+        Args:
+            sym (str|SymBitVector|SymString): Name of the symbol
+        
+        Short name: stB
+        
+        """
+        if isinstance(sym, str):
+            sym = self.debugger.get_symbol(sym)
+        return self.debugger.cast_to(sym, DataType.bool)
+    
+    async def remove_symbol(self, sym:str|SymBitVector|SymString):
+        """
+        Remove a symbol.
+
+        Args:
+            sym (str|SymBitVector|SymString): Name of the symbol
+        
+        Short name: sr
+        
+        """
+        if isinstance(sym, SymBitVector) or isinstance(sym, SymString):
+            if len(sym.args) == 0:
+                raise DebuggerCommandError("Symbol name not found.")
+            name = sym.args[0]
+        else: name = sym
+        self.debugger.remove_symbol(name)
+        await self.send_info(f"Symbol {sym} removed.")
+    
+    # async def set_symbol_value(self, sym:str|SymBitVector|SymString, value:int|bytes|str|SymBitVector|SymString):
+    #     """
+    #     Set a symbol value.
+
+    #     Args:
+    #         sym (str|SymBitVector|SymString): Name of the symbol
+    #         value (int|bytes|str|SymBitVector|SymString): Value to set
+        
+    #     Short name: ssv
+        
+    #     """
+    #     if isinstance(sym, str):
+    #         sym = self.debugger.get_symbol(sym)
+    #     value = self.to_value(value)
+    #     self.debugger.set_symbol(sym, value)
+    #     await self.send_info(f"Symbol {sym} set to {value}.")
 
     async def add_constraint(self, constraint:Constraint):
         """
@@ -71,9 +153,9 @@ class SymbolCommands(BaseCommand):
         Args:
             constraint (Constraint): Constraint to add.
         
-        Short name: sc
+        Short name: sac
         
         """
         self.debugger.add_constraint(constraint)
-        await self.send_info(f"Constraint {constraint} added.")
+        await self.send_info(f"Constraint added.")
  

@@ -4,7 +4,7 @@ from dAngr.cli.models import State
 from .base import BaseCommand
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from prompt_toolkit.shortcuts import ProgressBar
-import angrutils
+from dAngr.utils.loggers import dAngr_log_config
 
 class GeneralCommands(BaseCommand):
     def __init__(self, debugger_core):
@@ -30,3 +30,29 @@ class GeneralCommands(BaseCommand):
                 await self.debugger.list_args(spec)
         else:
              await self.debugger.list_commands()
+
+    async def set_log_level(self, module:str, level:str = "DEBUG"):
+        """
+        Set the log level for a module.
+
+        Usage: set_log_level module level
+
+        Args:
+        module (str): The module to set the log level for.
+        level (str): The log level to set. Default is DEBUG. Valid values are "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "NOTSET".
+
+        Short name: log
+
+        """
+        dAngr_log_config.set_module(module, level)
+        await self.send_info(f"Set log level for module '{module}' to {level}")
+    async def list_loggers(self):
+        """
+        List all loggers.
+
+        Usage: list_loggers
+
+        Short name: ll
+
+        """
+        return dAngr_log_config.list_modules_from_loggers()

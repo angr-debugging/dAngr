@@ -20,26 +20,26 @@ def evaluate_symbolic_string(symbolic_str, solver, length):
 
 def create_entry_state(project:Project, 
                        entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None= None, 
-                       default_state_options:Set[str]=set())-> Tuple[SimulationManager,SimState]:
-        
-        if entry_point is None:
-            state = project.factory.entry_state(add_options=default_state_options)
-        elif isinstance(entry_point,int):
-            state = project.factory.blank_state(addr=entry_point, add_options=default_state_options)
-        else:
-            name,prototype,cc,arguments = entry_point
-            addr = get_function_address(project,name)
-            state = project.factory.call_state( 
-                addr,
-                *arguments,
-                prototype=prototype,
-                cc=cc,
-                base_state=None,
-                ret_addr=project.simos.return_deadend, 
-                toc=None,
-                add_options= default_state_options,
-                remove_options=None,
-            )
+                       default_state_options:Set[str]=set(), state = None)-> Tuple[SimulationManager,SimState]:
+        if not state:
+            if entry_point is None:
+                state = project.factory.entry_state(add_options=default_state_options)
+            elif isinstance(entry_point,int):
+                state = project.factory.blank_state(addr=entry_point, add_options=default_state_options)
+            else:
+                name,prototype,cc,arguments = entry_point
+                addr = get_function_address(project,name)
+                state = project.factory.call_state( 
+                    addr,
+                    *arguments,
+                    prototype=prototype,
+                    cc=cc,
+                    base_state=None,
+                    ret_addr=project.simos.return_deadend, 
+                    toc=None,
+                    add_options= default_state_options,
+                    remove_options=None,
+                )
         state.register_plugin('stdout_tracker', StdTracker())
         simgr = project.factory.simulation_manager(state)
         return simgr,state

@@ -14,7 +14,11 @@ class ExecutionContext:
         self._definitions:Dict[str,Definition] = {}
         self._parent:ExecutionContext|None= parent # type: ignore
         self.return_value = None
-
+        
+    @property
+    def root(self):
+        return self._parent.root if self._parent else self
+    
     def clone(self):
         e = ExecutionContext() # type: ignore
         e._variables = self._variables.copy()
@@ -36,16 +40,23 @@ class ExecutionContext:
             self._parent[name].value = value
         else:
             self._variables[name] = Variable(name,value)
-    def addVariable(self, name:str, value:Any):
+    def add_variable(self, name:str, value:Any):
         self._variables[name] = Variable(name, value)
-    def removeVariable(self, name:str):
+    def remove_variable(self, name:str):
         if name in self._variables:
             del self._variables[name]
-    def addDefinition(self, name:str, value):
+    def add_definition(self, name:str, value):
         self._definitions[name] = value # type: ignore
-    def removeDefinition(self, name:str):
+    def remove_definition(self, name:str):
         if name in self._definitions:
             del self._definitions[name]
+
+    def get_definition(self, name:str):
+        if name in self._definitions:
+            return self._definitions[name]
+        if self._parent and name in self._parent.definitions:
+            return self._parent.get_definition(name)
+        raise KeyError(f"Unknown definition: {name}")
     @property
     def definitions(self):
         # merge dict from the parent with precedence to the current context

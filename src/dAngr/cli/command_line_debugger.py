@@ -27,6 +27,9 @@ from dAngr.utils.utils import get_union_members
 from .cli_connection import CliConnection
 from .debugger_commands import *
 
+from dAngr.utils.loggers import dAngr_log_config, get_logger
+log = get_logger(__name__)
+
 
 def _auto_register_commands() -> Dict[str, BuiltinFunctionDefinition]:
     commands:Dict[str, BuiltinFunctionDefinition] = {}
@@ -50,6 +53,13 @@ class dAngrExecutionContext(ExecutionContext):
         #add commands to context
         self._definitions.update(commands)
     
+    @override
+    def clone(self):
+        e = dAngrExecutionContext(self._debugger, cast(Dict[str, BuiltinFunctionDefinition], self._definitions))
+        e._variables = self._variables.copy()
+        e._parent = self
+        return e
+
     @property
     def debugger(self)->Debugger:
         return self._debugger
@@ -72,6 +82,13 @@ class CommandLineDebugger(Debugger,StepHandler):
         self.http_server = None
         self.http_thread = None
         self.context:dAngrExecutionContext = dAngrExecutionContext(self, DEBUGGER_COMMANDS)
+
+    def reset_state(self):
+        self._breakpoints = FilterList()
+        self._exclusions = []
+        self.http_server = None
+        self.http_thread = None
+        return super().reset_state()
 
     def __del__(self):
         if self.http_server is not None:
@@ -125,7 +142,8 @@ class CommandLineDebugger(Debugger,StepHandler):
             if r is not None:
                 if isinstance(r, int):
                     r = hex(r)
-                await self.conn.send_result(str(r))
+                await self.conn.send_result(r)
+                cast(CliConnection,self.conn).clear_output()
             return True
         except CommandError as e:
             await self.conn.send_error(e)
@@ -297,68 +315,7 @@ class CommandLineDebugger(Debugger,StepHandler):
             html_table += "\n"
         
         await self.conn.send_result(html_table, style=style)
-    # def _parse_arguments(self,spec :FunctionDefinition, user_input:str)->List: 
-
-    #     parsed_args = parse_arguments(user_input, " ")
-
-    #     named_args = {}
-    #     positional_args = []
-    #     # split parsed arguments into named and positional arguments
-    #     for arg in parsed_args:
-    #         if m := re.match(r"^([a-zA-Z0-9_]+)=(.*)$", arg):
-    #             name = m.group(1)
-    #             value = m.group(2)
-    #             named_args[name] = value
-    #         else:
-    #             # if there exist named arguments, this should fail
-    #             if named_args:
-    #                 raise InvalidArgumentError(f"Named arguments must be placed after positional arguments")
-    #             positional_args.append(arg)
-    #     # insert named arguments into the correct position
-    #     args = spec.args
-    #     input_args = positional_args
-    #     for arg_name, arg_value in named_args.items():
-    #         if arg_name not in args:
-    #             raise InvalidArgumentError(f"Invalid argument '{arg_name}'")
-    #         arg_index = args.index(arg_name)
-    #         if arg_index < len(positional_args):
-    #             input_args.insert(arg_index, arg_value)
-    #         else:
-    #             input_args.append(arg_value)
-        
-    #     required = spec.required_arguments
-    #     optional = spec.optional_arguments
-    #     if len(input_args) < len(required):
-    #         expected_arguments = ', '.join(arg_spec.name for arg_spec in required)
-    #         if len(optional)>0:
-    #             optional_arguments = ", optional arguments: "+', '.join(arg_spec.name for arg_spec in optional)
-    #         else:
-    #             optional_arguments = ""
-    #         raise InvalidArgumentError(f"Invalid input format. Expected arguments: {expected_arguments}{optional_arguments}")
-        
-    #     if len(input_args) > len(args):
-    #         if len(args) == 0 or args[-1].type != str:
-    #             raise InvalidArgumentError(f"Too many arguments. Expected {len(args)} but got {len(input_args)}")
-    #         else:
-    #             # If the last argument is a string, join the remaining input into a single string and remove the rest
-    #             input_args[len(args)-1] = ' '.join(input_args[len(args) - 1:])
-    #             input_args = input_args[:len(args)]
-
-    #     # Map argument names to parsed values
-    #     parsed_args_list = []
-    #     for arg_spec, arg_value in zip(args, input_args):
-    #         if arg_value is None:
-    #             break # must be because of optional arguments
-    #         # Convert the argument value to the specified type
-    #         parsed_args_list.append(convert_argument(arg_spec.type, arg_value))
-
-    #     # If there's remaining input, join it into a single string and assign it to the last argument
-    #     if len(parsed_args_list) < len(required):
-    #         if not args[-1][1] == str:
-    #             raise InvalidArgumentError(f"Failed to convert argument '{required[-1].name}' to type '{required[-1].type.__name__}' from '{parsed_args_list[-1]}{' '.join(parsed_args[len(required) - 1:])}'")
-    #         parsed_args_list.append(' '.join(parsed_args[len(required) - 1:]))
-    #     return parsed_args_list
-
+    
     async def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False):
         u = check_until
         exclusions = self.exclusions
@@ -367,6 +324,7 @@ class CommandLineDebugger(Debugger,StepHandler):
             if r != StopReason.NONE:
                 return r
             state = simgr.one_active
+
             if self.trigger_points.filter(state):
                 return StopReason.BREAKPOINT
             return StopReason.NONE

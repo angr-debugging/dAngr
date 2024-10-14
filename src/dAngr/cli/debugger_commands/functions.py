@@ -5,7 +5,7 @@ from dAngr.angr_ext.utils import convert_string
 from dAngr.cli.debugger_commands import BaseCommand
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
-from dAngr.utils.utils import parse_arguments
+from dAngr.utils.utils import parse_arguments, Endness
 
 class FunctionCommands(BaseCommand):
     def __init__(self, debugger_core):
@@ -22,6 +22,22 @@ class FunctionCommands(BaseCommand):
         """
         val = self.debugger.get_return_value() 
         return str(val) if not val is None else ""
+
+    async def set_call_state(self, function_addr: int, *args):
+        """
+        Set the call state of a function.
+
+        Args:
+            function_addr (int): The address of the function.
+            args (tuple): Arguments to the function.
+
+        Raises:
+            DebuggerCommandError: If the function address is not found.
+        
+        Short name: scs
+        """
+        self.debugger.set_call_state(function_addr, args)
+        await self.send_info(f"Call state set for function at {hex(function_addr)}")
 
     async def set_function_call(self, function_call: str):
         """
@@ -78,7 +94,7 @@ class FunctionCommands(BaseCommand):
                 v = convert_string(tp, value)
                 ix = ix + 1
                 if type(tp) is angr.types.SimTypePointer and not type(v) is int:
-                    self.debugger.set_memory(0x1000 * ix, v, state) # type: ignore
+                    self.debugger.set_memory(0x1000 * ix, v) # type: ignore
                     v = 0x1000 * ix
                     info.append(f"Value {value} stored at {hex(v)}")
             

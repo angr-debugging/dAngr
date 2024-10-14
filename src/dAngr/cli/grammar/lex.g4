@@ -16,7 +16,7 @@ ESCAPED_QUOTE : '\\' ESC_SEQ;
 ESCAPED_SINGLE_QUOTE : '\\' SESC_SEQ;
 
 // Lexer rules for binary string matching
-BINARY_STRING: 'b' '\'' ( ESC_SEQ | ~('\\'|'\''))* '\'' ;
+BINARY_STRING: 'b' '\'' ( ESC_SEQ | ('\\x'[0-9]*) | ~('\\'|'\''))* '\'' ;
 // Rule for escape sequences
 SESC_SEQ: '\\' [btnrf\\'0]; 
 ESC_SEQ: '\\' [btnrf\\"0]; 

@@ -18,8 +18,6 @@ from dAngr.exceptions import InvalidArgumentError, ValueError
 #create a undefined type
 undefined = type("Undefined", (), {})
 
-DEBUG:bool = True #os.getenv("BUILD_TYPE","Release").lower() == "debug"
-
 class DataType(Enum):
     int = auto()
     str = auto()
@@ -39,6 +37,11 @@ class ObjectStore(Enum):
     reg = auto()
     io = auto()
 
+class Endness(Enum):
+    LE = auto()
+    BE = auto()
+    DEFAULT = auto()
+    BINARY = auto()
 
 Constraint = claripy.ast.Bool
 SymBitVector = claripy.ast.BV
@@ -75,8 +78,11 @@ def str_to_type(dtype:str):
         tp = float
     elif dtype == "hex":
         tp = int
+    elif dtype == "tuple":
+        tp = tuple
     else:
         try:
+            from dAngr.cli.grammar.expressions import ReferenceObject,VariableRef, SymbolicValue, Register, Property, IndexedProperty
             tp = eval(dtype)
         except:
             raise ValueError(f"Invalid data type {dtype}")
@@ -119,6 +125,7 @@ def parse_binary_string(binary_string_text):
     binary_data = parsed_string.encode('latin1')
 
     return binary_data
+
 def convert_argument(arg_type: type, arg_value: str):
     try:
         # Handle Enums

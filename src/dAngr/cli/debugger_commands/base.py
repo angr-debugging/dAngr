@@ -99,15 +99,22 @@ def convert_args(args, signature):
         arg = args[name]
         tp = arg["type"]
         #check if the type matches the function definitions arg type
-        if a.annotation == inspect._empty:
-            raise InvalidArgumentError(f"Function {signature} parameter {name} does not have a type annotation")
-        if tp != a.annotation:
-            # check if the type is a union
-            if not (tp in get_args(a.annotation)):
+        if a.kind == inspect.Parameter.VAR_POSITIONAL:
+            if tp != tuple:
                 raise InvalidArgumentError(f"Function {signature} parameter {name} has type {a.annotation} but expected {tp}")
-        description = arg["description"]
-        default = a.default if a.default != inspect._empty else undefined
-        pargs.append(ArgumentSpec(name,tp, default, description))  # type: ignore
+            else:
+                # get the type of the elements in the tuple
+                pargs.append(ArgumentSpec(name, tp, undefined, arg["description"]))
+        else:
+            if a.annotation == inspect._empty:
+                raise InvalidArgumentError(f"Function {signature} parameter {name} does not have a type annotation")
+            if tp != a.annotation:
+                # check if the type is a union
+                if not (tp in get_args(a.annotation)):
+                    raise InvalidArgumentError(f"Function {signature} parameter {name} has type {a.annotation} but expected {tp}")
+            description = arg["description"]
+            default = a.default if a.default != inspect._empty else undefined
+            pargs.append(ArgumentSpec(name,tp, default, description))  # type: ignore
     return pargs
 
 
