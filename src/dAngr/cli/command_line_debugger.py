@@ -140,8 +140,6 @@ class CommandLineDebugger(Debugger,StepHandler):
                 return True
             r = await script(self.context)
             if r is not None:
-                if isinstance(r, int):
-                    r = hex(r)
                 await self.conn.send_result(r)
                 cast(CliConnection,self.conn).clear_output()
             return True
@@ -271,7 +269,7 @@ class CommandLineDebugger(Debugger,StepHandler):
     async def render_argument(self, value:int|bytes|str|Object, make_concrete:bool ):
         val = None
         if isinstance(value, int):
-            val = self.to_bytes(value)
+            val = self._to_bytes(value)
             if not make_concrete:
                 val = claripy.BVV(value, len(val)*8)
         elif isinstance(value, bytes):
@@ -279,7 +277,7 @@ class CommandLineDebugger(Debugger,StepHandler):
                 val = claripy.BVV(value)
             pass
         elif isinstance(value, str):
-            val = self.to_bytes(value)
+            val = self._to_bytes(value)
             if not make_concrete:
                 val = claripy.BVV(val)
         elif isinstance(value, Object):

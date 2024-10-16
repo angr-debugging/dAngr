@@ -1,4 +1,5 @@
 
+import re
 from typing import List, Sequence
 
 from antlr4 import TerminalNode
@@ -9,8 +10,8 @@ from dAngr.cli.grammar.antlr.dAngrVisitor import dAngrVisitor
 from dAngr.cli.grammar.statements import Assignment,  Statement
 from dAngr.cli.grammar.control_flow import IfThenElse, WhileLoop, ForLoop
 from dAngr.cli.grammar.script import Script, Body
-from dAngr.cli.grammar.definitions import CustomFunctionDefinition
-from dAngr.cli.grammar.expressions import Constraint, DangrCommand, Dictionary, IfConstraint, Listing, Memory, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, VariableRef
+from dAngr.cli.grammar.definitions import ArgumentSpec, CustomFunctionDefinition
+from dAngr.cli.grammar.expressions import Constraint, DangrCommand, Dictionary, IfConstraint, Listing, Memory, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
 from dAngr.utils.utils import parse_binary_string
 
 
@@ -253,22 +254,15 @@ class dAngrVisitor_(dAngrVisitor):
             return Range(start, end)
         
     def visitParameters(self, ctx: dAngrParser.ParametersContext):
-        return [p.getText() for p in ctx.identifier()]
+        return [ArgumentSpec(p.getText())for p in ctx.identifier()]
 
     def visitCondition(self, ctx: dAngrParser.ConditionContext):
         return self.visit(ctx.expression())
         
     def visitObject(self, ctx: dAngrParser.ObjectContext):
         
-        if ctx.MEM_DB():
-            size = int(ctx.NUMBERS().getText()) if ctx.NUMBERS() else 0
-            return Memory(self.visit(ctx.numeric(0)), size)
-        elif ctx.VARS_DB():
-            return ReferenceObject.createNamedObject(ctx.VARS_DB().getText(), ctx.identifier().getText())
-        elif ctx.REG_DB():
-            return ReferenceObject.createNamedObject(ctx.REG_DB().getText(), ctx.identifier().getText())
-        elif ctx.SYM_DB():
-            return ReferenceObject.createNamedObject(ctx.SYM_DB().getText(), ctx.identifier().getText())
+        if ctx.reference():
+            return self.visit(ctx.reference())
         elif ctx.NUMBERS():
             return Literal(int(ctx.NUMBERS().getText()))
         elif ctx.HEX_NUMBERS():
@@ -297,12 +291,12 @@ class dAngrVisitor_(dAngrVisitor):
                     return IndexedProperty(o, index)
                 elif ctx.numeric():
                     if ctx.COLON():
-                        start =  self.visit(ctx.NUMBERS()) 
-                        end = self.visit(ctx.numeric(0))
-                        return Slice(o,start, int(ctx.NUMBERS()[1].getText()))
+                        start =  self.visit(ctx.numeric(0)) 
+                        end = self.visit(ctx.numeric(1))
+                        return Slice(o,start, end)
                     elif ctx.ARROW():
-                        start = int(ctx.NUMBERS().getText())
-                        end = start + int(ctx.NUMBERS(1).getText())
+                        start = int(ctx.numeric(0).getText())
+                        end = start + int(ctx.NUMBERS().getText())
                         return Slice(o,start, end)
                 elif ctx.COMMA(): # Listing
                     lst = [self.visit(o) for o in ctx.object_()]
@@ -400,6 +394,7 @@ class dAngrVisitor_(dAngrVisitor):
             else:
                 args.append(Literal(c.getText()))
         return PythonCommand(*args)
+    
     def visitReference(self, ctx: dAngrParser.ReferenceContext):
         if ctx.MEM_DB():
             size = int(ctx.NUMBERS().getText()) if ctx.NUMBERS() else 0
@@ -410,6 +405,10 @@ class dAngrVisitor_(dAngrVisitor):
             return ReferenceObject.createNamedObject(ctx.REG_DB().getText(), ctx.identifier().getText())
         elif ctx.SYM_DB():
             return ReferenceObject.createNamedObject(ctx.SYM_DB().getText(), ctx.identifier().getText())
+        elif ctx.STATE():
+            return StateObject()
+        else:
+            raise ParseError(f"Invalid reference {ctx.getText()}")
         
         # args = []
         # kwargs = {}

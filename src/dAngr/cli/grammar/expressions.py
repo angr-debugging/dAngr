@@ -1,4 +1,5 @@
 from enum import Enum
+import io
 from types import UnionType
 from typing import Dict, List, Any, Union, cast, get_args, get_origin
 from abc import abstractmethod
@@ -9,6 +10,7 @@ from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.exceptions import CommandError, InvalidArgumentError, ValueError, KeyError
 from dAngr.utils import AngrValueType, StreamType, str_to_address
 from dAngr.utils.utils import DataType, Endness, check_signature_matches
+from contextlib import redirect_stdout, redirect_stderr
 
 from dAngr.utils.loggers import get_logger
 log = get_logger(__name__)
@@ -233,6 +235,18 @@ class Register(ReferenceObject):
         return f"&reg.{self.register}"
     def __eq__(self, other):
         return isinstance(other, Register) and self.register == other.register
+    
+class StateObject(ReferenceObject):
+    def __init__(self):
+        super().__init__("state")
+    def get_value(self, context):
+        return self.debugger(context).current_state
+    def set_value(self, context, value):
+        raise ValueError("Cannot set value to a state object")
+    def __str__(self):
+        return f"&state"
+    def __eq__(self, other):
+        return isinstance(other, StateObject)
 
 class VariableRef(ReferenceObject):
     def __init__(self, name:str, is_static=False):
@@ -242,7 +256,12 @@ class VariableRef(ReferenceObject):
     @property
     def is_static(self):
         return self._is_static
-
+    @property
+    def static_name(self):
+        if not self._is_static:
+            raise ValueError(f"Variable {self.name} is not static")
+        return f"@{self.name}"
+    
     def __str__(self):
         return f"{self.name}"
 
@@ -252,9 +271,10 @@ class VariableRef(ReferenceObject):
     def get_value(self, context):
         return context[self.name].value
     def set_value(self, context, value):
+        assert isinstance(value,AngrValueType)
         context[self.name] = value
 
-class Property(VariableRef):
+class Property(ReferenceObject):
     def __init__(self, obj:Object, prop):
         super().__init__(f"{obj}.{prop}")
         self.obj = obj
@@ -385,23 +405,30 @@ class PythonCommand(Command):
 
     async def _to_val(self, arg, context:ExecutionContext):
         v = await arg(context)
+        if isinstance(arg, ReferenceObject):
+            if isinstance(v, str) or isinstance(v, bytes):
+                return repr(v)
         if isinstance(v, claripy.ast.BV):
-            if v.symbolic:
-                return  self.debugger(context).cast_to(v, DataType.str)
-
-                # raise ValueError(f"Symbolic value {v} cannot be used in a Python command")
-            return v.cv
-        elif isinstance(arg, VariableRef) and isinstance(v, str):
-            return '"' + v + '"'
-        else:
-            return v
+            return repr(self.debugger(context).cast_to(v, DataType.str))
+        return v
     
     async def __call__(self, context:ExecutionContext):
         # copy the commands locally
         # execute the commands if it is an Expression and replace the entry in the copy with the result
         c = context.clone()
         results = [await self._to_val(a,c) for a in self.cmds] + [f"{k}={await v(c)}" for k,v in self.kwargs.items()]
-        context.return_value = eval("".join([str(r) for r in results]))
+        stdout_buffer = io.StringIO()
+        stderr_buffer = io.StringIO()
+        with redirect_stdout(stdout_buffer), redirect_stderr(stderr_buffer):
+            try:
+                cmd = "".join([str(r) for r in results])
+                context.return_value = eval(cmd)
+            except Exception as e:
+                raise CommandError(f"Error executing python command: {cmd} ({e})")
+        if stdout := stdout_buffer.getvalue():
+            await self.debugger(context).conn.send_output(stdout)
+        if stderr := stderr_buffer.getvalue():
+            await self.debugger(context).conn.send_error(stderr)
         return context.return_value
     
     def __str__(self):
@@ -431,33 +458,6 @@ class DangrCommand(Command):
         self.args:List[Expression] = [*args]
         self.kwargs:Dict[str,Expression] = kwargs
 
-    # async def _collapse_args(self, args:List[Expression], spec):
-    #     args = self.args
-    #     if spec.args[-1].dtype == str:
-    #         size = len(spec.args)
-    #         # replace varables and collapse the last arguments into a single string
-    #         cst = CompoundExpression(args[size-1:])
-    #         args = args[:size-1] + [cst]
-    #     return args
-    # def _check_args(self, args, kwargs, spec):
-    #     # for each unnamed argument check types:
-    #     # note, if type is Identifier, 
-
-    #     if len(args) < len(spec.required_arguments):
-    #         raise InvalidArgumentError(f"Missing required arguments: {spec.required_arguments}")
-    #     if len(args) > len(spec.args):
-    #         raise InvalidArgumentError(f"Too many arguments: {args}")
-    #     for i, arg in enumerate(args):
-    #         if (isinstance(arg, tuple)):
-    #             if i < len(spec.required_arguments):
-    #                 raise InvalidArgumentError(f"Invalid argument: {arg} expected {spec.args[i].dtype}")
-    #             # all remaining args must be named args
-    #             for i in range(i, len(args)):
-    #                 if not args[i][0] in [a.name for a in spec.args]:
-    #                     raise InvalidArgumentError(f"Unknown argument: {args[i][0]}")
-    #         else:
-    #             if not isinstance(arg, spec.args[i].dtype):
-    #                 raise InvalidArgumentError(f"Invalid argument type: {arg} expected {spec.args[i].dtype}")
     async def _check_arg(self, arg, context:ExecutionContext, spec):
         try:
             #TODO, what if  dtype is a tuple
@@ -497,7 +497,10 @@ class DangrCommand(Command):
         elif self.cmd in [f.short_name for f in context.functions.values() if isinstance(f, BuiltinFunctionDefinition)]:
             spec = next((f for f in context.functions.values() if cast(BuiltinFunctionDefinition,f).short_name == self.cmd), None)
         if not spec:
-            raise CommandError(f"Unknown command: {self.cmd}")
+            if context.find_variable(self.cmd):
+                return context[self.cmd].value
+            else:
+                raise CommandError(f"Unknown command: {self.cmd}")
         s_args = spec.args
         if len(spec.args) < len(self.args):
             if spec.args and  spec.args[-1].dtype == tuple:

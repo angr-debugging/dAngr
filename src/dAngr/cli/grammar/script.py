@@ -36,31 +36,33 @@ class Body:
         self._repair_static(context, func_name)
         return result
     async def _prepare_static(self, context:ExecutionContext, func_name:str, s:Statement):
-        var_name = None
+        var = None
         if isinstance(s, Assignment) and isinstance(s.variable, VariableRef):
-            var_name = s.variable.name
+            var = s.variable
         elif isinstance(s, VariableRef):
-            var_name = s.name
+            var= s
         else:
             raise Exception("Unknown statement type")
-        if context.root["static_" + func_name +"_"+ var_name] is None:
-            if isinstance(s, Assignment):
-                context.root["static_"+ func_name +"_"+ var_name] = await s.value(context)
-            else:
-                context.root["static_"+ func_name +"_"+ var_name] = None
-        context[var_name] = context.root["static_"+ func_name +"_"+ var_name]
+        stat_name = var.static_name
+        if context.root.find_variable(stat_name) is None:
+            context.root.add_variable(stat_name, None)
+        if isinstance(s, Assignment): #set global variable on each execution
+            val = await s.value(context)
+            context.root[stat_name].value = val
+        context.add_variable(var.name, context.root[stat_name].value)
+
     def _repair_static(self, context:ExecutionContext, func_name:str):
         #for all statements that are static, copy the value from context to the root context
         for s in self.statements:
             if self.is_static(s):
-                var_name = None
+                var = None
                 if isinstance(s, Assignment) and isinstance(s.variable, VariableRef):
-                    var_name = s.variable.name
+                    var = s.variable
                 elif isinstance(s, VariableRef):
-                    var_name = s.name
+                    var = s
                 else:
                     raise Exception("Unknown statement type")
-                context.root["static_"+ func_name +"_"+ var_name] = context[var_name]
+                context.root[var.static_name] = context[var.name].value
 
     def __repr__(self):
         return "\n".join([str(s) for s in self.statements])

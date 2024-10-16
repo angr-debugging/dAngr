@@ -31,8 +31,6 @@ class TestDebugExecutionCommands:
     async def dbg(self,conn):
         dbg = CommandLineDebugger(conn)
         assert await dbg.handle("load example")
-        conn.send_info = AsyncMock()
-        conn.send_error = AsyncMock()
         return dbg
 
     @pytest.mark.asyncio

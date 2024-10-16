@@ -10,21 +10,21 @@ else:
 
 def serializedATN():
     return [
-        4,1,57,57,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,58,57,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,1,0,1,0,1,1,1,1,1,1,3,1,24,8,1,1,2,1,2,1,2,1,2,
         1,2,1,3,1,3,1,3,1,3,1,3,1,4,1,4,1,4,1,4,1,4,1,5,1,5,1,6,1,6,1,7,
         1,7,1,7,1,7,1,7,1,7,1,7,1,7,3,7,53,8,7,1,8,1,8,1,8,0,0,9,0,2,4,6,
-        8,10,12,14,16,0,1,2,0,19,54,57,57,53,0,18,1,0,0,0,2,23,1,0,0,0,4,
+        8,10,12,14,16,0,1,2,0,20,55,58,58,53,0,18,1,0,0,0,2,23,1,0,0,0,4,
         25,1,0,0,0,6,30,1,0,0,0,8,35,1,0,0,0,10,40,1,0,0,0,12,42,1,0,0,0,
         14,52,1,0,0,0,16,54,1,0,0,0,18,19,3,2,1,0,19,1,1,0,0,0,20,24,3,4,
         2,0,21,24,3,6,3,0,22,24,3,8,4,0,23,20,1,0,0,0,23,21,1,0,0,0,23,22,
-        1,0,0,0,24,3,1,0,0,0,25,26,5,21,0,0,26,27,5,17,0,0,27,28,3,10,5,
-        0,28,29,5,18,0,0,29,5,1,0,0,0,30,31,5,20,0,0,31,32,5,17,0,0,32,33,
-        3,0,0,0,33,34,5,18,0,0,34,7,1,0,0,0,35,36,5,19,0,0,36,37,5,17,0,
-        0,37,38,3,12,6,0,38,39,5,18,0,0,39,9,1,0,0,0,40,41,3,14,7,0,41,11,
+        1,0,0,0,24,3,1,0,0,0,25,26,5,22,0,0,26,27,5,18,0,0,27,28,3,10,5,
+        0,28,29,5,19,0,0,29,5,1,0,0,0,30,31,5,21,0,0,31,32,5,18,0,0,32,33,
+        3,0,0,0,33,34,5,19,0,0,34,7,1,0,0,0,35,36,5,20,0,0,36,37,5,18,0,
+        0,37,38,3,12,6,0,38,39,5,19,0,0,39,9,1,0,0,0,40,41,3,14,7,0,41,11,
         1,0,0,0,42,43,3,14,7,0,43,13,1,0,0,0,44,53,5,4,0,0,45,53,5,2,0,0,
-        46,53,3,16,8,0,47,53,5,10,0,0,48,49,5,17,0,0,49,50,3,14,7,0,50,51,
-        5,18,0,0,51,53,1,0,0,0,52,44,1,0,0,0,52,45,1,0,0,0,52,46,1,0,0,0,
+        46,53,3,16,8,0,47,53,5,11,0,0,48,49,5,18,0,0,49,50,3,14,7,0,50,51,
+        5,19,0,0,51,53,1,0,0,0,52,44,1,0,0,0,52,45,1,0,0,0,52,46,1,0,0,0,
         52,47,1,0,0,0,52,48,1,0,0,0,53,15,1,0,0,0,54,55,7,0,0,0,55,17,1,
         0,0,0,2,23,52
     ]
@@ -41,17 +41,17 @@ class rangesParser ( Parser ):
 
     literalNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                      "<INVALID>", "<INVALID>", "'&sym'", "'&reg'", "'&vars'", 
-                     "'&mem'", "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "<INVALID>", "<INVALID>", "'->'", "'('", "')'", "'!'", 
-                     "'&'", "'$'", "':'", "';'", "','", "'\"'", "'''", "'@'", 
-                     "'.'", "'|'", "'['", "']'", "'{'", "'}'", "'^'", "'#'", 
-                     "'%'", "'*'", "'+'", "'/'", "'**'", "'='", "'=='", 
-                     "'!='", "'<'", "'>'", "'<='", "'>='", "'&&'", "'||'", 
-                     "'?'", "'~'", "'`'", "'_'", "'-'" ]
+                     "'&mem'", "'&state'", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "'->'", "'('", 
+                     "')'", "'!'", "'&'", "'$'", "':'", "';'", "','", "'\"'", 
+                     "'''", "'@'", "'.'", "'|'", "'['", "']'", "'{'", "'}'", 
+                     "'^'", "'#'", "'%'", "'*'", "'+'", "'/'", "'**'", "'='", 
+                     "'=='", "'!='", "'<'", "'>'", "'<='", "'>='", "'&&'", 
+                     "'||'", "'?'", "'~'", "'`'", "'_'", "'-'" ]
 
     symbolicNames = [ "<INVALID>", "HEX_NUMBERS", "NUMBERS", "NUMBER", "LETTERS", 
                       "LETTER", "SYM_DB", "REG_DB", "VARS_DB", "MEM_DB", 
-                      "STRING", "ESCAPED_QUOTE", "ESCAPED_SINGLE_QUOTE", 
+                      "STATE", "STRING", "ESCAPED_QUOTE", "ESCAPED_SINGLE_QUOTE", 
                       "BINARY_STRING", "SESC_SEQ", "ESC_SEQ", "ARROW", "LPAREN", 
                       "RPAREN", "BANG", "AMP", "DOLLAR", "COLON", "SCOLON", 
                       "COMMA", "QUOTE", "SQUOTE", "AT", "DOT", "BAR", "BRA", 
@@ -83,54 +83,55 @@ class rangesParser ( Parser ):
     REG_DB=7
     VARS_DB=8
     MEM_DB=9
-    STRING=10
-    ESCAPED_QUOTE=11
-    ESCAPED_SINGLE_QUOTE=12
-    BINARY_STRING=13
-    SESC_SEQ=14
-    ESC_SEQ=15
-    ARROW=16
-    LPAREN=17
-    RPAREN=18
-    BANG=19
-    AMP=20
-    DOLLAR=21
-    COLON=22
-    SCOLON=23
-    COMMA=24
-    QUOTE=25
-    SQUOTE=26
-    AT=27
-    DOT=28
-    BAR=29
-    BRA=30
-    KET=31
-    BRACE=32
-    KETCE=33
-    HAT=34
-    HASH=35
-    PERC=36
-    TIMES=37
-    ADD=38
-    DIV=39
-    POW=40
-    ASSIGN=41
-    EQ=42
-    NEQ=43
-    LT=44
-    GT=45
-    LE=46
-    GE=47
-    AND=48
-    OR=49
-    QMARK=50
-    TILDE=51
-    TICK=52
-    UNDERSCORE=53
-    DASH=54
-    SUB=55
-    NEWLINE=56
-    WS=57
+    STATE=10
+    STRING=11
+    ESCAPED_QUOTE=12
+    ESCAPED_SINGLE_QUOTE=13
+    BINARY_STRING=14
+    SESC_SEQ=15
+    ESC_SEQ=16
+    ARROW=17
+    LPAREN=18
+    RPAREN=19
+    BANG=20
+    AMP=21
+    DOLLAR=22
+    COLON=23
+    SCOLON=24
+    COMMA=25
+    QUOTE=26
+    SQUOTE=27
+    AT=28
+    DOT=29
+    BAR=30
+    BRA=31
+    KET=32
+    BRACE=33
+    KETCE=34
+    HAT=35
+    HASH=36
+    PERC=37
+    TIMES=38
+    ADD=39
+    DIV=40
+    POW=41
+    ASSIGN=42
+    EQ=43
+    NEQ=44
+    LT=45
+    GT=46
+    LE=47
+    GE=48
+    AND=49
+    OR=50
+    QMARK=51
+    TILDE=52
+    TICK=53
+    UNDERSCORE=54
+    DASH=55
+    SUB=56
+    NEWLINE=57
+    WS=58
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -236,17 +237,17 @@ class rangesParser ( Parser ):
             self.state = 23
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [21]:
+            if token in [22]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 20
                 self.bash_range()
                 pass
-            elif token in [20]:
+            elif token in [21]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 21
                 self.dangr_range()
                 pass
-            elif token in [19]:
+            elif token in [20]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 22
                 self.python_range()
@@ -603,31 +604,27 @@ class rangesParser ( Parser ):
         localctx = rangesParser.AnythingContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_anything)
         try:
+            self.enterOuterAlt(localctx, 1)
             self.state = 52
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [4]:
-                self.enterOuterAlt(localctx, 1)
                 self.state = 44
                 self.match(rangesParser.LETTERS)
                 pass
             elif token in [2]:
-                self.enterOuterAlt(localctx, 2)
                 self.state = 45
                 self.match(rangesParser.NUMBERS)
                 pass
-            elif token in [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 57]:
-                self.enterOuterAlt(localctx, 3)
+            elif token in [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 58]:
                 self.state = 46
                 self.symbol()
                 pass
-            elif token in [10]:
-                self.enterOuterAlt(localctx, 4)
+            elif token in [11]:
                 self.state = 47
                 self.match(rangesParser.STRING)
                 pass
-            elif token in [17]:
-                self.enterOuterAlt(localctx, 5)
+            elif token in [18]:
                 self.state = 48
                 self.match(rangesParser.LPAREN)
                 self.state = 49
@@ -794,7 +791,7 @@ class rangesParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 54
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 180143985094295552) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 360287970188591104) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)

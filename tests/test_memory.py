@@ -34,7 +34,7 @@ class TestMemoryCommands:
         assert await dbg.handle("add_breakpoint 0x400566")
         assert await dbg.handle("set_function_prototype 'int processMessage(char*, int, char**)'")
         assert await dbg.handle("set_function_call 'processMessage(\"abc\",2,b\"0000000000\")'")
-
+        conn.send_result = AsyncMock()
         conn.send_info = AsyncMock()
         conn.send_error = AsyncMock()
 

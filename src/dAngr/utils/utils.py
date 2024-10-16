@@ -23,7 +23,6 @@ class DataType(Enum):
     str = auto()
     bytes = auto()
     bool = auto()
-    double = auto()
     hex = auto()
 
 class StreamType(Enum):
@@ -41,23 +40,36 @@ class Endness(Enum):
     LE = auto()
     BE = auto()
     DEFAULT = auto()
-    BINARY = auto()
+    MEMORY = auto()
+    REGISTER = auto()
 
 Constraint = claripy.ast.Bool
 SymBitVector = claripy.ast.BV
-SymString = claripy.ast.String
-AngrValueType = SymBitVector | SymString | int | str | bytes
+class Variable:
+    @property
+    def value(self):
+        pass
+    @value.setter
+    def value(self, value):
+        pass
+
+AngrValueType = SymBitVector | int | str | bytes | bool
+AngrObjectType = AngrValueType | Variable
+AngrType = AngrValueType | AngrObjectType
+AngrExtendedType = Variable | dict[str, AngrValueType] | list[AngrValueType]
 
 class Variable:
-    def __init__(self, name:str, value):
+    def __init__(self, name:str, value:AngrExtendedType):
         self.name = name
+        assert not isinstance(value, Variable)
         self._value = value
 
     @property
-    def value(self) ->AngrValueType:   
+    def value(self) ->AngrExtendedType:   
         return self._value
     @value.setter
-    def value(self, value:AngrValueType):
+    def value(self, value:AngrExtendedType):
+        assert isinstance(value, (SymBitVector, int, str, bytes))
         self._value = value
     
     def __repr__(self):
@@ -109,7 +121,7 @@ def check_signature_matches(func, o, args, kwargs):
                 #get the value of the expected enum type given the str
                 param_value = expected_type[param_value]
             if not isinstance(param_value, expected_type):
-                raise InvalidArgumentError(f"Argument '{param_name}' should be of type {expected_type.__name__}, got {type(param_value).__name__}")
+                raise InvalidArgumentError(f"Argument '{param_name}' should be of type {expected_type.__name__ if isinstance(expected_type, type) else expected_type}, got {type(param_value).__name__}")
     
 def parse_binary_string(binary_string_text):
     # Strip the `b'` prefix and trailing `'`

@@ -9,7 +9,7 @@ from dAngr.angr_ext.step_handler import StopReason
 from dAngr.cli.grammar.definitions import ArgumentSpec, FunctionDefinition
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.exceptions import ExecutionError, InvalidArgumentError,DebuggerCommandError
-from dAngr.utils.utils import str_to_type, undefined, StreamType, DataType, ObjectStore, SymBitVector, SymString, Constraint
+from dAngr.utils.utils import str_to_type, undefined, AngrExtendedType, AngrType, AngrValueType, StreamType, DataType, ObjectStore, SymBitVector, Constraint
 
 # required for str_to_type - do not remove
 from dAngr.cli.grammar.expressions import *
@@ -81,7 +81,7 @@ class BuiltinFunctionDefinition(FunctionDefinition):
     
     async def __call__(self, context:ExecutionContext,*args, **named_args) -> Any:
         from dAngr.cli.command_line_debugger import dAngrExecutionContext
-        o = self._cmd_class(cast(dAngrExecutionContext,context).debugger)
+        o = self._cmd_class(cast(dAngrExecutionContext,context.root).debugger)
         # get the function from the class
         f = getattr(o, self._name, None)
         if not f:
@@ -262,12 +262,30 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
         # return self._debugger
         return cast(CommandLineDebugger,self._debugger)
     
-    def to_value(self, value: int|bytes|str|SymBitVector|SymString|Variable):
+    def to_value(self, value: int|bytes|str|SymBitVector|Variable):
         if value is None:
             return None
         if isinstance(value, Variable):
             return value.value
         return value
+    
+    def get_angr_value(self, ref:AngrType)->AngrValueType:
+        if isinstance(ref, str):
+            var = self.debugger.context.find_variable(ref)
+            if var:
+                assert isinstance(var.value, AngrValueType), f"Invalid value type {type(var.value)}"
+                return var.value
+            else:
+                sym = self.debugger.find_symbol(ref)
+                if not sym is None:
+                    return sym
+                else:
+                    log.debug(f"Variable or symbol {ref} not found, asuming string conversion.")
+                    return ref
+        elif isinstance(ref, Variable):
+            return ref.value # type: ignore
+        else:
+            return ref
 
     async def run_angr(self, until:Callable[[SimulationManager],StopReason] = lambda _: StopReason.NONE):
         u = until

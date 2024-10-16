@@ -1,6 +1,6 @@
 import claripy
 from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils.utils import Constraint, DataType, SymBitVector, SymString, undefined
+from dAngr.utils.utils import Constraint, DataType, SymBitVector, undefined
 from .base import BaseCommand
 
 class SymbolCommands(BaseCommand):
@@ -25,7 +25,19 @@ class SymbolCommands(BaseCommand):
         self.debugger.add_symbol(name, claripy.BVS(name, int_size*8))
         await self.send_info(f"Symbol {name} created.")
 
-    
+    # async def is_symbolic(self, sym:str|SymBitVector):
+    #     """
+    #     Check if a symbol is symbolic.
+
+    #     Args:
+    #         sym (str|SymBitVector): Name of the symbol
+        
+    #     Short name: sis
+        
+    #     """
+    #     if isinstance(sym, str):
+    #         sym = self.debugger.get_symbol(sym)
+    #     return sym.symbolic
     # async def add_symbol_int(self, name:str):
     #     """
     #     Add a symbol with name and size.
@@ -51,16 +63,14 @@ class SymbolCommands(BaseCommand):
     #     Short name: sas
         
     #     """
-    #     # TODO: check what StringS can be used for, using it in e.g., file stream it fails to work, had to use bitvector.
-    #     self.debugger.add_symbol(name, claripy.StringS(name, size*8))
     #     await self.send_info(f"Symbolic string {name} created.")
 
-    async def symbol_to_bytes(self, sym:str|SymBitVector|SymString):
+    async def symbol_to_bytes(self, sym:str|SymBitVector):
         """
         Solve and get concrete symbol value in bytes based on current state.
 
         Args:
-            sym (str|SymBitVector|SymString): Name of the symbol
+            sym (str|SymBitVector): Name of the symbol
         
         Short name: stb
         
@@ -69,12 +79,12 @@ class SymbolCommands(BaseCommand):
             sym = self.debugger.get_symbol(sym)
         return self.debugger.cast_to(sym, DataType.bytes)
     
-    async def symbol_to_int(self, sym:str|SymBitVector|SymString):
+    async def symbol_to_int(self, sym:str|SymBitVector):
         """
         Solve and get concrete symbol value as int based on current state.
 
         Args:
-            sym (str|SymBitVector|SymString): Name of the symbol
+            sym (str|SymBitVector): Name of the symbol
         
         Short name: sti
         
@@ -83,12 +93,12 @@ class SymbolCommands(BaseCommand):
             sym = self.debugger.get_symbol(sym)
         return self.debugger.cast_to(sym, DataType.int)
     
-    async def symbol_to_str(self, sym:str|SymBitVector|SymString):
+    async def symbol_to_str(self, sym:str|SymBitVector):
         """
         Convert symbol to a str.
 
         Args:
-            sym (str|SymBitVector|SymString): Name of the symbol
+            sym (str|SymBitVector): Name of the symbol
         
         Short name: sts
         
@@ -97,12 +107,12 @@ class SymbolCommands(BaseCommand):
             sym = self.debugger.get_symbol(sym)
         return self.debugger.cast_to(sym, DataType.str)
     
-    async def symbol_to_bool(self, sym:str|SymBitVector|SymString):
+    async def symbol_to_bool(self, sym:str|SymBitVector):
         """
         Solve and get concrete symbol value as bool based on current state.
 
         Args:
-            sym (str|SymBitVector|SymString): Name of the symbol
+            sym (str|SymBitVector): Name of the symbol
         
         Short name: stB
         
@@ -111,17 +121,17 @@ class SymbolCommands(BaseCommand):
             sym = self.debugger.get_symbol(sym)
         return self.debugger.cast_to(sym, DataType.bool)
     
-    async def remove_symbol(self, sym:str|SymBitVector|SymString):
+    async def remove_symbol(self, sym:str|SymBitVector):
         """
         Remove a symbol.
 
         Args:
-            sym (str|SymBitVector|SymString): Name of the symbol
+            sym (str|SymBitVector): Name of the symbol
         
         Short name: sr
         
         """
-        if isinstance(sym, SymBitVector) or isinstance(sym, SymString):
+        if isinstance(sym, SymBitVector):
             if len(sym.args) == 0:
                 raise DebuggerCommandError("Symbol name not found.")
             name = sym.args[0]
@@ -129,13 +139,13 @@ class SymbolCommands(BaseCommand):
         self.debugger.remove_symbol(name)
         await self.send_info(f"Symbol {sym} removed.")
     
-    # async def set_symbol_value(self, sym:str|SymBitVector|SymString, value:int|bytes|str|SymBitVector|SymString):
+    # async def set_symbol_value(self, sym:str|SymBitVector, value:int|bytes|str|SymBitVector):
     #     """
     #     Set a symbol value.
 
     #     Args:
-    #         sym (str|SymBitVector|SymString): Name of the symbol
-    #         value (int|bytes|str|SymBitVector|SymString): Value to set
+    #         sym (str|SymBitVector): Name of the symbol
+    #         value (int|bytes|str|SymBitVector): Value to set
         
     #     Short name: ssv
         

@@ -33,7 +33,18 @@ class ExecutionContext:
             return self._parent[name]
         raise KeyError(f"Unknown variable: {name}")
     
+    def find_variable(self, name:str):
+        if name in self._variables:
+            return self._variables[name]
+        if self._parent and name in self._parent.variables:
+            return self._parent[name]
+        if "@"+name in self.root.variables:
+            return self.root.variables["@"+name]
+        return None
+    
+    
     def __setitem__(self, name, value):
+        assert not isinstance(value, Variable)
         if name in self._variables:
             self._variables[name]._value = value
         elif self._parent and name in self._parent.variables:
@@ -41,6 +52,7 @@ class ExecutionContext:
         else:
             self._variables[name] = Variable(name,value)
     def add_variable(self, name:str, value:Any):
+        assert not isinstance(value, Variable)
         self._variables[name] = Variable(name, value)
     def remove_variable(self, name:str):
         if name in self._variables:
@@ -52,11 +64,15 @@ class ExecutionContext:
             del self._definitions[name]
 
     def get_definition(self, name:str):
+        if definition := self.find_definition(name):
+            return definition
+        raise KeyError(f"Unknown definition: {name}")
+    def find_definition(self, name:str):
         if name in self._definitions:
             return self._definitions[name]
         if self._parent and name in self._parent.definitions:
             return self._parent.get_definition(name)
-        raise KeyError(f"Unknown definition: {name}")
+        return None
     @property
     def definitions(self):
         # merge dict from the parent with precedence to the current context

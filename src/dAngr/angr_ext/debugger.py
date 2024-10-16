@@ -4,19 +4,18 @@ import re
 import subprocess
 from typing import Any, Callable, Dict, List, Tuple, cast
 import angr
-from angr import SimCC, SimulationManager, types
+from angr import SimCC, SimProcedure, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
 import angr.storage
 import archinfo
 import claripy
-import claripy.strings
 import cle
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.cli.grammar.execution_context import Variable
-from dAngr.utils.utils import AngrValueType, DataType, Endness, ObjectStore, StreamType, SymBitVector, SymString, remove_ansi_escape_codes
+from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, ObjectStore, StreamType, SymBitVector, remove_ansi_escape_codes
 
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, get_function_by_addr, hook_simprocedures, load_module_from_file
@@ -53,7 +52,7 @@ class Debugger:
         self._cfg:CFGFast|None = None
         self.stop_reason = StopReason.NONE
         self._entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None = None
-        self._symbols:Dict[str,SymBitVector|SymString] = {}
+        self._symbols:Dict[str,SymBitVector] = {}
 
     @property
     def project(self)->angr.project.Project:
@@ -75,7 +74,7 @@ class Debugger:
     def simgr(self)->SimulationManager:
         if self._simgr is None:
             self.throw_if_not_initialized()
-            self._simgr,_ = create_entry_state(self.project,self._entry_point,self._default_state_options, self._current_state)
+            self._simgr,_ = create_entry_state(self.project,self._entry_point,self._default_state_options, self._current_state, self.veritesting)
         return self._simgr
     
     @property
@@ -263,8 +262,9 @@ class Debugger:
             return self.from_src_path + path[len(self.to_src_path):]
         return path
     
-    def init(self, binary_path:str, base_addr:int=0, from_src_path=None, to_src_path=None): #support passing custom angr arguments to project
+    def init(self, binary_path:str, base_addr:int=0, from_src_path=None, to_src_path=None, veritesting:bool=False): #support passing custom angr arguments to project
         self.reset_state()
+        self.veritesting = veritesting
         self._binary_path = binary_path
         self.from_src_path = os.path.abspath(os.path.expanduser(os.path.normpath(from_src_path))) if from_src_path else ''
         self.to_src_path = os.path.abspath(os.path.expanduser(os.path.normpath(to_src_path))) if to_src_path else ''
@@ -320,7 +320,7 @@ class Debugger:
         self._entry_point = address
         
     
-    def add_symbol(self, name:str, sym:SymBitVector|SymString):
+    def add_symbol(self, name:str, sym:SymBitVector):
         self._symbols[name] = sym
 
     def remove_symbol(self, name:str):
@@ -333,21 +333,27 @@ class Debugger:
         if name in self._symbols:
             return self._symbols[name]
         else : raise DebuggerCommandError(f"Symbol {name} not found.")
+    
+    def find_symbol(self, name:str):
+        if name in self._symbols:
+            return self._symbols[name]
+        return None
 
     def set_symbol(self, name, value):
         self._symbols[name] = value
 
     def add_constraint(self, cs):
         self.current_state.add_constraints(cs)
-
-    def add_to_stack(self, value:int|bytes|str|SymBitVector|SymString|Variable):
-        if isinstance(value, int):
-            value = self.to_bytes(value)
-        elif isinstance(value, str):
-            value = value.encode('utf-8')
-        elif isinstance(value, Variable):
-            value = value.value
-        self.current_state.stack_push(value)
+    def make_value(self, value:AngrObjectType)->AngrValueType:
+        if isinstance(value, Variable):
+            if not value.value:
+                raise DebuggerCommandError("Variable has no value.")
+            return value.value
+        return value
+    
+    def add_to_stack(self, value:AngrObjectType):
+        v = self.make_value(value)
+        self.current_state.stack_push(v)
         
     def get_stack(self, length, offset = 0):
         return self.current_state.stack_read(offset,length)
@@ -362,7 +368,7 @@ class Debugger:
         self._cfg = None
         self.stop_reason = StopReason.NONE
         self._entry_point = None
-        self._symbols = {}
+#        self._symbols = {}
 
         log.info("State reset.")
     
@@ -515,8 +521,6 @@ class Debugger:
         return self.simgr.stashes[stash]
     
     def set_memory(self,address:int|SymBitVector,value:AngrValueType,size:int|None = None, endness:Endness = Endness.DEFAULT):
-        if isinstance(value,claripy.String):
-            raise DebuggerCommandError("Cannot set memory to string.")
         if isinstance(value,str):
             # Encode string to bytes
             val = value.encode('utf-8')
@@ -525,17 +529,19 @@ class Debugger:
         switch = {
             Endness.LE: archinfo.Endness.LE,
             Endness.BE: archinfo.Endness.BE,
-            Endness.BINARY: self.project.arch.memory_endness,
+            Endness.MEMORY: self.project.arch.memory_endness,
+            Endness.REGISTER: self.project.arch.register_endness,
             Endness.DEFAULT: archinfo.Endness.BE
         }
         en = switch.get(endness)
         # Store the byte value in memory
         self.current_state.memory.store(address, val,size, endness=en,)
     
-    def get_memory(self, address:int|SymBitVector, size = 0):
+    def get_memory(self, address:int|SymBitVector, size:int|SymBitVector = 0):
         state = self.current_state
-        if size == 0:
-            size = self.project.arch.bits // 8
+        if address is int: 
+            if size == 0:
+                size = self.project.arch.bits // 8
         byte_value = state.memory.load(address, size)
         return byte_value
     
@@ -545,68 +551,95 @@ class Debugger:
         std:StdTracker = state.get_plugin(f'{mapped}_tracker')
         return std.get_prev_string()
 
-    def cast_to(self, value:SymBitVector|SymString, cast_to:DataType):
-        # if not value.concrete:
-        #     raise DebuggerCommandError("Value is not concrete.")
+    def cast_to(self, value:AngrValueType, cast_to:DataType)-> AngrValueType:
         state = self.current_state
-        if cast_to == DataType.bytes:
-            if isinstance(value, claripy.String):
-                bytes_values = []
-                for i in range(32):  # Loop over each byte
-                    byte = value.args[0][i]
-                    concrete_byte_value = state.solver.eval(byte)
-                    bytes_values.append(concrete_byte_value)
-                return bytes_values
-                # concrete_string = bytes(bytes_values).decode('utf-8')
-                # return value.args[0]
+        if isinstance(value, SymBitVector):
+            switch = {
+                DataType.bytes: bytes,
+                DataType.int: int,
+                DataType.bool: bool,
+            }
+            cast_to_ = switch.get(cast_to, None)
+            if cast_to_:
+                return state.solver.eval(value, cast_to=cast_to_)
             else:
-                return state.solver.eval(value, cast_to=bytes)
-        if cast_to == DataType.hex:
-            return hex(self.cast_to(value, DataType.int)) # type: ignore
-        if cast_to == DataType.str:
-            if isinstance(value, claripy.String):
-                bytes_values = []
-                for i in range(32):  # Loop over each byte
-                    byte = value.args[0][i]
-                    concrete_byte_value = state.solver.eval(byte)
-                    bytes_values.append(concrete_byte_value)
-                return bytes(bytes_values).decode('utf-8')
-                # concrete_string = bytes(bytes_values).decode('utf-8')
-                # return value.args[0]
-            else:
-                b = state.solver.eval(value, cast_to=bytes)
-                return b.decode('utf-8')
-
+                value = state.solver.eval(value, cast_to=bytes)
         switch = {
-            DataType.int: int,
-            DataType.bool: bool,
-            DataType.double: float,
+            DataType.bytes: self._to_bytes,
+            DataType.int: self._to_int,
+            DataType.bool: self._to_bool,
+            DataType.str: self._to_str,
+            DataType.hex: self._to_hex
         }
-        cast_to_ = switch.get(cast_to, None)
-        if cast_to_:
-            if isinstance(value, claripy.String):
-                raise DebuggerCommandError("Cannot cast a string to an integer/bool/float.")
-            if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le':
-                endianness = 'little'
-            else:
-                endianness = 'big'
-            return state.solver.eval(value, cast_to=cast_to_)
+        if f := switch.get(cast_to,None):
+            return f(value)
         else:
-            raise DebuggerCommandError(f"Invalid data type: {cast_to}.")
-        
+            raise DebuggerCommandError(f"Cast to {cast_to} not supported.")
 
-    def to_bytes(self, value):
+    def _get_endianness(self):
+        if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le':
+            endianness = 'little'
+        else:
+            endianness = 'big'
+        return endianness
+   
+    #TODO: move to utils
+    def _to_int(self, value:int|str|bytes|bool)->int:
+        if type(value) == int:
+            return value
+        elif type(value) == str:
+            if value.startswith('0x'):
+                return int(value, 16)
+            return int(value, 0)
+        elif type(value) == bytes:
+            return int.from_bytes(value, byteorder=self._get_endianness())
+        elif type(value) == bool:
+            return int(value)
+        raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
+
+    def _to_hex(self, value:int|str|bytes|bool)->str:
+        if type(value) == int:
+            return hex(value)
+        elif type(value) == str:
+            return self._to_bytes(value).hex(":")
+        elif type(value) == bytes:
+            return value.hex(":")
+        elif type(value) == bool:
+            return hex(int(value))
+        raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
+    
+    def _to_str(self, value:int|str|bytes|bool)->str:
+        if type(value) == int:
+            return str(value)
+        elif type(value) == bytes:
+            return value.decode('utf-8', errors='replace')
+        elif type(value) == str:
+            return value
+        elif type(value) == bool:
+            return str(value)
+        raise DebuggerCommandError(f"Type not supported. Use 'int' or 'bytes'.")
+    def _to_bool(self, value:int|str|bytes|bool)->bool:
+        if type(value) == int:
+            return bool(value)
+        elif type(value) == str:
+            return value.lower() in ['true', '1']
+        elif type(value) == bytes:
+            return bool(int.from_bytes(value, byteorder=self._get_endianness()))
+        elif type(value) == bool:
+            return value
+        raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
+    
+    def _to_bytes(self, value:int|str|bytes|bool)->bytes:
         if type(value) == int:
             # Account for endianness when storing integers
-            if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le':
-                endianness = 'little'
-            else:
-                endianness = 'big'
+            endianness = self._get_endianness()
             byte_value = value.to_bytes(self.project.arch.bytes, byteorder=endianness)
         elif type(value) == str:
             byte_value = value.encode('utf-8')
         elif type(value) == bytes:
             byte_value = value
+        elif type(value) == bool:
+            byte_value = int(value).to_bytes(1, byteorder=self._get_endianness())
         else:
             raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
         return byte_value
@@ -619,6 +652,14 @@ class Debugger:
     
     def add_hook(self, address:int, function:Callable, skip_length:int = 0):
         self.project.hook(address, function, length=skip_length, replace=True)
+
+    def add_function_hook(self, target:int|str, function:SimProcedure):
+        self.project.hook_symbol(target, function, replace=True)
+
+    def add_to_state(self, name:str, value:AngrType):
+        self.current_state.globals[name] = value
+    def get_from_state(self, name:str):
+        return self.current_state.globals[name]
 
     def get_constraints(self):
         return self.current_state.solver.constraints

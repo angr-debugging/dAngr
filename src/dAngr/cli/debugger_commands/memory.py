@@ -3,8 +3,7 @@ from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import ReferenceObject
 from dAngr.cli.models import Register
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
-from dAngr.utils import  DataType, SymBitVector, SymString
-from dAngr.utils.utils import Endness
+from dAngr.utils import  DataType, SymBitVector, AngrType, Endness
 from .base import BaseCommand
 
 
@@ -13,13 +12,13 @@ class MemoryCommands(BaseCommand):
         super().__init__(debugger_core)
 
 
-    async def assign(self, target:ReferenceObject, value:int|bytes|str|SymBitVector|SymString|Variable):
+    async def assign(self, target:ReferenceObject, value:int|bytes|str|SymBitVector|Variable):
         """
         Assign a value to some target symbol
 
         Args:
             target (ReferenceObject): Name of the symbol. Prefix with &reg for register, &mem for memory, &sym for symbol.
-            value (int|bytes|str|SymBitVector|SymString|Variable): Value to set. Either a value or a prefixed register, memory or symbol.
+            value (int|bytes|str|SymBitVector|Variable): Value to set. Either a value or a prefixed register, memory or symbol.
         
         Short name: as
         
@@ -28,17 +27,17 @@ class MemoryCommands(BaseCommand):
         await self.send_info(f"Value {value} assigned to {target}.")
 
 
-    async def add_to_stack(self, value:int|bytes|str|SymBitVector|SymString|Variable):
+    async def add_to_stack(self, value:int|bytes|str|SymBitVector|Variable):
         """
         Add a value to the stack.
 
         Args:
-            value (int|bytes|str|SymBitVector|SymString|Variable): Value to set at the stack.
+            value (int|bytes|str|SymBitVector|Variable): Value to set at the stack.
         
         Short name: ast
         
         """
-        self.debugger.add_to_stack(self.to_value(value))
+        self.debugger.add_to_stack(self.get_angr_value(value))
         await self.send_info(f"Value {value} added to the stack.")
 
     async def get_stack(self, length:int, offset:int=0):
@@ -66,7 +65,7 @@ class MemoryCommands(BaseCommand):
         """
         return self.debugger.get_string_memory(address)
         
-    async def get_memory(self, address:int|SymBitVector, size:int, type:DataType = DataType.bytes):
+    async def get_memory(self, address:int|SymBitVector, size:int|SymBitVector, type:DataType = DataType.bytes):
         """
         Get the memory value at a specific address.
         Supported Types: int, bytes, bool, double, hex.
@@ -80,30 +79,26 @@ class MemoryCommands(BaseCommand):
         """
         m = self.debugger.get_memory(address, size)
         if m.symbolic:
-            return str(m)
-        value = self.debugger.cast_to(m, cast_to=type)
-        if value:
-            return value
-        else:
-            raise DebuggerCommandError(f"Invalid data type: {type}.")
+            return m
+        return self.debugger.cast_to(m, cast_to=type)
     
-    async def set_memory(self, address:int|SymBitVector, value:str|bytes|int|SymBitVector|SymString|Variable, size:int|None=None, endness:Endness=Endness.DEFAULT):
+    async def set_memory(self, address:int|SymBitVector, value:AngrType, size:int|None=None, endness:Endness=Endness.DEFAULT):
         """
         Set a memory value at a specific address.
         Supported Types: int, str, bytes.
 
         Args:
-            address (int): Address in the memory
-            value (int|bytes|str|SymBitVector|SymString|Variable): Value to set at the address.
-            size (int): Size of the memory, default is None.
+            address (int|SymBitVector): Address in the memory
+            value (AngrType): Value to set at the address.
+            size (int|None): Size of the memory, default is None.
             endness (Endness): Endianness of the value.
 
         Short name: ms
         """
-        value = self.to_value(value)
-        self.debugger.set_memory(address, value,size=size, endness=endness)        
+        value = self.get_angr_value(value)
+        self.debugger.set_memory(address, value, size=size, endness=endness)        
         if isinstance(address, SymBitVector):
-            a = self.debugger.cast_to(address, DataType.hex)
+            a = str(address)
         else:
             a = hex(address)
         await self.send_info(f"Memory at {a}: {value}.")
@@ -167,7 +162,9 @@ class MemoryCommands(BaseCommand):
         
         """
         value = self.debugger.get_register(name)
-        return self.debugger.cast_to(value, cast_to=DataType.hex)
+        # handle as int instead of 64 bit byte array
+        v = self.debugger.cast_to(value, cast_to=DataType.int)
+        return self.debugger.cast_to(v, cast_to=DataType.hex)
 
     async def list_registers(self):
         """

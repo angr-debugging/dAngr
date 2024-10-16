@@ -17,7 +17,7 @@ python_range: BANG LPAREN py_content RPAREN;
 
 bash_content: anything;
 py_content: anything;
-anything: LETTERS | NUMBERS | symbol | STRING | LPAREN anything RPAREN;
+anything: (LETTERS | NUMBERS | symbol | STRING | LPAREN anything RPAREN);
 
 symbol: WS  | BANG | AMP | DOLLAR | COLON | SCOLON | COMMA | QUOTE | SQUOTE | 
         AT | DOT | BAR | BRA | KET | BRACE | KETCE | HAT | HASH | PERC | TIMES | ADD | DIV | 

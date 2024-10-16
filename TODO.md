@@ -1,27 +1,23 @@
 # MUST
+- improved logging
 
 # WANT
-
 - support cfg for range
-# Symbolic Execution
-
-Required for ctf:
-- set reg/mem/symbol to other reg/mem/symbol
-- create symbol from memory/register
-- push to stack
-- create symbolic file 
-- add symbolic file to filesystem
-- add constraints to symbol
-
+# CTF
+cleanup markdown files / copy info from original
 
 # Installation
-- Install issue ??
+- Install issue ??, fix docker
 
 # Unit testing
-- add tests for all commands that require initialization / active state
+- add more tests
 
+# Doucmentation
+- generarte new docs
+- add info about python and bash support
+- cleaner feedback on invalid tokens/parsing?
 
 # FUTURE WORK
-# Debugging
+# Debugging - async
 - pause does not work as you cannot give inputs while running ...
 

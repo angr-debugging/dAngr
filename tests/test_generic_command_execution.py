@@ -2,6 +2,8 @@ import pytest
 
 from unittest.mock import AsyncMock
 
+from dAngr.cli.cli_connection import CliConnection
+from dAngr.cli.command_line_debugger import CommandLineDebugger, dAngrExecutionContext
 from dAngr.cli.grammar.control_flow import ForLoop, IfThenElse
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.cli.grammar.parser import lex_input, parse_input
@@ -18,13 +20,23 @@ class TestGenericCommandExecution:
     def teardown_method(self):
         pass
     
-    async def test_python_command(self,capsys):
+    @pytest.fixture
+    def conn(self):
+        c = CliConnection()
+        c.send_output = AsyncMock()
+        return c
+
+    @pytest.fixture
+    async def dbg(self,conn):
+        dbg = CommandLineDebugger(conn)
+        return dbg
+
+    async def test_python_command(self,capsys,dbg):
         input = "!print('x')"
         result = parse_input(input)
         
         assert isinstance(result, Script)
-        ctx = ExecutionContext()
+        ctx = dAngrExecutionContext(dbg,{})
         r = await result(ctx)
         assert r == None
-        stdout = capsys.readouterr().out
-        assert stdout == "x\n"
+        assert str(dbg.conn.send_output.call_args[0][0])  == "x\n"

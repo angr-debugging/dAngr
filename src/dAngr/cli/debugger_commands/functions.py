@@ -5,7 +5,7 @@ from dAngr.angr_ext.utils import convert_string
 from dAngr.cli.debugger_commands import BaseCommand
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
-from dAngr.utils.utils import parse_arguments, Endness
+from dAngr.utils.utils import parse_arguments,Endness
 
 class FunctionCommands(BaseCommand):
     def __init__(self, debugger_core):
@@ -94,7 +94,7 @@ class FunctionCommands(BaseCommand):
                 v = convert_string(tp, value)
                 ix = ix + 1
                 if type(tp) is angr.types.SimTypePointer and not type(v) is int:
-                    self.debugger.set_memory(0x1000 * ix, v) # type: ignore
+                    self.debugger.set_memory(0x1000 * ix, v, len(v)) # type: ignore
                     v = 0x1000 * ix
                     info.append(f"Value {value} stored at {hex(v)}")
             

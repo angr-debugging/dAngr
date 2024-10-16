@@ -9,6 +9,7 @@ SYM_DB : '&sym';
 REG_DB : '&reg';
 VARS_DB : '&vars';
 MEM_DB : '&mem';
+STATE : '&state';
 
 
 STRING : '"' (ESCAPED_QUOTE | ~["\\])* '"' | '\'' (ESCAPED_SINGLE_QUOTE | ~['\\])* '\'';

@@ -30,8 +30,13 @@
                 // "${workspaceFolder}/examples/malware.oregonctf.org/06_angr_symbolic_dynamic_memory.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/07_angr_symbolic_file.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/08_angr_constraints.md"
-                "${workspaceFolder}/examples/malware.oregonctf.org/09_angr_hooks.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/09_angr_hooks.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/10_angr_simprocedures.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/11_angr_sim_scanf.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/12_angr_veritesting.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/13_angr_static_binary.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/14_angr_shared_library.md"
+                "${workspaceFolder}/examples/malware.oregonctf.org/15_angr_arbitrary_read.md"
                 // "${workspaceFolder}/examples/basic_example/example.dangr"
             ],
             "console": "integratedTerminal",

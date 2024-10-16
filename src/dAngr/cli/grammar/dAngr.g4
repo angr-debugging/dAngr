@@ -23,6 +23,7 @@ def nextToken(self):
     return self.denter.next_token()
 
 }
+
 @parser::header {
 import re as rex
 }
@@ -88,17 +89,15 @@ operation : ADD | DASH | TIMES | DIV | PERC | POW | EQ | NEQ | GT | LT | LE | GE
 
 
 py_basic_content: identifier WS? LPAREN WS? (py_content)* RPAREN  ;
-py_content: (reference |range | anything | LPAREN py_content RPAREN)+;
+py_content: (reference |range | anything | LPAREN py_content RPAREN)+ ;
 
 reference: 
         (VARS_DB|REG_DB|SYM_DB) DOT identifier | // ReferenceObject
+        STATE |
         MEM_DB BRA WS? numeric (WS? ARROW WS? NUMBERS)? KET // MemoryObject with size and length
         ;
-// named_arg: (identifier ASSIGN)? expression;
 
 bash_content: identifier (range|anything |reference)*;
-
-//content: (identifier LPAREN)? (object (WS? operation WS? expression_part)? | symbol)+;// | ; 
 
 
 index : identifier | numeric;
@@ -109,8 +108,7 @@ object : identifier |
     (ADD|SUB)? NUMBERS |
     HEX_NUMBERS | 
     BOOL |
-    (VARS_DB|REG_DB|SYM_DB) DOT identifier | // ReferenceObject
-    MEM_DB BRA WS? numeric (WS? ARROW WS? NUMBERS)? KET| // MemoryObject with size and length
+    reference |
     object DOT identifier | // property
     object BRA WS? index WS? KET | // indexed property
     object BRA WS? numeric WS? COLON WS? numeric WS? KET | // slice from start to end
@@ -121,7 +119,7 @@ object : identifier |
     BINARY_STRING
     ; 
 
-special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | NEWLINE;
+special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE;
 
 STATIC : 'static';
 

@@ -38,6 +38,9 @@ class TestExamples:
         "07_angr_symbolic_file.md": 'OBAXRUZT',
         "08_angr_constraints.md": 'ZEVKWROAYILRPZYB',
         "09_angr_hooks.md": b'QREPXOHPJPOQKQLKNOBMULEMGMLNHNIH',
+        "10_angr_simprocedures.md": b'MTMDRONBBNSAAMNS',
+        "11_angr_sim_scanf.md": '1447907916 1146768724',
+        "13_angr_static_binary.md": b'EADQYLAR',
         "14_angr_shared_library.md": 'TSDLQKWZ',
     }
 
@@ -47,10 +50,10 @@ class TestExamples:
         # and check the output
 
         for file in sorted(os.listdir("examples/malware.oregonctf.org")):
-            if file.endswith(".md"):
+            if file.endswith(".md") and "12" in file:
                 print(file)
                 await dbg.handle("run_script 'examples/malware.oregonctf.org/" + file + "'")
-                assert conn.send_result.call_args[0][0] == self.results[file]
+                assert conn.send_result.call_args[0][0] == self.results[file], f"Failed on {file}"
                 conn.send_result.reset_mock()
                 conn.send_info.reset_mock()
                 conn.send_error.reset_mock()

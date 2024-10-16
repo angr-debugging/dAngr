@@ -1,7 +1,7 @@
 
 import claripy
 from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils.utils import StreamType, SymBitVector, SymString, Variable, convert_argument
+from dAngr.utils.utils import StreamType, SymBitVector, Variable, convert_argument
 from .base import BaseCommand
 
 class FileCommands(BaseCommand):
@@ -21,13 +21,13 @@ class FileCommands(BaseCommand):
         return self.debugger.get_stdstream(stream_type)
 
 
-    async def create_symbolic_file(self, name:str, content:str|SymBitVector|SymString|Variable|None=None, size:int|None=None):
+    async def create_symbolic_file(self, name:str, content:str|SymBitVector|Variable|None=None, size:int|None=None):
         """
         Create a symbolic file with name and size.
 
         Args:
             name (str): Name of the file
-            content (str|SymBitVector|SymString|Variable|None): Content of the file. Default is None. If content starts with $sym.SYM, the content is replaced with the symbol named SYM.
+            content (str|SymBitVector|Variable|None): Content of the file. Default is None. If content starts with $sym.SYM, the content is replaced with the symbol named SYM.
             size (int|None): Size of the file. Default is None.
         
         Short name: cs

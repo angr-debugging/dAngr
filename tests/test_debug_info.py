@@ -33,10 +33,6 @@ class TestDebugInfoCommands:
         assert await dbg.handle("load example")
         assert await dbg.handle("add_breakpoint 0x400566")
         assert await dbg.handle("continue")
-        conn.send_result = AsyncMock()
-        conn.send_info = AsyncMock()
-        conn.send_error = AsyncMock()
-
         return dbg
 
     # @pytest.mark.asyncio

@@ -1,13 +1,18 @@
 import asyncio
+import inspect
 import os
+import types
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.angr_ext.step_handler import StopReason
 from dAngr.cli.debugger_commands import BaseCommand
+from dAngr.cli.grammar.definitions import FunctionDefinition
 from dAngr.cli.script_processor import ScriptProcessor
 from dAngr.exceptions import DebuggerCommandError, ExecutionError
+from dAngr.utils import AngrType
 import angr
 
 from dAngr.utils.loggers import AsyncLogger
+from dAngr.utils.utils import Variable
 
 log = AsyncLogger("execution")
 
@@ -94,21 +99,78 @@ class ExecutionCommands(BaseCommand):
                     print(f"Running hooked print function in example_hooks.py: {args}")
                     return
         
-        Short name: lh
+        Short name: hl
         """
         self.debugger.load_hooks(filename)
         await self.send_info(f"Hooks '{filename}' successfully attached.")
+
+
    
-    async def add_hook(self,  definition:str, location:int|str, skip_length:int = 0):
+    
+    def _generate_simProcedure(self, func:FunctionDefinition):
+        from dAngr.cli.command_line_debugger import CommandLineDebugger
+        def generate_function(func):
+            def run(self, *args):
+                self._run(*args)
+            params = [inspect.Parameter(a.name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for a in func.args]
+            signature = inspect.Signature([inspect.Parameter("self", inspect.Parameter.POSITIONAL_OR_KEYWORD)] +params)
+            run.__signature__ = signature
+            return run
+        class CustomSimProcedure(angr.SimProcedure):
+            def __init__(self, debugger, func):
+                self.debugger = debugger
+                self.func:FunctionDefinition = func
+                super().__init__()
+            def _run(self, *args):
+                prev = self.debugger.current_state
+                try:
+                    self.debugger.current_state = self.state
+                    loop = asyncio.get_event_loop()
+                    return loop.run_until_complete(func(self.debugger.context, *args))
+                finally:
+                    self.debugger.current_state = prev
+
+        cls = type('CustomSimProcedure_'+func.name, (CustomSimProcedure,), {
+            'run': generate_function(func)
+        })
+        return cls(self.debugger, func)
+
+    def _get_standard_lib(self, func):
+        if "." in func:
+                lib, func = func.split(".")
+        else: lib= 'libc'
+        return angr.SIM_PROCEDURES[lib][func]()
+
+    async def hook_function(self,  definition:str, target:int|str):
         """
-        Add a hook at a specific location.
+        Add a hook to replace complete function/symbol.
+
+        Args:
+            definition (str): The definition of the hook. Standard sim procedures can be addressed as [lib].[func] e.g. libc.printf
+            target (int|str): The target to add the hook (int for an address, string for a function name).
+
+        Short name: har
+        """
+        func = self.debugger.context.find_definition(definition)
+        if func:
+            if not isinstance(func, FunctionDefinition):
+                raise DebuggerCommandError(f"Definition '{definition}' is not a function definition.")
+            proc = self._generate_simProcedure(func)
+        else:
+            proc = self._get_standard_lib(definition)
+        self.debugger.add_function_hook(target, proc)
+        await self.send_info(f"Hook added at {target}.")
+
+    async def hook_region(self,  definition:str, location:int|str, skip_length:int = 0):
+        """
+        Add a hook at a specific location/call site, and skip 'skip_length' instructions.
 
         Args:
             definition (str): The definition of the hook.
             location (int|str): The location to add the hook (int for an address, string for a function name).
             skip_length (int): The length of the instruction to skip. Default is 0.
 
-        Short name: ah
+        Short name: har
         """
         if isinstance(location, str):
             address = self.debugger.get_function_address(location)
@@ -116,31 +178,57 @@ class ExecutionCommands(BaseCommand):
                 raise DebuggerCommandError(f"Function '{location}' not found.")
         else:
             address = location
-        func = self.debugger.context.get_definition(definition)
-        def run_sync(state,*args):
-            try:
-                prev = self.debugger.current_state
-                self.debugger.current_state = state
-                loop = asyncio.get_event_loop()
-                v = loop.run_until_complete(func(self.debugger.context, *args))
-            finally:
-                self.debugger.current_state = prev
+        func = self.debugger.context.find_definition(definition)
+        if not func:
+            run_sync = self._get_standard_lib(definition)
+        else:
+            def run_sync(state,*args):
+                try:
+                    prev = self.debugger.current_state
+                    self.debugger.current_state = state
+                    loop = asyncio.get_event_loop()
+                    v = loop.run_until_complete(func(self.debugger.context, *args))
+                finally:
+                    self.debugger.current_state = prev
         
         self.debugger.add_hook(address, run_sync , skip_length)
         await self.send_info(f"Hook added at {location}.")
+    async def add_to_state(self, name:str, value:AngrType):
+        """
+        Add a value to the current state.
 
-    async def load(self, binary_path:str, base_addr:int=0):
+        Args:
+            name (str): The name of the value to add.
+            value (AngrType): Value to add to the state.
+
+        Short name: sta
+        """
+        self.debugger.add_to_state(name, value)
+        await self.send_info(f"Value {value} added to the state.")
+
+    async def get_from_state(self, name:str):
+        """
+        Get a value from the current state.
+
+        Args:
+            name (str): The name of the value to get.
+
+        Short name: sg
+        """
+        return self.debugger.get_from_state(name)
+
+    async def load(self, binary_path:str, base_addr:int=0, veritesting:bool=False):
         """
         Load a binary into the debugger.
 
         Args:
             binary_path (str): The path to the binary to load.
             base_addr (int): The base address of the binary. Default is 0, means the binary is loaded at its default base address.
-
+            veritesting (bool): Enable veritesting. Default is False.
         Short name: l
         """
         try:
-            self.debugger.init(binary_path, base_addr)
+            self.debugger.init(binary_path, base_addr, veritesting=veritesting)
         except Exception as e:
             raise DebuggerCommandError(f"Failed to load binary: {e}")
         f = os.path.basename(binary_path)

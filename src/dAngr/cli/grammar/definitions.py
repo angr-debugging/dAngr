@@ -104,7 +104,7 @@ class CustomFunctionDefinition(FunctionDefinition):
         context = FunctionContext(self, context)
         # match arg_values with required and optional args
         for i, arg in enumerate(arg_values):
-            context[self.args[i]]= arg_values[i]
+            context[self.args[i].name]= arg_values[i]
         for k,v in named_args.items():
             context[k] = v
             

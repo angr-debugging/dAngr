@@ -20,7 +20,8 @@ def evaluate_symbolic_string(symbolic_str, solver, length):
 
 def create_entry_state(project:Project, 
                        entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None= None, 
-                       default_state_options:Set[str]=set(), state = None)-> Tuple[SimulationManager,SimState]:
+                       default_state_options:Set[str]=set(), state = None,
+                       veritesting:bool=False)-> Tuple[SimulationManager,SimState]:
         if not state:
             if entry_point is None:
                 state = project.factory.entry_state(add_options=default_state_options)
@@ -41,13 +42,15 @@ def create_entry_state(project:Project,
                     remove_options=None,
                 )
         state.register_plugin('stdout_tracker', StdTracker())
-        simgr = project.factory.simulation_manager(state)
+        simgr = project.factory.simulation_manager(state, veritesting=veritesting)
         return simgr,state
 
 def get_function_address(project, function_name):
     for symbol in project.loader.symbols: 
         if symbol.name == function_name:
             return symbol.rebased_addr
+    if f := project.kb.functions.function(name=function_name):
+        return f.addr
     return None
 
 # def value_to_simtype(value):
