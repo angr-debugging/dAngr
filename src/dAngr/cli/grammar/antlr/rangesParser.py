@@ -10,11 +10,11 @@ else:
 
 def serializedATN():
     return [
-        4,1,58,57,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,60,57,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,1,0,1,0,1,1,1,1,1,1,3,1,24,8,1,1,2,1,2,1,2,1,2,
         1,2,1,3,1,3,1,3,1,3,1,3,1,4,1,4,1,4,1,4,1,4,1,5,1,5,1,6,1,6,1,7,
         1,7,1,7,1,7,1,7,1,7,1,7,1,7,3,7,53,8,7,1,8,1,8,1,8,0,0,9,0,2,4,6,
-        8,10,12,14,16,0,1,2,0,20,55,58,58,53,0,18,1,0,0,0,2,23,1,0,0,0,4,
+        8,10,12,14,16,0,1,2,0,20,58,60,60,53,0,18,1,0,0,0,2,23,1,0,0,0,4,
         25,1,0,0,0,6,30,1,0,0,0,8,35,1,0,0,0,10,40,1,0,0,0,12,42,1,0,0,0,
         14,52,1,0,0,0,16,54,1,0,0,0,18,19,3,2,1,0,19,1,1,0,0,0,20,24,3,4,
         2,0,21,24,3,6,3,0,22,24,3,8,4,0,23,20,1,0,0,0,23,21,1,0,0,0,23,22,
@@ -45,9 +45,10 @@ class rangesParser ( Parser ):
                      "<INVALID>", "<INVALID>", "<INVALID>", "'->'", "'('", 
                      "')'", "'!'", "'&'", "'$'", "':'", "';'", "','", "'\"'", 
                      "'''", "'@'", "'.'", "'|'", "'['", "']'", "'{'", "'}'", 
-                     "'^'", "'#'", "'%'", "'*'", "'+'", "'/'", "'**'", "'='", 
-                     "'=='", "'!='", "'<'", "'>'", "'<='", "'>='", "'&&'", 
-                     "'||'", "'?'", "'~'", "'`'", "'_'", "'-'" ]
+                     "'^'", "'#'", "'%'", "'*'", "'+'", "'/'", "'//'", "'<<'", 
+                     "'>>'", "'**'", "'='", "'=='", "'!='", "'<'", "'>'", 
+                     "'<='", "'>='", "'&&'", "'||'", "'?'", "'~'", "'`'", 
+                     "'_'", "'-'" ]
 
     symbolicNames = [ "<INVALID>", "HEX_NUMBERS", "NUMBERS", "NUMBER", "LETTERS", 
                       "LETTER", "SYM_DB", "REG_DB", "VARS_DB", "MEM_DB", 
@@ -55,10 +56,11 @@ class rangesParser ( Parser ):
                       "BINARY_STRING", "SESC_SEQ", "ESC_SEQ", "ARROW", "LPAREN", 
                       "RPAREN", "BANG", "AMP", "DOLLAR", "COLON", "SCOLON", 
                       "COMMA", "QUOTE", "SQUOTE", "AT", "DOT", "BAR", "BRA", 
-                      "KET", "BRACE", "KETCE", "HAT", "HASH", "PERC", "TIMES", 
-                      "ADD", "DIV", "POW", "ASSIGN", "EQ", "NEQ", "LT", 
-                      "GT", "LE", "GE", "AND", "OR", "QMARK", "TILDE", "TICK", 
-                      "UNDERSCORE", "DASH", "SUB", "NEWLINE", "WS" ]
+                      "KET", "BRACE", "KETCE", "HAT", "HASH", "PERC", "MUL", 
+                      "ADD", "DIV", "FLOORDIV", "LSHIFT", "RSHIFT", "POW", 
+                      "ASSIGN", "EQ", "NEQ", "LT", "GT", "LE", "GE", "AND", 
+                      "OR", "QMARK", "TILDE", "TICK", "UNDERSCORE", "DASH", 
+                      "NEWLINE", "WS" ]
 
     RULE_expression = 0
     RULE_range = 1
@@ -111,27 +113,29 @@ class rangesParser ( Parser ):
     HAT=35
     HASH=36
     PERC=37
-    TIMES=38
+    MUL=38
     ADD=39
     DIV=40
-    POW=41
-    ASSIGN=42
-    EQ=43
-    NEQ=44
-    LT=45
-    GT=46
-    LE=47
-    GE=48
-    AND=49
-    OR=50
-    QMARK=51
-    TILDE=52
-    TICK=53
-    UNDERSCORE=54
-    DASH=55
-    SUB=56
-    NEWLINE=57
-    WS=58
+    FLOORDIV=41
+    LSHIFT=42
+    RSHIFT=43
+    POW=44
+    ASSIGN=45
+    EQ=46
+    NEQ=47
+    LT=48
+    GT=49
+    LE=50
+    GE=51
+    AND=52
+    OR=53
+    QMARK=54
+    TILDE=55
+    TICK=56
+    UNDERSCORE=57
+    DASH=58
+    NEWLINE=59
+    WS=60
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -616,7 +620,7 @@ class rangesParser ( Parser ):
                 self.state = 45
                 self.match(rangesParser.NUMBERS)
                 pass
-            elif token in [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 58]:
+            elif token in [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60]:
                 self.state = 46
                 self.symbol()
                 pass
@@ -708,8 +712,8 @@ class rangesParser ( Parser ):
         def PERC(self):
             return self.getToken(rangesParser.PERC, 0)
 
-        def TIMES(self):
-            return self.getToken(rangesParser.TIMES, 0)
+        def MUL(self):
+            return self.getToken(rangesParser.MUL, 0)
 
         def ADD(self):
             return self.getToken(rangesParser.ADD, 0)
@@ -762,6 +766,15 @@ class rangesParser ( Parser ):
         def DASH(self):
             return self.getToken(rangesParser.DASH, 0)
 
+        def FLOORDIV(self):
+            return self.getToken(rangesParser.FLOORDIV, 0)
+
+        def LSHIFT(self):
+            return self.getToken(rangesParser.LSHIFT, 0)
+
+        def RSHIFT(self):
+            return self.getToken(rangesParser.RSHIFT, 0)
+
         def getRuleIndex(self):
             return rangesParser.RULE_symbol
 
@@ -791,7 +804,7 @@ class rangesParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 54
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 360287970188591104) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 1729382256909221888) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)

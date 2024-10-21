@@ -1,6 +1,6 @@
 import claripy
 from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils.utils import Constraint, DataType, SymBitVector, undefined
+from dAngr.utils.utils import Constraint, DataType, SymBitVector, undefined, AngrType
 from .base import BaseCommand
 
 class SymbolCommands(BaseCommand):
@@ -24,20 +24,63 @@ class SymbolCommands(BaseCommand):
         else: int_size = size
         self.debugger.add_symbol(name, claripy.BVS(name, int_size*8))
         await self.send_info(f"Symbol {name} created.")
+    async def chop_symbol(self, sym:str|SymBitVector, bits:int=1):
+        """
+        Chop a symbol to a specific number of bits.
 
-    # async def is_symbolic(self, sym:str|SymBitVector):
-    #     """
-    #     Check if a symbol is symbolic.
+        Args:
+            sym (str|SymBitVector): Name of the symbol
+            bits (int): Number of bits to chop
+        
+        Short name: cs
+        
+        """
+        if isinstance(sym, str):
+            sym = self.debugger.get_symbol(sym)
+        return sym.chop(bits)
+    
+    async def evaluate(self, sym:SymBitVector|str, dtype:DataType=DataType.bytes):
+        """
+        Evaluate a symbol and get the value.
 
-    #     Args:
-    #         sym (str|SymBitVector): Name of the symbol
+        Args:
+            sym (SymBitVector|str): Symbol to evaluate.
+            dtype (DataType): Type of the symbol. Default is none.
         
-    #     Short name: sis
+        Short name: ev
         
-    #     """
-    #     if isinstance(sym, str):
-    #         sym = self.debugger.get_symbol(sym)
-    #     return sym.symbolic
+        """
+        return self.debugger.cast_to(sym, cast_to=dtype)
+    
+    
+    async def satisfiable(self, constraint:Constraint|None = None):
+        """
+        Check if the current state is satisfiable.
+
+        Args:
+            constraint (Constraint|None): Constraint to check. Default is None.
+        
+        Short name: sf
+        
+        """
+        if constraint is None:
+            return self.debugger.satisfiable()
+        return self.debugger.satisfiable(constraint)
+    async def is_symbolic(self, sym:AngrType):
+        """
+        Check if a symbol is symbolic.
+
+        Args:
+            sym (AngrType): Name of the symbol
+        
+        Short name: sis
+        
+        """
+        if isinstance(sym, str):
+            sym = self.debugger.get_symbol(sym)
+        if not isinstance(sym, SymBitVector):
+            return False
+        return self.debugger.is_symbolic(sym)
     # async def add_symbol_int(self, name:str):
     #     """
     #     Add a symbol with name and size.

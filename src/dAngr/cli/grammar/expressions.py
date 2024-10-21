@@ -8,7 +8,7 @@ import claripy
 
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.exceptions import CommandError, InvalidArgumentError, ValueError, KeyError
-from dAngr.utils import AngrValueType, StreamType, str_to_address
+from dAngr.utils import AngrValueType, AngrExtendedType, StreamType, str_to_address
 from dAngr.utils.utils import DataType, Endness, check_signature_matches
 from contextlib import redirect_stdout, redirect_stderr
 
@@ -271,7 +271,6 @@ class VariableRef(ReferenceObject):
     def get_value(self, context):
         return context[self.name].value
     def set_value(self, context, value):
-        assert isinstance(value,AngrValueType)
         context[self.name] = value
 
 class Property(ReferenceObject):
@@ -332,7 +331,7 @@ class Slice(Property):
         return self.end - self.start
     
     def get_value(self, context):
-        return super().get_value(context)[self.start:self.end]
+        return self.obj.get_value(context)[self.start:self.end]
     
     def set_value(self, context, value: list):
         o = self.obj.get_value(context)
@@ -344,16 +343,107 @@ class Slice(Property):
         return f"{self.obj}[{self.start}:{self.end}]"
     def __eq__(self, other):
         return isinstance(other, Slice) and self.start == other.start and self.end == other.end
+    
+class Operator(Enum):
+    POW = 7
+    MOD = 6
+    MUL = 6
+    DIV = 6
+    FLOORDIV = 6  
+    ADD = 5
+    SUB = 5
+    LSHIFT = 4 
+    RSHIFT = 4  
+    XOR = 4     
+    BITWISE_AND = 3  
+    EQ = 3
+    NEQ = 3
+    GT = 3
+    LT = 3
+    LE = 3
+    GE = 3
+    BITWISE_OR = 2  
+    AND = 2  
+    OR = 1   
+
+    # Method resolution based on Python's magic methods
+def convert_to_magic_method(self):
+    switch = {
+        Operator.POW: "__pow__",
+        Operator.MOD: "__mod__",
+        Operator.MUL: "__mul__",
+        Operator.DIV: "__truediv__",  
+        Operator.FLOORDIV: "__floordiv__",  
+        Operator.ADD: "__add__",
+        Operator.SUB: "__sub__",
+        Operator.LSHIFT: "__lshift__",  
+        Operator.RSHIFT: "__rshift__",  
+        Operator.XOR: "__xor__",       
+        Operator.BITWISE_AND: "__and__",  
+        Operator.BITWISE_OR: "__or__",   
+        Operator.EQ: "__eq__",
+        Operator.NEQ: "__ne__",  
+        Operator.GT: "__gt__",
+        Operator.LT: "__lt__",
+        Operator.LE: "__le__",
+        Operator.GE: "__ge__",
+        Operator.AND: "__and__",  
+        Operator.OR: "__or__"     
+    }
+    return switch[self]
+    
+    
 class Comparison(Expression):
-    def __init__(self, left:Expression, operator, right:Expression):
+    def __init__(self, left:Expression, operator:Operator, right:Expression):
         self.left = left
-        self.operator = operator
+        self.operator:Operator = operator
         self.right = right
 
+
+    def reorder_comparison(self,comp):
+        # Base case: If it's not a Comparison, return it as is
+        if not isinstance(comp, Comparison):
+            return comp
+        
+        # Recursively reorder left and right comparisons first
+        left = self.reorder_comparison(comp.left)
+        right = self.reorder_comparison(comp.right)
+
+        # If the right is a Comparison and has higher precedence than current,
+        # restructure to respect precedence
+        if isinstance(right, Comparison) and right.operator.value > comp.operator.value: 
+            # Re-arrange: the right side will become a new left-side comparison
+            new_left = Comparison(left, comp.operator, right.left)
+            return Comparison(new_left, right.operator, right.right)
+        
+        # Otherwise, just return the current comparison
+        return Comparison(left, comp.operator, right)
+
     async def __call__(self, context:ExecutionContext):
+        # handle operator precedence, the right side of the expression may be a comparison
+        
+
         left = await self.left(context)
         right = await self.right(context)
-        return getattr(left, self.operator)(right)
+        switch = {
+            Operator.AND: claripy.And,
+            Operator.OR: claripy.Or
+
+        }
+        if isinstance(left, claripy.ast.Base) or isinstance(right, claripy.ast.Base):
+            op = switch.get(self.operator, None)
+            if op:
+                v= op(left, right)
+                if v == NotImplemented:
+                    raise ValueError(f"Invalid operator {self.operator} for {type(left)} and {type(right)}")
+                return v
+        operation = convert_to_magic_method(self.operator)
+        v = getattr(type(left), operation)(left, right)
+        if v == NotImplemented:
+            v = getattr(type(right), operation)(left, right)
+            if v == NotImplemented:
+                raise ValueError(f"Invalid operator {self.operator} for {type(left)} and {type(right)}")
+        return v
     
     def __str__(self):
         return f"{self.left}{self.operator}{self.right}"
@@ -461,7 +551,9 @@ class DangrCommand(Command):
     async def _check_arg(self, arg, context:ExecutionContext, spec):
         try:
             #TODO, what if  dtype is a tuple
-            if isinstance(spec.dtype, type) and issubclass(spec.dtype, ReferenceObject):
+            if spec.dtype == str and isinstance(arg, VariableRef):
+                return arg.name
+            elif isinstance(spec.dtype, type) and issubclass(spec.dtype, ReferenceObject):
                 return arg
             elif isinstance(spec.dtype, type) and issubclass(spec.dtype,Enum):
                 return spec.dtype[arg.name]

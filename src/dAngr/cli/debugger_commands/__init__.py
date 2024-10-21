@@ -10,3 +10,4 @@ from .symbols import SymbolCommands
 from .files import FileCommands
 from .tools import ToolCommands
 from .general import GeneralCommands
+from .exclusions import ExclusionCommands

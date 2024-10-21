@@ -43,9 +43,12 @@ KETCE: '}';
 HAT: '^';
 HASH: '#';
 PERC: '%';
-TIMES: '*';
+MUL: '*';
 ADD: '+';
 DIV: '/';
+FLOORDIV: '//';
+LSHIFT: '<<';
+RSHIFT: '>>';
 POW: '**';
 ASSIGN: '=';
 EQ: '==';
@@ -61,7 +64,6 @@ TILDE: '~';
 TICK: '`';
 UNDERSCORE: '_';
 DASH: '-';
-SUB : DASH;
 
 
 NEWLINE: '\r'? '\n';

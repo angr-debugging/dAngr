@@ -20,5 +20,7 @@ py_content: anything;
 anything: (LETTERS | NUMBERS | symbol | STRING | LPAREN anything RPAREN);
 
 symbol: WS  | BANG | AMP | DOLLAR | COLON | SCOLON | COMMA | QUOTE | SQUOTE | 
-        AT | DOT | BAR | BRA | KET | BRACE | KETCE | HAT | HASH | PERC | TIMES | ADD | DIV | 
-        POW | ASSIGN | EQ | NEQ | LT | GT | LE | GE | AND | OR | QMARK | TILDE | TICK | UNDERSCORE | DASH;
+        AT | DOT | BAR | BRA | KET | BRACE | KETCE | HAT | HASH | PERC | MUL | ADD | DIV | 
+        POW | ASSIGN | EQ | NEQ | LT | GT | LE | GE | AND | OR | QMARK | TILDE | TICK | UNDERSCORE | DASH 
+        | FLOORDIV | LSHIFT | RSHIFT;
+        

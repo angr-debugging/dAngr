@@ -48,7 +48,7 @@ class TestCommands:
         assert "Run until a breakpoint or" in conn.send_result.call_args[0][0]
     @pytest.mark.asyncio
     async def test_command_not_found(self, dbg, conn):
-        assert await dbg.handle("not_a_command")
+        assert await dbg.handle("not_a_command", False)
         conn.send_error.assert_called_once()
         assert "Unknown command:" in str(conn.send_error.call_args[0][0])
 
@@ -59,7 +59,7 @@ class TestCommands:
 
     @pytest.mark.asyncio
     async def test_exit_with_args(self, dbg, conn):
-        assert await dbg.handle("exit args")
+        assert await dbg.handle("exit args", False)
         conn.send_info.assert_not_called()
         conn.send_error.assert_called_once_with(InvalidArgumentError('Too many arguments. Expected 0 but got 1'))
 

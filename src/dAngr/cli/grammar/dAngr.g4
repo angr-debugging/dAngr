@@ -39,7 +39,7 @@ statement:  control_flow |
             ext_command NEWLINE ;
 
 expression
-    :     identifier (WS (identifier ASSIGN)?expression_part)* // dangr command
+    :     DIV? identifier (WS (identifier ASSIGN)?expression_part)* // dangr command
     |     constraint
     |     expression_part;
 
@@ -50,7 +50,9 @@ constraint :
 expression_part: LPAREN WS? expression WS? RPAREN
     | range // python, bash, dangr
     | reference
-    | object (WS? operation WS? expression)? 
+    | BOOL
+    | object (WS? operation WS? expression)?
+    | object
     ;
 
 
@@ -77,14 +79,35 @@ function_def
     : DEF WS identifier WS?LPAREN parameters? RPAREN WS? COLON body
     ;
 
-body : INDENT (statement NEWLINE?)+ DEDENT ;
+body : INDENT (fstatement NEWLINE?)+ DEDENT ;
+
+fstatement: (RETURN WS expression)|statement ;
 
 iterable : object | 'range' LPAREN WS? numeric WS? (COMMA WS?numeric WS?)?  RPAREN ;
 
 parameters : identifier (WS? COMMA WS? identifier)* ;
 
 condition : expression ;
-operation : ADD | DASH | TIMES | DIV | PERC | POW | EQ | NEQ | GT | LT | LE | GE | AND | OR ;
+operation : ADD | 
+        DASH | 
+        MUL | 
+        DIV | 
+        PERC | 
+        POW | 
+        EQ | 
+        NEQ | 
+        GT | 
+        LT | 
+        LE | 
+        GE | 
+        AND | 
+        OR 
+        FLOORDIV |
+        LSHIFT |
+        RSHIFT |
+        AMP |
+        BAR 
+        ;
 
 
 
@@ -105,21 +128,21 @@ identifier : (LETTERS|UNDERSCORE|special_words UNDERSCORE)(LETTERS|NUMBERS|UNDER
 numeric : NUMBERS | HEX_NUMBERS;
 
 object : identifier | 
-    (ADD|SUB)? NUMBERS |
+    (ADD|DASH)? NUMBERS |
     HEX_NUMBERS | 
     BOOL |
     reference |
     object DOT identifier | // property
     object BRA WS? index WS? KET | // indexed property
-    object BRA WS? numeric WS? COLON WS? numeric WS? KET | // slice from start to end
-    object BRA WS? numeric WS? ARROW WS? NUMBERS WS? KET | // slice from start to start + number
+    object BRA WS? DASH? numeric WS? COLON WS? DASH? numeric WS? KET | // slice from start to end
+    object BRA WS? DASH?numeric WS? ARROW WS? DASH? NUMBERS WS? KET | // slice from start to start + number
     BRA WS? object (WS? COMMA WS? object)* WS? KET | // list
     BRACE WS? (STRING WS? COLON WS? object (WS? COMMA WS? STRING WS? COLON WS? object))* WS? KETCE | // dict
     STRING | 
     BINARY_STRING
     ; 
 
-special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE;
+special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN;
 
 STATIC : 'static';
 
@@ -135,6 +158,7 @@ IN : 'in';
 WHILE : 'while';
 BOOL: 'True' | 'False';
 HELP : 'help';
+RETURN : 'return';
 NEWLINE: ('\r'? '\n' ' '*) ;
 
 WS: ' '+ ;

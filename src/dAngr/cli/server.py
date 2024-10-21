@@ -53,7 +53,7 @@ class Server:
         prmpt = HTML('<darkcyan>(dAngr)> </darkcyan>')
         session = PromptSession(enable_history_search=True)
         if self.debug_file_path:
-            await dbg.handle(f"load {self.debug_file_path}")
+            await dbg.handle(f"load {self.debug_file_path}", False)
         if self.script_path:
             try:
                 if os.path.dirname(self.script_path):
@@ -75,7 +75,7 @@ class Server:
                             if not line.strip().startswith("#"):
                                 # line = self._preprocess_input(conn, line)
                                 
-                                if not await dbg.handle(line):
+                                if not await dbg.handle(line, False):
                                     self.stop = True
                         except KeyboardInterrupt:
                             self.stop = True
@@ -114,7 +114,7 @@ class Server:
                     # lines = self._preprocess_input(conn, lines)
                     if not lines:
                         continue
-                    if not await dbg.handle(lines):
+                    if not await dbg.handle(lines, False):
                         self.stop = True
             except KeyboardInterrupt:
                 return # Ctrl-C to exit

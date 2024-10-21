@@ -36,7 +36,7 @@ async def test_loop(prompt, handle, send_info, server):
     await server.loop()
     prompt.assert_called_once()
     send_info.assert_called_once_with("Welcome to dAngr, the symbolic debugger. Type help or ? to list commands.")
-    handle.assert_called_once_with('help')
+    handle.assert_called_once_with('help', False)
 
 @pytest.mark.asyncio
 async def test_check_shortnames(server):
@@ -49,4 +49,16 @@ async def test_check_shortnames(server):
         if cmd.name in ["start","continue"]:
             break
         assert not any([o.short_name == cmd.short_name for o in DEBUGGER_COMMANDS.values() if o != cmd]), f"Duplicate short command {cmd.short_name}"
+
+@pytest.mark.asyncio
+async def test_check_cmdnames(server):
+    conn = CliConnection()
+    dbg = CommandLineDebugger(conn)
+
+            # get duplicate short commands and print short and fullname
+    for cmd in DEBUGGER_COMMANDS.values():
+        
+        if cmd.name in ["start","continue"]:
+            break
+        assert not any([o.name == cmd.name for o in DEBUGGER_COMMANDS.values() if o != cmd]), f"Duplicate short command {cmd.name}"
 

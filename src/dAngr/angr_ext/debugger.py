@@ -15,6 +15,7 @@ import cle
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.cli.grammar.execution_context import Variable
+from dAngr.cli.grammar.expressions import Constraint
 from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, ObjectStore, StreamType, SymBitVector, remove_ansi_escape_codes
 
 from .std_tracker import StdTracker
@@ -181,7 +182,7 @@ class Debugger:
                         return elf_obj, addr
         # Return None if no matching ELF object or address is found
         return None
-    def find_address(self, sourcefile, line_number):
+    def find_address(self, sourcefile, line_number)->int|None:
         n = self._find_elf_object_by_source(self.substitute_path(sourcefile), line_number)
         if n:
             return n[1]
@@ -333,7 +334,9 @@ class Debugger:
         if name in self._symbols:
             return self._symbols[name]
         else : raise DebuggerCommandError(f"Symbol {name} not found.")
-    
+    def satisfiable(self, constraint=None):
+        return self.current_state.satisfiable(extra_constraints=[constraint])
+
     def find_symbol(self, name:str):
         if name in self._symbols:
             return self._symbols[name]
@@ -341,6 +344,8 @@ class Debugger:
 
     def set_symbol(self, name, value):
         self._symbols[name] = value
+    def is_symbolic(self, value):
+        return self.current_state.solver.symbolic(value)
 
     def add_constraint(self, cs):
         self.current_state.add_constraints(cs)
@@ -526,23 +531,16 @@ class Debugger:
             val = value.encode('utf-8')
         else:
             val = value
-        switch = {
-            Endness.LE: archinfo.Endness.LE,
-            Endness.BE: archinfo.Endness.BE,
-            Endness.MEMORY: self.project.arch.memory_endness,
-            Endness.REGISTER: self.project.arch.register_endness,
-            Endness.DEFAULT: archinfo.Endness.BE
-        }
-        en = switch.get(endness)
+        en = Endness.to_arch_endness(endness, self.project)
         # Store the byte value in memory
         self.current_state.memory.store(address, val,size, endness=en,)
     
-    def get_memory(self, address:int|SymBitVector, size:int|SymBitVector = 0):
+    def get_memory(self, address:int|SymBitVector, size:int|SymBitVector = 0, endness:Endness = Endness.DEFAULT):
         state = self.current_state
         if address is int: 
             if size == 0:
                 size = self.project.arch.bits // 8
-        byte_value = state.memory.load(address, size)
+        byte_value = state.memory.load(address, size, endness=Endness.to_arch_endness(endness, self.project))
         return byte_value
     
     def get_stream(self, stream:StreamType) -> str:
@@ -563,18 +561,20 @@ class Debugger:
             if cast_to_:
                 return state.solver.eval(value, cast_to=cast_to_)
             else:
-                value = state.solver.eval(value, cast_to=bytes)
+                value = state.solver.eval(value)
         switch = {
             DataType.bytes: self._to_bytes,
             DataType.int: self._to_int,
             DataType.bool: self._to_bool,
             DataType.str: self._to_str,
-            DataType.hex: self._to_hex
+            DataType.hex: self._to_hex,
+            DataType.address: self._to_address,
+            DataType.none: None
         }
         if f := switch.get(cast_to,None):
             return f(value)
         else:
-            raise DebuggerCommandError(f"Cast to {cast_to} not supported.")
+            return value
 
     def _get_endianness(self):
         if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le':
@@ -596,6 +596,19 @@ class Debugger:
         elif type(value) == bool:
             return int(value)
         raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
+    
+    def _to_address(self, value:int|str|bytes|bool)->str:
+        if type(value) == int:
+            v = value
+        elif type(value) == str:
+            v = int(value, 0)
+        elif type(value) == bytes:
+            v = int.from_bytes(value, byteorder=self._get_endianness())
+        elif type(value) == bool:
+            v = int(value)
+        else:
+            raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
+        return hex(v)
 
     def _to_hex(self, value:int|str|bytes|bool)->str:
         if type(value) == int:

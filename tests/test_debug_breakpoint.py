@@ -18,8 +18,6 @@ class TestDebugBreakpointCommands:
     def teardown_method(self):
         os.chdir(self.old_dir)
 
-
-
     @pytest.fixture
     def conn(self):
         c = CliConnection()
@@ -33,7 +31,7 @@ class TestDebugBreakpointCommands:
         dbg = CommandLineDebugger(conn)
         assert await dbg.handle("load example")
         return dbg
-
+    
     @pytest.mark.asyncio
     async def test_add_breakpoint(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x400566")
@@ -79,7 +77,7 @@ class TestDebugBreakpointCommands:
     
     @pytest.mark.asyncio
     async def test_enable_non_breakpoint(self, dbg, conn):
-        assert await dbg.handle("enable_breakpoint 0")
+        assert await dbg.handle("enable_breakpoint 0", False)
         assert "Index 0 out of range." == str(conn.send_error.call_args[0][0])
 
     @pytest.mark.asyncio
@@ -92,7 +90,7 @@ class TestDebugBreakpointCommands:
 
     @pytest.mark.asyncio
     async def test_disable_non_breakpoint(self, dbg, conn):
-        assert await dbg.handle("disable_breakpoint 0")
+        assert await dbg.handle("disable_breakpoint 0", False)
         assert "Index 0 out of range." == str(conn.send_error.call_args[0][0])
 
     @pytest.mark.asyncio
@@ -104,7 +102,7 @@ class TestDebugBreakpointCommands:
     @pytest.mark.asyncio
     async def test_list_no_breakpoints(self, dbg, conn):
         assert await dbg.handle("list_breakpoints")
-        assert "No breakpoints set." == str(conn.send_info.call_args[0][0])
+        assert "No breakpoints found." == str(conn.send_info.call_args[0][0])
 
     @pytest.mark.asyncio
     async def test_clear_breakpoints(self, dbg, conn):

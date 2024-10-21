@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 from dAngr.cli.grammar.control_flow import ForLoop, IfThenElse
 from dAngr.cli.grammar.parser import lex_input, parse_input
-from dAngr.cli.grammar.expressions import BashCommand, Comparison, Dictionary, Expression, Iterable, Listing, Literal, DangrCommand, PythonCommand, Range, VariableRef
+from dAngr.cli.grammar.expressions import BashCommand, Comparison, Dictionary, Expression, Iterable, Listing, Literal, DangrCommand, Operator, PythonCommand, Range, VariableRef
 from dAngr.cli.grammar.script import Body, Script
 from dAngr.cli.grammar.statements import Assignment
 from dAngr.exceptions import ParseError
@@ -120,7 +120,7 @@ for i,n in [5,6,7,8,9]:
 if a != "Hello from Bash":
     !print("Printing from Python: ", &vars.a)
     x = 0
-""":[IfThenElse(Comparison(VariableRef('a'), '__ne__', Literal('Hello from Bash')), Body([PythonCommand('print("Printing from Python: ", ', VariableRef("a"),')'), Assignment(VariableRef("x"),Literal(0))]))],
+""":[IfThenElse(Comparison(VariableRef('a'), Operator.NEQ, Literal('Hello from Bash')), Body([PythonCommand('print("Printing from Python: ", ', VariableRef("a"),')'), Assignment(VariableRef("x"),Literal(0))]))],
 """[1,2,3,4,5]""":[Listing([Literal(1), Literal(2), Literal(3), Literal(4), Literal(5)])],
 '!print("Printing from Python: ", &vars.a)': [PythonCommand('print("Printing from Python: ", ', VariableRef("a"),')')],
 "static i = 0": [Assignment(VariableRef('i',True), Literal(0))],

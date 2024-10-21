@@ -1,10 +1,12 @@
 
 from abc import abstractmethod
+import asyncio
 from typing import List, override
 
 from angr import SimState
 
 from dAngr.angr_ext.std_tracker import StdTracker
+from dAngr.cli.grammar.definitions import FunctionDefinition
 from dAngr.cli.models import Breakpoint
 from dAngr.exceptions import ExecutionError
 
@@ -32,9 +34,10 @@ class Filter:
 
 
 class FilterList(Filter):
-    def __init__(self):
+    def __init__(self, filters:List[Filter]):
         super().__init__()
-        self.filters = []
+        self.filters = filters 
+        self._combination = any
     
     @property
     def enabled(self)->bool:
@@ -54,21 +57,67 @@ class FilterList(Filter):
         self.filters.append(filter)
     def remove(self, filter:Filter):
         self.filters.remove(filter)
+    def pop(self, index:int):
+        return self.filters.pop(index)
+    def find(self, filter_type:type, condition):
+        return next((f for f in self.filters if isinstance(f, filter_type) and condition), None)
+    
     def clear(self):
         self.filters.clear()
     def __getitem__(self, index:int):
         return self.filters[index]
     def _filter(self, state:SimState):
-        return any(f._filter(state) for f in self.filters)
+        return self._combination(f._filter(state) for f in self.filters)
     def __len__(self):
         return len(self.filters)
     def __str__(self) -> str:
         return f"FilterList: {', '.join(str(f) for f in self.filters)}"
     def __iter__(self):
         return iter(self.filters)
+    def __len__(self):
+        return len(self.filters)
     def empty(self):
         return len(self.filters) == 0
+class OrFilterList(FilterList):
+    def __init__(self, filters:List[Filter]):
+        super().__init__(filters)
+        self._combination = any
+    def __str__(self) -> str:
+        return f"OrFilterList: {', '.join(str(f) for f in self.filters)}"
+class AndFilterList(FilterList):
+    def __init__(self, filters:List[Filter]):
+        super().__init__(filters)
+        self._combination = all
+    def __str__(self) -> str:
+        return f"AndFilterList: {', '.join(str(f) for f in self.filters)}"
+    
+class FilterFunction(Filter):
+    def __init__(self, func, debugger):
+        super().__init__()
+        self.func:FunctionDefinition = func
+        self.debugger = debugger
+        self._enabled = True
+    
+    @property
+    def enabled(self)->bool:
+        return self._enabled
+    
+    @enabled.setter
+    def enabled(self, value:bool):
+        self._enabled = value
 
+    def _filter(self, state:SimState):
+        try:
+            prev = self.debugger.current_state
+            self.debugger.current_state = state
+            loop = asyncio.get_event_loop()
+            return loop.run_until_complete(self.func(self.debugger.context))
+        finally:
+            self.debugger.current_state = prev
+    
+    def __str__(self) -> str:
+        return f"Filter Function: {self.func.name}"
+    
 class AddressFilter(Filter):
     def __init__(self, address:int):
         super().__init__()

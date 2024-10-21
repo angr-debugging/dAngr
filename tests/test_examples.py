@@ -42,6 +42,7 @@ class TestExamples:
         "11_angr_sim_scanf.md": '1447907916 1146768724',
         "13_angr_static_binary.md": b'EADQYLAR',
         "14_angr_shared_library.md": 'TSDLQKWZ',
+        "15_angr_arbitrary_read.md": '2358019 AAAAAAAAAAAAAAAAWISO'
     }
 
     @pytest.mark.asyncio

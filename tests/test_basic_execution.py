@@ -86,22 +86,26 @@ class TestBasicExecutionCommands:
     
     @pytest.mark.asyncio
     async def test_exclude_function(self, dbg, conn):
-        assert await dbg.handle("filter_at_function 'main' True")
-        conn.send_info.assert_called_with("Function main added to exclusions.")
-        assert await dbg.handle("filter_at_function 'main' True False")
-        conn.send_info.assert_called_with("Function main removed from exclusions.")
+        await dbg.handle("f = filter_at_function 'main'")
+        await dbg.handle("add_exclusion f")
+        conn.send_info.assert_called_with("Function Filter: main added to exclusions.")
+        assert await dbg.handle("remove_exclusion 0")
+        conn.send_info.assert_called_with("Function Filter: main removed from exclusions.")
     
     @pytest.mark.asyncio
     async def test_exclude_address(self, dbg, conn):
-        assert await dbg.handle("filter 0x40054d True")
-        conn.send_info.assert_called_with("Address 0x40054d added to exclusions.")
-        assert await dbg.handle("filter 0x40054d True False")
-        conn.send_info.assert_called_with("Address 0x40054d removed from exclusions.")
+        assert await dbg.handle("f = address_filter 0x40054d")
+        await dbg.handle("add_exclusion f")
+        conn.send_info.assert_called_with("Address Filter: 0x40054d added to exclusions.")
+        assert await dbg.handle("f = address_filter 0x40054d")
+        await dbg.handle("remove_exclusion 0")
+        conn.send_info.assert_called_with("Address Filter: 0x40054d removed from exclusions.")
 
     @pytest.mark.asyncio
     async def test_list_exclusions(self, dbg, conn):
-        assert await dbg.handle("filter_list True")
-        conn.send_info.assert_called_with("No exclusions set.")
-        assert await dbg.handle("filter 0x40054d True")
-        assert await dbg.handle("filter_list True")
+        assert await dbg.handle("list_exclusions")
+        conn.send_info.assert_called_with("No exclusions found.")
+        await dbg.handle("f = address_filter 0x40054d")
+        await dbg.handle("add_exclusion f")
+        assert await dbg.handle("list_exclusions")
         conn.send_result.assert_called_with("Exclusion(s): [0] Address Filter: 0x40054d")

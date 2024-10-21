@@ -6,6 +6,7 @@ import inspect
 import sys
 from typing import Union, get_args
 
+import archinfo
 from claripy import List
 import re
 
@@ -24,6 +25,8 @@ class DataType(Enum):
     bytes = auto()
     bool = auto()
     hex = auto()
+    address = auto()
+    none = auto()
 
 class StreamType(Enum):
     stdin = 0
@@ -42,6 +45,16 @@ class Endness(Enum):
     DEFAULT = auto()
     MEMORY = auto()
     REGISTER = auto()
+    @staticmethod
+    def to_arch_endness(endness, project):
+        switch = {
+            Endness.LE: archinfo.Endness.LE,
+            Endness.BE: archinfo.Endness.BE,
+            Endness.MEMORY: project.arch.memory_endness,
+            Endness.REGISTER: project.arch.register_endness,
+            Endness.DEFAULT: archinfo.Endness.BE
+        }
+        return switch.get(endness, archinfo.Endness.BE)
 
 Constraint = claripy.ast.Bool
 SymBitVector = claripy.ast.BV
@@ -112,15 +125,27 @@ def check_signature_matches(func, o, args, kwargs):
         raise InvalidArgumentError(str(e))
     
     # Optionally: Perform type checking if the function has type hints
-    annotations = func.__annotations__
+
     for param_name, param_value in bound_args.arguments.items():
-        if param_name in annotations:
-            expected_type = annotations[param_name]
+            p = signature.parameters.get(param_name)
+            if p is None:
+                raise InvalidArgumentError(f"Invalid argument '{param_name}', not found in signature")
+            if p.name == "self":
+                continue
+            if p is None:
+                raise InvalidArgumentError(f"Invalid argument '{param_name}', not found in signature")
             
+            expected_type = p.annotation
             if inspect.isclass(expected_type) and  issubclass(expected_type ,Enum) and isinstance(param_value, str):
                 #get the value of the expected enum type given the str
                 param_value = expected_type[param_value]
-            if not isinstance(param_value, expected_type):
+            if p.kind == inspect.Parameter.VAR_POSITIONAL:
+                    if not isinstance(param_value, tuple):
+                        raise InvalidArgumentError(f"Argument '{param_name}' should be of type {expected_type.__name__ if isinstance(expected_type, type) else expected_type}, got {type(param_value).__name__}")
+                    for t in param_value:
+                        if not isinstance(t, expected_type):
+                            raise InvalidArgumentError(f"Argument '{param_name}' should be of type {expected_type.__name__ if isinstance(expected_type, type) else expected_type}, got {type(param_value).__name__}")
+            elif not isinstance(param_value, expected_type):
                 raise InvalidArgumentError(f"Argument '{param_name}' should be of type {expected_type.__name__ if isinstance(expected_type, type) else expected_type}, got {type(param_value).__name__}")
     
 def parse_binary_string(binary_string_text):

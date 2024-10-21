@@ -159,7 +159,7 @@ def parse_docstring(docstring:str):
             elif state == 1:
                 args.append(line)
             elif state == 2:
-                short_name = line.split(":")[1].strip()
+                short_name = '/' + line.split(":")[1].strip()
             elif state == 3:
                 return_value = line
             elif state == 4:

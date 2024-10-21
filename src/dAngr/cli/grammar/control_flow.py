@@ -3,7 +3,7 @@ from textwrap import indent
 from typing import List
 
 from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import Expression, Iterable, VariableRef
+from dAngr.cli.grammar.expressions import Expression, Iterable, Range, VariableRef
 from .statements import Statement
 from .script import Body
 
@@ -19,7 +19,7 @@ class IfThenElse(ControlFlow):
         self.else_body: Body = else_body if else_body else Body([])
 
     async def __call__(self, context: ExecutionContext):
-        if Expression.toBool(self.condition(context)):
+        if Expression.toBool(await self.condition(context)):
             return await self.body(ExecutionContext(context))
         elif self.else_body.statements:
             return await self.else_body(ExecutionContext(context))
@@ -47,23 +47,27 @@ class WhileLoop(ControlFlow):
         return isinstance(value, WhileLoop) and self.condition == value.condition and self.body == value.body
 
 class ForLoop(ControlFlow):
-    def __init__(self, iterable: Iterable, body: Body, item: VariableRef, index:VariableRef|None= None):
+    def __init__(self, iterable: Iterable|VariableRef, body: Body, item: VariableRef, index:VariableRef|None= None):
         super().__init__(body)
         self.index = index
         self.item = item
-        self.iterable = iterable
+        self.iterable:VariableRef|Iterable = iterable
 
     async def __call__(self, context: ExecutionContext):
+        if isinstance(self.iterable, VariableRef):
+            iterable = await self.iterable(context)
+        else:
+            iterable = self.iterable
         if self.index:
-            for index, item in self.iterable:
+            for index, item in iterable:
                 ctx = ExecutionContext(context)
                 ctx[self.index] = index
-                ctx[self.item] = item
+                ctx[self.item.name] = item
                 await self.body(ctx)
         else:
-            for item in self.iterable:
+            for item in iterable:
                 ctx = ExecutionContext(context)
-                ctx[self.item] = item
+                ctx[self.item.name] = item
                 await self.body(ctx)
 
     def __repr__(self):

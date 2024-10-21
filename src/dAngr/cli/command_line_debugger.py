@@ -75,17 +75,17 @@ class dAngrExecutionContext(ExecutionContext):
     #         return await super().get_argument_value(arg)
 
 class CommandLineDebugger(Debugger,StepHandler):
-    def __init__(self, conn:CliConnection):
+    def __init__(self, *args):
+        print(args)
+        conn = args[0]
         Debugger.__init__(self, conn)
-        self._breakpoints:FilterList = FilterList()
-        self._exclusions:List[Filter] = []
+        self._breakpoints:FilterList = FilterList([])
+        self._exclusions:List[Filter] = [] #TODO: check if we can use FilterList
         self.http_server = None
         self.http_thread = None
         self.context:dAngrExecutionContext = dAngrExecutionContext(self, DEBUGGER_COMMANDS)
 
     def reset_state(self):
-        self._breakpoints = FilterList()
-        self._exclusions = []
         self.http_server = None
         self.http_thread = None
         return super().reset_state()
@@ -98,7 +98,7 @@ class CommandLineDebugger(Debugger,StepHandler):
             self.http_thread.join()
     
     @property
-    def trigger_points(self)->FilterList:
+    def breakpoints(self)->FilterList:
         self.throw_if_not_initialized()
         return self._breakpoints
     
@@ -119,7 +119,7 @@ class CommandLineDebugger(Debugger,StepHandler):
         elif reason == StopReason.STEP:
             await self.conn.send_info(f"Stepped to: {hex(state.addr)}.") # type: ignore
         elif reason == StopReason.BREAKPOINT:
-            for f in self.trigger_points.get_matching_filter(state):
+            for f in self.breakpoints.get_matching_filter(state):
                 await self.conn.send_info(f"Break: {f}.")
         elif reason == StopReason.PAUSE:
             await self.conn.send_info(f"Paused at: {hex(state.addr)}.") # type: ignore
@@ -127,7 +127,7 @@ class CommandLineDebugger(Debugger,StepHandler):
             await self.conn.send_warning(f"Stopped with unknown reason at: {hex(start)}.") # type: ignore
 
     # command methods
-    async def handle(self, command:str):
+    async def handle(self, command:str, raise_error:bool = True):
         try:
             if not command:
                 return True
@@ -144,8 +144,11 @@ class CommandLineDebugger(Debugger,StepHandler):
                 cast(CliConnection,self.conn).clear_output()
             return True
         except CommandError as e:
-            await self.conn.send_error(e)
-            return True
+            if raise_error:
+                raise e
+            else:
+                await self.conn.send_error(e)
+                return True
             # raise e
         
     def launch_file_server(self):
@@ -323,7 +326,7 @@ class CommandLineDebugger(Debugger,StepHandler):
                 return r
             state = simgr.one_active
 
-            if self.trigger_points.filter(state):
+            if self.breakpoints.filter(state):
                 return StopReason.BREAKPOINT
             return StopReason.NONE
 

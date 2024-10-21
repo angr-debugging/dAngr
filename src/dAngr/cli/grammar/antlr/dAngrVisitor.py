@@ -69,6 +69,11 @@ class dAngrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by dAngrParser#fstatement.
+    def visitFstatement(self, ctx:dAngrParser.FstatementContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by dAngrParser#iterable.
     def visitIterable(self, ctx:dAngrParser.IterableContext):
         return self.visitChildren(ctx)

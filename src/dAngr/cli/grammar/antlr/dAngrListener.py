@@ -116,6 +116,15 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by dAngrParser#fstatement.
+    def enterFstatement(self, ctx:dAngrParser.FstatementContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#fstatement.
+    def exitFstatement(self, ctx:dAngrParser.FstatementContext):
+        pass
+
+
     # Enter a parse tree produced by dAngrParser#iterable.
     def enterIterable(self, ctx:dAngrParser.IterableContext):
         pass

@@ -62,7 +62,7 @@ class ToolCommands(BaseCommand):
             value (AngrType): Value or reference to value to convert.
             dtype (DataType): Data type to convert to.
         
-        Short name: ct
+        Short name: to
         
         """
         value = self.get_angr_value(value)

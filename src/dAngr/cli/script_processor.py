@@ -45,6 +45,9 @@ class ScriptProcessor:
                     line = next(file_obj, None)
                     if line is None:
                         break
+                    if until(line):
+                        yield l
+                        return
                     line = line.rstrip()
                     if line == "":
                         continue

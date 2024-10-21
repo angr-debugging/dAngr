@@ -65,27 +65,28 @@ class MemoryCommands(BaseCommand):
         """
         return self.debugger.get_string_memory(address)
         
-    async def get_memory(self, address:int|SymBitVector, size:int|SymBitVector, type:DataType = DataType.bytes):
+    async def get_memory(self, address:int|SymBitVector, size:int|SymBitVector, endness:Endness=Endness.DEFAULT):
         """
         Get the memory value at a specific address.
-        Supported Types: int, bytes, bool, double, hex.
+        Supported Conversion Types: int, bytes, bool, double, hex, none.
 
         Args:
             address (int): Address in the memory
             size (int): Size of the memory
+            endness (Endness): Endianness of the value.
         
         Short name: mg
         
         """
-        m = self.debugger.get_memory(address, size)
-        if m.symbolic:
-            return m
-        return self.debugger.cast_to(m, cast_to=type)
+        return self.debugger.get_memory(address, size, endness=endness)
+    
+    
+
     
     async def set_memory(self, address:int|SymBitVector, value:AngrType, size:int|None=None, endness:Endness=Endness.DEFAULT):
         """
         Set a memory value at a specific address.
-        Supported Types: int, str, bytes.
+        Supported Conversion Types: int, bytes, bool, double, hex, none.
 
         Args:
             address (int|SymBitVector): Address in the memory
@@ -161,10 +162,7 @@ class MemoryCommands(BaseCommand):
         Short name: rg
         
         """
-        value = self.debugger.get_register(name)
-        # handle as int instead of 64 bit byte array
-        v = self.debugger.cast_to(value, cast_to=DataType.int)
-        return self.debugger.cast_to(v, cast_to=DataType.hex)
+        return self.debugger.get_register(name)
 
     async def list_registers(self):
         """

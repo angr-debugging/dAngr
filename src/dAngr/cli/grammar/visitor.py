@@ -11,25 +11,33 @@ from dAngr.cli.grammar.statements import Assignment,  Statement
 from dAngr.cli.grammar.control_flow import IfThenElse, WhileLoop, ForLoop
 from dAngr.cli.grammar.script import Script, Body
 from dAngr.cli.grammar.definitions import ArgumentSpec, CustomFunctionDefinition
-from dAngr.cli.grammar.expressions import Constraint, DangrCommand, Dictionary, IfConstraint, Listing, Memory, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
+from dAngr.cli.grammar.expressions import Constraint, DangrCommand, Dictionary, IfConstraint, Listing, Memory, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
 from dAngr.utils.utils import parse_binary_string
 
 
 class dAngrVisitor_(dAngrVisitor):
     def __init__(self):
         self.operators = {
-            "==" : "__eq__",
-            "!=" : "__ne__",
-            "<" : "__lt__",
-            "<=" : "__le__",
-            ">" : "__gt__",
-            ">=" : "__ge__",
-            "+" : "__add__",
-            "-" : "__sub__",
-            "*" : "__mul__",
-            "/" : "__truediv__",
-            "%" : "__mod__",
-            "**" : "__pow__"
+            "**": Operator.POW,
+            "%": Operator.MOD,
+            "*": Operator.MUL,
+            "/": Operator.DIV,
+            "//": Operator.FLOORDIV,
+            "+": Operator.ADD,
+            "-": Operator.SUB,
+            "<<": Operator.LSHIFT,
+            ">>": Operator.RSHIFT,
+            "&": Operator.BITWISE_AND,
+            "|": Operator.BITWISE_OR,
+            "<": Operator.LT,
+            "<=": Operator.LE,
+            ">": Operator.GT,
+            ">=": Operator.GE,
+            "==": Operator.EQ,
+            "!=": Operator.NEQ,
+            "^": Operator.XOR,
+            "&&": Operator.AND,
+            "||": Operator.OR
         }
 
     def getOperator(self, op):
@@ -100,7 +108,8 @@ class dAngrVisitor_(dAngrVisitor):
     
     def visitExpression(self, ctx: dAngrParser.ExpressionContext):
         if ctx.identifier():
-            cmd = ctx.identifier(0).getText()
+            cmd = '/' + ctx.identifier(0).getText() if ctx.DIV() else ctx.identifier(0).getText()
+
             args = []
             kwargs  = {}
             if ctx.expression_part():
@@ -146,6 +155,8 @@ class dAngrVisitor_(dAngrVisitor):
             if isinstance(ctx.expression(), list):
                 x=1
             return self.visit(ctx.expression())
+        elif ctx.BOOL():
+            return Literal(ctx.BOOL().getText() == "True")            
         elif ctx.range_():
             return self.visit(ctx.range_())
         elif ctx.reference():
@@ -240,8 +251,14 @@ class dAngrVisitor_(dAngrVisitor):
     
      
     def visitBody(self, ctx: dAngrParser.BodyContext):
-        statements = [self.visit(s) for s in ctx.statement()] if ctx.statement() else []
+        statements = [self.visit(s) for s in ctx.fstatement()] if ctx.fstatement() else []
         return Body(Statement.flatten(statements))
+    
+    def visitFstatement(self, ctx: dAngrParser.FstatementContext):
+        if ctx.expression():
+            return self.visit(ctx.expression())
+        elif ctx.statement():
+            return self.visit(ctx.statement())
 
     def visitIterable(self, ctx: dAngrParser.IterableContext):
         if ctx.object_():
@@ -291,12 +308,13 @@ class dAngrVisitor_(dAngrVisitor):
                     return IndexedProperty(o, index)
                 elif ctx.numeric():
                     if ctx.COLON():
-                        start =  self.visit(ctx.numeric(0)) 
-                        end = self.visit(ctx.numeric(1))
+
+                        start =  self.visit(ctx.numeric(0)) * (-1 if ctx.DASH(0) else 1)
+                        end = self.visit(ctx.numeric(1))* (-1 if ctx.DASH(1) else 1)
                         return Slice(o,start, end)
                     elif ctx.ARROW():
-                        start = int(ctx.numeric(0).getText())
-                        end = start + int(ctx.NUMBERS().getText())
+                        start = int(ctx.numeric(0).getText()) * (-1 if ctx.DASH(0) else 1)
+                        end = start + int(ctx.NUMBERS().getText()) * (-1 if ctx.DASH(1) else 1)
                         return Slice(o,start, end)
                 elif ctx.COMMA(): # Listing
                     lst = [self.visit(o) for o in ctx.object_()]

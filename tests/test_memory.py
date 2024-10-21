@@ -42,7 +42,8 @@ class TestMemoryCommands:
 
     @pytest.mark.asyncio
     async def test_get_memory(self, dbg, conn):
-        assert await dbg.handle("get_memory 0x1000 3")
+        assert await dbg.handle("m = get_memory 0x1000 3")
+        assert await dbg.handle("evaluate m")
         assert "b'abc'" == str(conn.send_result.call_args[0][0])
     
     # @pytest.mark.asyncio
@@ -56,17 +57,18 @@ class TestMemoryCommands:
         assert "abc" == str(conn.send_result.call_args[0][0])
     @pytest.mark.asyncio
     async def test_get_register(self, dbg, conn):
-        assert await dbg.handle("get_register ip")
+        assert await dbg.handle("r = get_register ip")
+        assert await dbg.handle("evaluate r address")
         assert "0x40054d" == str(conn.send_result.call_args[0][0])
 
     @pytest.mark.asyncio
     async def test_get_register_invalid(self, dbg, conn):
-        assert await dbg.handle("get_register invalid")
+        assert await dbg.handle("get_register invalid",False)
         assert "Register 'invalid' not found." == str(conn.send_error.call_args[0][0])
     
     @pytest.mark.asyncio
     async def test_get_register_invalid_args(self, dbg, conn):
-        assert await dbg.handle("get_register")
+        assert await dbg.handle("get_register",False)
         assert "missing a required argument: 'name'" == str(conn.send_error.call_args[0][0])
     
     @pytest.mark.asyncio
