@@ -13,15 +13,10 @@ RUN apt-get -y install graphviz
 RUN apt-get -y install graphviz-dev 
 RUN apt-get -y install default-jre
 
-# Clone Repo..
+# Setup environment
 ENV VIRTUAL_ENV=/home/ubuntu/dAngr/venv
 RUN mkdir -p /home/ubuntu/dAngr
-# RUN git clone https://github.com/angr-debugging/dAngr.git /home/ubuntu/dAngr
+
 RUN python3 -m venv "$VIRTUAL_ENV"
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip install setuptools
-
-
-# RUN pip install . && pip install setuptools
-# RUN cd /home/ubuntu/dAngr/
-# RUN pip install -r /home/ubuntu/dAngr/requirements.txt
