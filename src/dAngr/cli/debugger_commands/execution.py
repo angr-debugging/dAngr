@@ -21,13 +21,13 @@ class ExecutionCommands(BaseCommand):
     def __init__(self, debugger:Debugger):
         super().__init__(debugger)
     
-    async def continue_(self): # type: ignore
-        """
-        Run until a breakpoint or terminated. Same as run.
+    # async def continue_(self): # type: ignore
+    #     """
+    #     Run until a breakpoint or terminated. Same as run.
 
-        Short name: c
-        """
-        await super().run_angr()
+    #     Short name: c
+    #     """
+    #     await super().run_angr()
     
     async def run(self): # type: ignore
         """
@@ -149,7 +149,7 @@ class ExecutionCommands(BaseCommand):
             definition (str): The definition of the hook. Standard sim procedures can be addressed as [lib].[func] e.g. libc.printf
             target (int|str): The target to add the hook (int for an address, string for a function name).
 
-        Short name: har
+        Short name: hf
         """
         func = self.debugger.context.find_definition(definition)
         if func:
@@ -170,7 +170,7 @@ class ExecutionCommands(BaseCommand):
             location (int|str): The location to add the hook (int for an address, string for a function name).
             skip_length (int): The length of the instruction to skip. Default is 0.
 
-        Short name: har
+        Short name: hr
         """
         if isinstance(location, str):
             address = self.debugger.get_function_address(location)
@@ -185,14 +185,15 @@ class ExecutionCommands(BaseCommand):
             def run_sync(state,*args):
                 try:
                     prev = self.debugger.current_state
-                    self.debugger.current_state = state
+                    self.debugger._set_current_state(state)
                     loop = asyncio.get_event_loop()
                     v = loop.run_until_complete(func(self.debugger.context, *args))
                 finally:
-                    self.debugger.current_state = prev
+                    self.debugger._set_current_state(prev)
         
         self.debugger.add_hook(address, run_sync , skip_length)
         await self.send_info(f"Hook added at {location}.")
+
     async def add_to_state(self, name:str, value:AngrType):
         """
         Add a value to the current state.
@@ -233,6 +234,35 @@ class ExecutionCommands(BaseCommand):
             raise DebuggerCommandError(f"Failed to load binary: {e}")
         f = os.path.basename(binary_path)
         await self.send_info(f"Binary '{f}' loaded.")
+
+    async def set_entry_state(self, addr:int|None=None, *args, **kwargs):
+        """
+        Set the call state of a function.
+
+        Args:
+            addr (int): The address the state should start at instead of the entry point.
+            args (tuple): a list of values to use as the program's argv. May be mixed strings and bitvectors.
+            kwargs (dict): a dictionary of additional keyword arguments to pass to the entry_state function.
+
+        Raises:
+            DebuggerCommandError: If the function address is not found.
+        
+        Short name: ses
+        """
+        self.debugger.set_entry_state(addr, *args, **kwargs)
+        await self.send_info(f"Execution will start {'at address '+hex(addr) if addr else 'at specified entry point'}.")
+
+    async def keep_unconstrained(self, keep:bool=True):
+        """
+        Keep unconstrained states.
+
+        Args:
+            keep (bool): True to keep unconstrained states, False otherwise.
+
+        Short name: ku
+        """
+        self.debugger.keep_unconstrained = keep
+        await self.send_info(f"Unconstrained states {'kept' if keep else 'discarded'}.")
 
     async def pause(self):
         """
@@ -281,7 +311,7 @@ class ExecutionCommands(BaseCommand):
             raise DebuggerCommandError(f"Failed to run script: {e}", e)
 
 
-    async def select_path(self, index:int, stash:str="active"):
+    async def select_state(self, index:int, stash:str="active"):
         """
         Select a path to execute.
 
@@ -292,7 +322,12 @@ class ExecutionCommands(BaseCommand):
         Short name: sp
         """
         self.debugger.set_current_state(index, stash)
-        await self.send_info(f"Path {index} selected: {hex(self.debugger.current_state.addr)}") # type: ignore
+        try:
+            addr = f": {hex(self.debugger.current_state.addr)}" # type: ignore
+        except angr.errors.SimValueError as e:
+            addr = ""
+
+        await self.send_info(f"Path {index} selected{addr}")
 
     async def move_state_to_stash(self, index:int, from_stash:str, to_stash:str):
         """
@@ -308,14 +343,4 @@ class ExecutionCommands(BaseCommand):
         self.debugger.move_state_to_stash(index, from_stash, to_stash)
         await self.send_info(f"State moved from {from_stash} to {to_stash}.")
 
-    async def set_start_address(self, address:int):
-        """
-        Set the start address for execution.
-
-        Args:
-            address (int): The address to start execution at.
-        
-        Short name: e
-        """
-        self.debugger.set_start_address(address)
-        await self.send_info(f"Execution will start at address {hex(address)}.")
+    

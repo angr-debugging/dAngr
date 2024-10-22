@@ -25,7 +25,7 @@ class ViewerCommands(BaseCommand):
         Args:
             text (str): Text to print.
 
-        Short name: p
+        Short name: pr
         """
         await self.send_result(text)
     

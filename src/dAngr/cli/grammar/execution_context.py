@@ -81,6 +81,14 @@ class ExecutionContext:
     def functions(self):
         from .definitions import FunctionDefinition
         return {k:v for k,v in self.definitions.items() if isinstance(v, FunctionDefinition)}
+    
+    def find_function(self, package:str|None, name:str):
+        from dAngr.cli.command_line_debugger import BuiltinFunctionDefinition
+        if f:= next((f for f in self.functions.values() if (f.name == name ) and (f.package == package if package else True)), None):
+            return f
+        else:
+            return next((f for f in self.functions.values() if isinstance(f, BuiltinFunctionDefinition) and (f.short_name == name ) and not package), None)
+    
     @property
     def variables(self)->Dict[str,Variable]:
         # merge dict from the parent with precedence to the current context

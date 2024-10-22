@@ -11,7 +11,6 @@ class CliConnection(Connection):
         super().__init__()
         self.indent = 4
         self._history:List[List[Tuple[str,Style|None]]] = [[]]
-        # self._output:List[Tuple[str,Style|None]] = []
         self._first = True
 
     @property
@@ -34,23 +33,13 @@ class CliConnection(Connection):
         if len(self._history[-1])!=0:
             self._history.append([])
         self._first = True
-        
-    # async def send(self, data):
-    #     if isinstance(data, Exception):
-    #         print(data, file=sys.stderr)
-    #     else:
-    #         print(data)
-        # try:
-        #     print(f"    \033[94m{cmd.executeCmd(args)}\033[0m")
-        # except CommandError as e:
-        #     print(f"    \033[91m{e}\033[0m")
+
     def _escape(self, data, esscape_html=True):
         # indent data
         data = " "*self.indent + str(data).replace("\n", "\n" + " "*self.indent).replace("\t", " "*self.indent)
         # replace non-printable characters with their hex representation
         data = "".join([c if c.isprintable() or c in ['\r','\n', '\t'] else f"\\x{ord(c):02x}" for c in data])
         return html.escape(data ) if esscape_html else data
-        # return data.replace("&", "&amp").replace("<", "&lt").replace(">", "&gt").replace("\"", "&quot").replace("'", "&apos")
     
     
     async def send_result(self, data, style=None):

@@ -19,32 +19,21 @@ from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS
 from dAngr.cli.script_processor import ScriptProcessor
 
 # add logger
-
-
 from dAngr.utils.loggers import get_logger
 logger = get_logger(__name__)
 
-DEBUG_COMMANDS = True
+DEBUG_COMMANDS = False
 class Server:
     def __init__(self, debug_file_path = None, script_path=None):
         logger.info("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
 
         self.commands = DEBUGGER_COMMANDS
-        dd = {c: f">{c} ({self.commands[c].short_name})" for c in self.commands.keys()}
+        dd = {c: f"{c} ({self.commands[c].short_name})" for c in self.commands.keys()}
+        dd.update({self.commands[c].package + '.' + c: f"{c}" for c in self.commands.keys()})
         self.completer = merge_completers([WordCompleter(sorted(dd.keys()),display_dict=dd),PathCompleter(get_paths=lambda: [os.getcwd()])])
         self.debug_file_path = debug_file_path
         self.script_path = script_path
         self.stop = False
-    
-    # def _create_key_bindings(self):
-    #     # add key bindings
-    #     kb = KeyBindings()
-    #     @kb.add('c-c')
-    #     def _(event):
-    #         self.stop=True
-    #         event.app.exit()
-
-
     
     async def loop(self):
         conn = CliConnection()
@@ -125,25 +114,6 @@ class Server:
                     raise e
                 else:
                     await conn.send_error(f"An unexpected error occurred: {e}")
-    # def _preprocess_input(self, conn:CliConnection,line:str):
-    #     """
-    #     Preprocess the input line.
-    #     """
-    #     # remove comments
-    #     line = line.split("#")[0]
-    #     # remove leading and trailing whitespaces
-    #     line = line.strip()
-    #     # line may contain references marked as $<int> with int being the index back in the history of conn.history
-    #     # replace them with the actual values
-    #     for match in re.finditer(r"\$([0-9]+)", line):
-    #         try:
-    #             ix = int(match.group(1))
-    #             if 0 <= ix < len(conn.history):
-    #                 val = conn.history[ix][0][0]
-    #                 line = line.replace(match.group(0), val)
-    #         except IndexError:
-    #             pass    
-    #     return line
     
     def start_server(self):
         asyncio.run(self.loop())

@@ -36,7 +36,7 @@ class TestDebugExecutionCommands:
     @pytest.mark.asyncio
     async def test_continue(self, dbg, conn):
         assert await dbg.handle("add_breakpoint 0x400611")
-        assert await dbg.handle("continue")
+        assert await dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x400611.")
 
     @pytest.mark.asyncio
@@ -44,7 +44,7 @@ class TestDebugExecutionCommands:
         assert await dbg.handle("add_breakpoint 0x400611")
         conn.send_info.assert_called_with("Address 0x400611 added to breakpoints.")
         assert await dbg.handle("add_breakpoint 0x4005de")
-        assert await dbg.handle("set_start_address 0x40054d")
+        assert await dbg.handle("set_entry_state 0x40054d")
         conn.send_info.assert_called_with("Execution will start at address 0x40054d.")
         assert await dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x4005de.") # should not stop at 0x400611

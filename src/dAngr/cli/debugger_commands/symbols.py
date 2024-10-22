@@ -50,7 +50,9 @@ class SymbolCommands(BaseCommand):
         Short name: ev
         
         """
-        return self.debugger.cast_to(sym, cast_to=dtype)
+        if isinstance(sym, str):
+            sym = self.debugger.get_symbol(sym)
+        return self.debugger.eval_symbol(sym, dtype)
     
     
     async def satisfiable(self, constraint:Constraint|None = None):
@@ -108,61 +110,61 @@ class SymbolCommands(BaseCommand):
     #     """
     #     await self.send_info(f"Symbolic string {name} created.")
 
-    async def symbol_to_bytes(self, sym:str|SymBitVector):
-        """
-        Solve and get concrete symbol value in bytes based on current state.
+    # async def symbol_to_bytes(self, sym:str|SymBitVector):
+    #     """
+    #     Solve and get concrete symbol value in bytes based on current state.
 
-        Args:
-            sym (str|SymBitVector): Name of the symbol
+    #     Args:
+    #         sym (str|SymBitVector): Name of the symbol
         
-        Short name: stb
+    #     Short name: stb
         
-        """
-        if isinstance(sym, str):
-            sym = self.debugger.get_symbol(sym)
-        return self.debugger.cast_to(sym, DataType.bytes)
+    #     """
+    #     if isinstance(sym, str):
+    #         sym = self.debugger.get_symbol(sym)
+    #     return self.debugger.cast_to(sym, DataType.bytes)
     
-    async def symbol_to_int(self, sym:str|SymBitVector):
-        """
-        Solve and get concrete symbol value as int based on current state.
+    # async def symbol_to_int(self, sym:str|SymBitVector):
+    #     """
+    #     Solve and get concrete symbol value as int based on current state.
 
-        Args:
-            sym (str|SymBitVector): Name of the symbol
+    #     Args:
+    #         sym (str|SymBitVector): Name of the symbol
         
-        Short name: sti
+    #     Short name: sti
         
-        """
-        if isinstance(sym, str):
-            sym = self.debugger.get_symbol(sym)
-        return self.debugger.cast_to(sym, DataType.int)
+    #     """
+    #     if isinstance(sym, str):
+    #         sym = self.debugger.get_symbol(sym)
+    #     return self.debugger.cast_to(sym, DataType.int)
     
-    async def symbol_to_str(self, sym:str|SymBitVector):
-        """
-        Convert symbol to a str.
+    # async def symbol_to_str(self, sym:str|SymBitVector):
+    #     """
+    #     Convert symbol to a str.
 
-        Args:
-            sym (str|SymBitVector): Name of the symbol
+    #     Args:
+    #         sym (str|SymBitVector): Name of the symbol
         
-        Short name: sts
+    #     Short name: sts
         
-        """
-        if isinstance(sym, str):
-            sym = self.debugger.get_symbol(sym)
-        return self.debugger.cast_to(sym, DataType.str)
+    #     """
+    #     if isinstance(sym, str):
+    #         sym = self.debugger.get_symbol(sym)
+    #     return self.debugger.cast_to(sym, DataType.str)
     
-    async def symbol_to_bool(self, sym:str|SymBitVector):
-        """
-        Solve and get concrete symbol value as bool based on current state.
+    # async def symbol_to_bool(self, sym:str|SymBitVector):
+    #     """
+    #     Solve and get concrete symbol value as bool based on current state.
 
-        Args:
-            sym (str|SymBitVector): Name of the symbol
+    #     Args:
+    #         sym (str|SymBitVector): Name of the symbol
         
-        Short name: stB
+    #     Short name: stB
         
-        """
-        if isinstance(sym, str):
-            sym = self.debugger.get_symbol(sym)
-        return self.debugger.cast_to(sym, DataType.bool)
+    #     """
+    #     if isinstance(sym, str):
+    #         sym = self.debugger.get_symbol(sym)
+    #     return self.debugger.cast_to(sym, DataType.bool)
     
     async def remove_symbol(self, sym:str|SymBitVector):
         """

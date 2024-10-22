@@ -37,19 +37,6 @@ def logTokens(stream:CommonTokenStream, Parser:type[Any], lexer:Any):
             token_type = lexer.ruleNames[token.type-1]
         result[-1] +=f"{token_type}({token.text}) "
 
-
-    # for token in stream.tokens:
-    #     switcher = {
-    #         -1: "EOF",
-    #     }
-    #     if getattr(Parser, "INDENT", None):
-    #         switcher[Parser.INDENT] = "INDENT"
-    #         switcher[Parser.DEDENT] = "DEDENT"
-    #     if token.type in switcher:
-    #         token_type = switcher[token.type]
-    #     else:
-    #         token_type = lexer.ruleNames[token.type-1]
-    #     result.append(f"Token: {token.text}, Type: {token_type}")
     log.debug(lambda:"\n".join(result))
     return result
 
@@ -74,12 +61,10 @@ def parse_input(input:str, Lexer:type[Any]=dAngrLexer, Parser:type[Any] = dAngrP
     parser.addErrorListener(error_listener)
     tree = parser.script()
     if not tree:
-        log.error(lambda:"Could not parse input: %s", input)
         raise ParseError("No tree generated")
 
     log.debug(lambda:tree.toStringTree(recog=parser))
     if error_listener._errors:
-        log.error(lambda: "Error parsing '%s': %s", input, error_listener.errors)
         raise ParseError("\n".join([e for e in error_listener.errors]))
     
     if not Visitor:

@@ -1,6 +1,7 @@
 import logging
+
 from dAngr.cli.debugger_commands.base import BaseCommand
-from dAngr.utils.utils import DataType, AngrType, AngrValueType, AngrExtendedType
+from dAngr.utils.utils import DataType, AngrType, AngrValueType, AngrExtendedType, Endness
 
 from dAngr.utils.loggers import get_logger
 log = get_logger(__name__)
@@ -81,17 +82,20 @@ class ToolCommands(BaseCommand):
         """
         return await self.cast_to(value, DataType.bytes)
     
-    async def to_int(self, value:AngrType):
+    async def to_int(self, value:AngrType, endness:Endness=Endness.DEFAULT):
         """
         Solve and get concrete symbol value as int based on current state.
 
         Args:
             value (AngrType): value or reference to the object. If str then we check either a symbol name or a variable name.
+            endness (Endness): Endianness of the value. Default is BE.
         
         Short name: cti
         
         """
-        return await self.cast_to(value, DataType.int)
+        value = self.get_angr_value(value)
+        assert isinstance(value, AngrType), f"Invalid value type {type(value)}"
+        return self.debugger.cast_to(value, DataType.int, endness=endness)
     
     async def to_str(self, value:AngrValueType):
         """
@@ -111,7 +115,7 @@ class ToolCommands(BaseCommand):
         Args:
             value (AngrValueType): value or reference to the object. If str then we check either a symbol name or a variable name.
         
-        Short name: cts
+        Short name: cth
         
         """
         return await self.cast_to(value, DataType.hex)

@@ -39,7 +39,7 @@ statement:  control_flow |
             ext_command NEWLINE ;
 
 expression
-    :     DIV? identifier (WS (identifier ASSIGN)?expression_part)* // dangr command
+    :     (identifier DOT)? identifier (WS (identifier ASSIGN)?expression_part)* // dangr command
     |     constraint
     |     expression_part;
 
@@ -81,7 +81,7 @@ function_def
 
 body : INDENT (fstatement NEWLINE?)+ DEDENT ;
 
-fstatement: (RETURN WS expression)|statement ;
+fstatement: BREAK|CONTINUE|(RETURN WS expression)|statement ;
 
 iterable : object | 'range' LPAREN WS? numeric WS? (COMMA WS?numeric WS?)?  RPAREN ;
 
@@ -115,9 +115,9 @@ py_basic_content: identifier WS? LPAREN WS? (py_content)* RPAREN  ;
 py_content: (reference |range | anything | LPAREN py_content RPAREN)+ ;
 
 reference: 
-        (VARS_DB|REG_DB|SYM_DB) DOT identifier | // ReferenceObject
+        (VARS_DB|REG_DB|SYM_DB) DOT identifier BANG?| // ReferenceObject
         STATE |
-        MEM_DB BRA WS? numeric (WS? ARROW WS? NUMBERS)? KET // MemoryObject with size and length
+        MEM_DB BRA WS? numeric (WS? ARROW WS? NUMBERS)? KET BANG?// MemoryObject with size and length
         ;
 
 bash_content: identifier (range|anything |reference)*;
@@ -127,7 +127,7 @@ index : identifier | numeric;
 identifier : (LETTERS|UNDERSCORE|special_words UNDERSCORE)(LETTERS|NUMBERS|UNDERSCORE|special_words)*;
 numeric : NUMBERS | HEX_NUMBERS;
 
-object : identifier | 
+object : identifier BANG? | 
     (ADD|DASH)? NUMBERS |
     HEX_NUMBERS | 
     BOOL |
@@ -142,7 +142,7 @@ object : identifier |
     BINARY_STRING
     ; 
 
-special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN;
+special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN | BREAK | CONTINUE;
 
 STATIC : 'static';
 
@@ -159,6 +159,8 @@ WHILE : 'while';
 BOOL: 'True' | 'False';
 HELP : 'help';
 RETURN : 'return';
+BREAK : 'break';
+CONTINUE : 'continue';
 NEWLINE: ('\r'? '\n' ' '*) ;
 
 WS: ' '+ ;

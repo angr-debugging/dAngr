@@ -17,7 +17,7 @@ class BreakpointCommands(BaseCommand):
         
         Short name: ba
         """
-        f = await FilterCommands(self.debugger).address_filter(address)
+        f = await FilterCommands(self.debugger).by_address(address)
         self.debugger.breakpoints.append(f)
         await self.send_info(f"Address {hex(address)} added to breakpoints.")
     
@@ -31,7 +31,7 @@ class BreakpointCommands(BaseCommand):
         
         Short name: bal
         """
-        f = await FilterCommands(self.debugger).filter_at_line(source_file, line)
+        f = await FilterCommands(self.debugger).by_line(source_file, line)
         self.debugger.breakpoints.append(f)
         await self.send_info(f"Address {hex(f.address)} added to breakpoints.")
     
@@ -44,7 +44,7 @@ class BreakpointCommands(BaseCommand):
         
         Short name: baf
         """
-        f = await FilterCommands(self.debugger).filter_at_function(function)
+        f = await FilterCommands(self.debugger).by_function(function)
         self.debugger.breakpoints.append(f)
         await self.send_info(f"Function {function} added to breakpoints.")
     
@@ -146,7 +146,7 @@ class BreakpointCommands(BaseCommand):
             return []
         return f'Breakpoint(s): {"\n\t".join([f"[{i}] {b}" for i,b in enumerate(list)])}'
     
-    async def add_breakpoint_filter(self, *filters:Filter):
+    async def breakpoint(self, *filters:Filter):
             """
             Add a filter to the list of breakpoints.
 
@@ -155,13 +155,8 @@ class BreakpointCommands(BaseCommand):
             
             Short name: bf
             """
-            if len(filters) == 0:
-                raise DebuggerCommandError("At least one filter must be provided.")
-            if len(filters) == 1:
-                self.debugger.breakpoints.append(filters[0])
-            else:
-                self.debugger.breakpoints.append(AndFilterList([f for f in filters]))
-            await self.send_info(f"{[str(f) for f in filters] if len(filters)>1 else str(filters[0])} added to breakpoints.")
+
+            await FilterCommands(self.debugger).filter(False, *filters)
 
     async def remove_breakpoint_filter(self, index:int):
         """
@@ -172,11 +167,7 @@ class BreakpointCommands(BaseCommand):
         
         Short name: brf
         """
-        list = self.debugger.breakpoints
-        if index >= len(list):
-            raise DebuggerCommandError(f"Index {index} out of range.")
-        fltr = list.pop(index)
-        await self.send_info(f"{fltr} removed from breakpoints.")
+        await FilterCommands(self.debugger).remove_filter(index, False)
 
     async def clear_breakpoints(self):
         """

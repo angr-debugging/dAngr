@@ -92,17 +92,17 @@ if a != "Hello from Bash":
 
     parse_tests = {
         "" : [],
-        'cmd_0_1_': [DangrCommand('cmd_0_1_')],
-        '_cmd_0_2': [DangrCommand('_cmd_0_2' )],
-        'cmd3 0 1 2': [DangrCommand('cmd3', Literal(0), Literal(1), Literal(2))],
+        'cmd_0_1_': [DangrCommand('cmd_0_1_',None)],
+        '_cmd_0_2': [DangrCommand('_cmd_0_2' ,None)],
+        'cmd3 0 1 2': [DangrCommand('cmd3', None, Literal(0), Literal(1), Literal(2))],
         "!print(&vars.x)" : [PythonCommand(Literal("print("), VariableRef('x'), Literal(")"))],
         "!print('x')" : [PythonCommand(Literal("print('x')"))],
         '$ls' : [BashCommand(Literal('ls'))],
-        '&cmd_0_3_' : [DangrCommand('cmd_0_3_')],
-        'cmd "4" "3" "4"': [DangrCommand('cmd', Literal('4'), Literal('3'), Literal('4'))],
-        'cmd "5" !(print(1)) "4"': [DangrCommand('cmd', Literal('5'), PythonCommand(Literal("print(1)")), Literal('4'))],
-        'cmd "6" $(ls -la) "4"': [DangrCommand('cmd', Literal('6'), BashCommand(Literal("ls -la")), Literal('4'))],
-        'cmd "7" !(print($(ls -la))) "4"': [DangrCommand('cmd', Literal('7'), PythonCommand(Literal("print("),BashCommand(Literal("ls -la")), Literal(")")), Literal('4'))],
+        '&cmd_0_3_' : [DangrCommand('cmd_0_3_', None)],
+        'cmd "4" "3" "4"': [DangrCommand('cmd', None, Literal('4'), Literal('3'), Literal('4'))],
+        'cmd "5" !(print(1)) "4"': [DangrCommand('cmd', None, Literal('5'), PythonCommand(Literal("print(1)")), Literal('4'))],
+        'cmd "6" $(ls -la) "4"': [DangrCommand('cmd', None, Literal('6'), BashCommand(Literal("ls -la")), Literal('4'))],
+        'cmd "7" !(print($(ls -la))) "4"': [DangrCommand('cmd', None, Literal('7'), PythonCommand(Literal("print("),BashCommand(Literal("ls -la")), Literal(")")), Literal('4'))],
 """
 for i in range(10):
     !print(&vars.i)
@@ -125,8 +125,8 @@ if a != "Hello from Bash":
 '!print("Printing from Python: ", &vars.a)': [PythonCommand('print("Printing from Python: ", ', VariableRef("a"),')')],
 "static i = 0": [Assignment(VariableRef('i',True), Literal(0))],
 '!("{:08x} {:08x} {:08x}".format(int(&vars.password0,16), int(&vars.password1,16), int(&vars.password2,16)))':[PythonCommand('"{:08x} {:08x} {:08x}"','.format(int(', VariableRef('password0'),',16), int(', VariableRef('password1'),',16), int(', VariableRef('password2'),',16))')],
-'a2 = (get_symbolic_value &vars.password2 "int")': [Assignment(VariableRef('a2'), DangrCommand('get_symbolic_value', VariableRef('password2'), Literal('int')))],
-'a2 = &(get_symbolic_value password2 "int")': [Assignment(VariableRef('a2'), DangrCommand('get_symbolic_value', VariableRef('password2'), Literal('int')))]
+'a2 = (get_symbolic_value &vars.password2 "int")': [Assignment(VariableRef('a2'), DangrCommand('get_symbolic_value', None, VariableRef('password2'), Literal('int')))],
+'a2 = &(get_symbolic_value password2 "int")': [Assignment(VariableRef('a2'), DangrCommand('get_symbolic_value', None, VariableRef('password2'), Literal('int')))]
     }
 
     def test_parse_false(self):

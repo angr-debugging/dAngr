@@ -52,12 +52,7 @@ class Less:
         @kb.add('c-d')
         def _(event):
             event.app.exit()
-        
 
-        # @kb.add('c-f')
-        # def _(event):
-        #     start_search(self.inner.control)
-        
         handle = kb.add
 
 

@@ -5,6 +5,7 @@ import pytest
 
 from dAngr.cli.command_line_debugger import CommandLineDebugger
 from dAngr.cli.cli_connection import CliConnection
+from dAngr.exceptions import DebuggerCommandError
 from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
 
 class TestCommands:
@@ -43,7 +44,7 @@ class TestCommands:
 
     @pytest.mark.asyncio
     async def test_help_command(self, dbg, conn):
-        assert await dbg.handle("help continue")
+        assert await dbg.handle("help run")
         conn.send_result.assert_called_once()
         assert "Run until a breakpoint or" in conn.send_result.call_args[0][0]
     @pytest.mark.asyncio
@@ -68,3 +69,20 @@ class TestCommands:
     async def test_load(self, dbg, conn):
         assert await dbg.handle("load example")
         conn.send_info.assert_called_once_with("Binary 'example' loaded.")
+
+    @pytest.mark.asyncio
+    async def test_load_invalid(self, dbg, conn):
+        assert await dbg.handle("load invalid", False)
+        conn.send_error.assert_called_once_with(DebuggerCommandError("Failed to load binary: File 'invalid' does not exist"))
+    
+    @pytest.mark.asyncio
+    async def test_load_args(self, dbg, conn):
+        assert await dbg.handle("load example args", False)
+        conn.send_error.assert_called_once_with(InvalidArgumentError("Argument 'base_addr' should be of type int, got str"))
+    
+    @pytest.mark.asyncio
+    async def test_variable(self, dbg, conn):
+        assert await dbg.handle("test = 1")
+        assert await dbg.handle("&vars.test")
+        conn.send_result.assert_called_once()
+        assert 1 == conn.send_result.call_args[0][0]

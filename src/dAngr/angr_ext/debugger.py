@@ -17,7 +17,7 @@ from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import Constraint
 from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, ObjectStore, StreamType, SymBitVector, remove_ansi_escape_codes
-
+from dAngr.utils import utils
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, get_function_by_addr, hook_simprocedures, load_module_from_file
 from .connection import Connection
@@ -52,6 +52,7 @@ class Debugger:
         self._current_function:str = ''
         self._cfg:CFGFast|None = None
         self.stop_reason = StopReason.NONE
+        self._save_unconstrained = False
         self._entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None = None
         self._symbols:Dict[str,SymBitVector] = {}
 
@@ -75,7 +76,10 @@ class Debugger:
     def simgr(self)->SimulationManager:
         if self._simgr is None:
             self.throw_if_not_initialized()
-            self._simgr,_ = create_entry_state(self.project,self._entry_point,self._default_state_options, self._current_state, self.veritesting)
+            if self._current_state is None:
+                log.debug("Creating default simulation manager.")
+                self.set_entry_state()
+            self._simgr = self.project.factory.simulation_manager(self.current_state, save_unconstrained=self._save_unconstrained)
         return self._simgr
     
     @property
@@ -115,19 +119,22 @@ class Debugger:
             else:
                 raise DebuggerCommandError("No active or deadended states.")
         return self._current_state
+    
     @current_state.setter
-    def current_state(self, state):
-        self._current_state = state
+    def current_state(self, state:angr.SimState):
+        self._set_current_state(state)
 
+    def _set_current_state(self, state):
+        if state:
+            state.register_plugin('stdout_tracker', StdTracker())
+        self._current_state = state
+                
     def set_current_state(self, stateID:int, stash="active"):
         if stash not in self.simgr.stashes:
             raise DebuggerCommandError(f"Stash {stash} not found.")
         if stateID >= len(self.simgr.stashes[stash]):
             raise DebuggerCommandError(f"State with ID {stateID} not found in stash {stash}.")
-        self._current_state = self.simgr.stashes[stash][stateID]
-
-    def _set_current_state(self, state):
-        self._current_state = state
+        self._set_current_state(self.simgr.stashes[stash][stateID])
 
     def move_state_to_stash(self, stateID:int, from_stash:str, to_stash:str):
         if from_stash not in self.simgr.stashes:
@@ -192,9 +199,27 @@ class Debugger:
         if self._simgr is not None:
             self.reset_state()
         # TODO: check add_options
-        self._current_state = self.project.factory.call_state(func_addr,*arguments,
-                    add_options = { angr.options.SYMBOL_FILL_UNCONSTRAINED_MEMORY,
-                                   angr.options.SYMBOL_FILL_UNCONSTRAINED_REGISTERS})
+        self._set_current_state( self.project.factory.call_state(func_addr,*arguments,
+                    add_options = self._default_state_options, save_unconstrained=self._save_unconstrained))
+
+    def set_entry_state(self,addr = None, *args, **kwargs):
+        if self._simgr is not None:
+            self.reset_state()
+        if addr:
+            kwargs['addr'] = addr
+        if args:
+            kwargs['args'] = args
+        self._set_current_state(self.project.factory.entry_state(
+                    add_options = self._default_state_options, **kwargs))
+
+    @property
+    def keep_unconstrained(self):
+        return self._save_unconstrained
+    
+    @keep_unconstrained.setter  
+    def keep_unconstrained(self, value:bool):
+        self._save_unconstrained = value
+        self._simgr = None
 
     def set_function_prototype(self, return_type:str, name:str, args:List[str]):  
         # Parse argument types
@@ -235,6 +260,7 @@ class Debugger:
         self._entry_point = (function_name,prototype,cc,arguments)
         if self._simgr is not None:
             self.reset_state()
+        self._simgr,_ = create_entry_state(self.project,self._entry_point,self._default_state_options, self._current_state, self.veritesting)
         return self.simgr.one_active
 
     def get_variables(self, func_addr):
@@ -270,7 +296,7 @@ class Debugger:
         self.from_src_path = os.path.abspath(os.path.expanduser(os.path.normpath(from_src_path))) if from_src_path else ''
         self.to_src_path = os.path.abspath(os.path.expanduser(os.path.normpath(to_src_path))) if to_src_path else ''
         if not os.path.exists(binary_path):
-            raise InvalidArgumentError(f"File {binary_path} does not exist")
+            raise InvalidArgumentError(f"File '{binary_path}' does not exist")
         if base_addr:
             main_opts = {'base_addr': base_addr}
         else:
@@ -311,15 +337,6 @@ class Debugger:
         except Exception as e:
             raise DebuggerCommandError(f"Failed to run checksec: {e}")
         return features
-        
-
-
-
-    def set_start_address(self, address:int):
-        if self._simgr is not None:
-            self.reset_state()
-        self._entry_point = address
-        
     
     def add_symbol(self, name:str, sym:SymBitVector):
         self._symbols[name] = sym
@@ -334,6 +351,18 @@ class Debugger:
         if name in self._symbols:
             return self._symbols[name]
         else : raise DebuggerCommandError(f"Symbol {name} not found.")
+
+    def eval_symbol(self, sym:SymBitVector|Constraint, dtype:DataType, **kwargs):
+        if isinstance(sym, SymBitVector):
+            return self.current_state.solver.eval(sym, cast_to=dtype.to_type(), **kwargs)
+        elif isinstance(sym, utils.Constraint):
+            #drop endness from kwargs
+            if 'endness' in kwargs:
+                kwargs.pop('endness')
+            return self.current_state.solver.eval(sym, cast_to=dtype.to_type(), **kwargs)
+        else:
+            raise DebuggerCommandError(f"Invalid symbol type {type(sym)}.")
+
     def satisfiable(self, constraint=None):
         return self.current_state.satisfiable(extra_constraints=[constraint])
 
@@ -381,25 +410,12 @@ class Debugger:
         self._project = None
         self._simgr = None
         self._current_state = None
-
-    # def select_active_path(self, index):
-    #     to_move = self.simgr.stashes["active"][index]
-    #     self.simgr.move(from_stash="active", to_stash="deferred")
-    #     self.simgr.move("deferred", to_stash="active", filter_func= lambda x: x==to_move)
-    #     return (to_move)  
-
-
+ 
     # @param handler: StepHandler
     # @param check_until: callable return reason to stop, else None
     # @param exclude: callable returns True to exclude state from active stash
     
     async def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False):
-
-        # self.simgr.explore(find=0x400071c)
-        # self.stop_reason = StopReason.BREAKPOINT
-        # self._current_state = self.simgr.found[0]
-        # await handler.handle_step(self.stop_reason, self._current_state)
-        # return
         self.throw_if_not_initialized()
         await self.pause(False)
         self.stop_reason:StopReason = StopReason.NONE
@@ -408,6 +424,7 @@ class Debugger:
             if self._current_state not in self.simgr.active:
                 self._current_state = self.simgr.one_active
             else:
+                #move current state to the front
                 self.simgr.active.remove(self._current_state)
                 self.simgr.active.insert(0,self._current_state)
         else:
@@ -448,7 +465,7 @@ class Debugger:
             return self.stop_reason != StopReason.NONE
         
         self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func,step_func=step_func)
-        self._current_state = self.simgr.one_active if self.simgr.active else None
+        self._set_current_state( self.simgr.one_active if self.simgr.active else None)
         await handler.handle_step(self.stop_reason, self._current_state)
 
   
@@ -549,114 +566,8 @@ class Debugger:
         std:StdTracker = state.get_plugin(f'{mapped}_tracker')
         return std.get_prev_string()
 
-    def cast_to(self, value:AngrValueType, cast_to:DataType)-> AngrValueType:
-        state = self.current_state
-        if isinstance(value, SymBitVector):
-            switch = {
-                DataType.bytes: bytes,
-                DataType.int: int,
-                DataType.bool: bool,
-            }
-            cast_to_ = switch.get(cast_to, None)
-            if cast_to_:
-                return state.solver.eval(value, cast_to=cast_to_)
-            else:
-                value = state.solver.eval(value)
-        switch = {
-            DataType.bytes: self._to_bytes,
-            DataType.int: self._to_int,
-            DataType.bool: self._to_bool,
-            DataType.str: self._to_str,
-            DataType.hex: self._to_hex,
-            DataType.address: self._to_address,
-            DataType.none: None
-        }
-        if f := switch.get(cast_to,None):
-            return f(value)
-        else:
-            return value
-
-    def _get_endianness(self):
-        if self.project.arch.memory_endness.replace('Iend_', '').lower()=='le':
-            endianness = 'little'
-        else:
-            endianness = 'big'
-        return endianness
-   
-    #TODO: move to utils
-    def _to_int(self, value:int|str|bytes|bool)->int:
-        if type(value) == int:
-            return value
-        elif type(value) == str:
-            if value.startswith('0x'):
-                return int(value, 16)
-            return int(value, 0)
-        elif type(value) == bytes:
-            return int.from_bytes(value, byteorder=self._get_endianness())
-        elif type(value) == bool:
-            return int(value)
-        raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
-    
-    def _to_address(self, value:int|str|bytes|bool)->str:
-        if type(value) == int:
-            v = value
-        elif type(value) == str:
-            v = int(value, 0)
-        elif type(value) == bytes:
-            v = int.from_bytes(value, byteorder=self._get_endianness())
-        elif type(value) == bool:
-            v = int(value)
-        else:
-            raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
-        return hex(v)
-
-    def _to_hex(self, value:int|str|bytes|bool)->str:
-        if type(value) == int:
-            return hex(value)
-        elif type(value) == str:
-            return self._to_bytes(value).hex(":")
-        elif type(value) == bytes:
-            return value.hex(":")
-        elif type(value) == bool:
-            return hex(int(value))
-        raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
-    
-    def _to_str(self, value:int|str|bytes|bool)->str:
-        if type(value) == int:
-            return str(value)
-        elif type(value) == bytes:
-            return value.decode('utf-8', errors='replace')
-        elif type(value) == str:
-            return value
-        elif type(value) == bool:
-            return str(value)
-        raise DebuggerCommandError(f"Type not supported. Use 'int' or 'bytes'.")
-    def _to_bool(self, value:int|str|bytes|bool)->bool:
-        if type(value) == int:
-            return bool(value)
-        elif type(value) == str:
-            return value.lower() in ['true', '1']
-        elif type(value) == bytes:
-            return bool(int.from_bytes(value, byteorder=self._get_endianness()))
-        elif type(value) == bool:
-            return value
-        raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
-    
-    def _to_bytes(self, value:int|str|bytes|bool)->bytes:
-        if type(value) == int:
-            # Account for endianness when storing integers
-            endianness = self._get_endianness()
-            byte_value = value.to_bytes(self.project.arch.bytes, byteorder=endianness)
-        elif type(value) == str:
-            byte_value = value.encode('utf-8')
-        elif type(value) == bytes:
-            byte_value = value
-        elif type(value) == bool:
-            byte_value = int(value).to_bytes(1, byteorder=self._get_endianness())
-        else:
-            raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', or 'bytes'.")
-        return byte_value
-    
+    def cast_to(self, value:AngrValueType, dtype:DataType, **kwargs)-> AngrValueType:
+        return dtype.convert(value,  self.project.arch, **kwargs)    
 
     def load_hooks(self, filename):
         mod = load_module_from_file(filename)

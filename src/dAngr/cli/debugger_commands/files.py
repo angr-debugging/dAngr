@@ -30,7 +30,7 @@ class FileCommands(BaseCommand):
             content (str|SymBitVector|Variable|None): Content of the file. Default is None. If content starts with $sym.SYM, the content is replaced with the symbol named SYM.
             size (int|None): Size of the file. Default is None.
         
-        Short name: cs
+        Short name: csf
         
         """
         c = None

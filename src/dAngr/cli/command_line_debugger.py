@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Tuple, cast, override
 import angr
 
 
+import archinfo
 import claripy
 from prompt_toolkit.styles import Style
 from prompt_toolkit.styles.named_colors import NAMED_COLORS
@@ -23,7 +24,7 @@ from dAngr.exceptions import CommandError
 
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
-from dAngr.utils.utils import get_union_members
+from dAngr.utils.utils import DataType, get_union_members
 from .cli_connection import CliConnection
 from .debugger_commands import *
 
@@ -63,16 +64,6 @@ class dAngrExecutionContext(ExecutionContext):
     @property
     def debugger(self)->Debugger:
         return self._debugger
-    # @override
-    # async def get_argument_value(self, arg):
-    #     if isinstance(arg, Memory):
-    #         return self._debugger.get_memory(arg.address, arg.size)
-    #     elif isinstance(arg, Register):        
-    #         return self._debugger.get_register_value(arg.name)
-    #     elif isinstance(arg, ValueObject):
-    #         return self._debugger.get_symbol(arg.name)
-    #     else:
-    #         return await super().get_argument_value(arg)
 
 class CommandLineDebugger(Debugger,StepHandler):
     def __init__(self, *args):
@@ -201,7 +192,8 @@ class CommandLineDebugger(Debugger,StepHandler):
                 
                 table_data.append([EMPTY, EMPTY, EMPTY, f"<info>{first}</info>"])
             else:
-                table_data.extend(self.list_args_table(spec,[EMPTY,EMPTY,EMPTY]))
+                dt, _ =self.list_args_table(spec,[EMPTY,EMPTY,EMPTY])
+                table_data.extend(dt)
             table_data.append([])
         style = Style.from_dict({
             'title': '',
@@ -220,25 +212,23 @@ class CommandLineDebugger(Debugger,StepHandler):
             'arg_info': 'darkgray italic',
             'extra_info': 'gray italic',
         })
-        table_data = [[]]
-
+        table_data = []
+        for l in spec.description.split("\n"):
+            table_data.append([EMPTY, f"<info>{l}</info>"])         
         # command structure
         # print command name, followed by required args separated by comma, then optional args in square brackets
         required = spec.required_arguments
         optional = spec.optional_arguments
         req = " " + " ".join([f"<argument>{a.name}</argument>" for a in required])
         opt = " " + " ".join([f"<argument>[{a.name}]</argument>" for a in optional])
-        table_data.append([EMPTY, f"Usage: <command>{spec.name}{req.rstrip()}{opt.rstrip()}</command>"])
-        table_data.append([EMPTY, f"Short name: <command>{spec.short_name}</command>"])
-        for l in spec.description.split("\n"):
-            table_data.append([EMPTY, f"<info>{l}</info>"])         
-        table_data.append([])
+        table_data.append([EMPTY, f"- Usage: <command>{spec.name}{req.rstrip()}{opt.rstrip()}</command>"])
+        table_data.append([EMPTY, f"- Short name: <command>{spec.short_name}</command>"])
         if spec.args:
             if required:
-                table_data.append([EMPTY, "<info>Arguments:</info>"])
+                table_data.append([EMPTY, "<info>- Arguments:</info>"])
             for a in required:                
                 if a.dtype:
-                    if members:= get_union_members(a.name):
+                    if members:= get_union_members(a.dtype):
                         tp = " or ".join([m.__name__ for m in members])
                     else:
                         tp = a.dtype.__name__
@@ -272,7 +262,7 @@ class CommandLineDebugger(Debugger,StepHandler):
     async def render_argument(self, value:int|bytes|str|Object, make_concrete:bool ):
         val = None
         if isinstance(value, int):
-            val = self._to_bytes(value)
+            val = DataType._to_bytes(value, archinfo.get_host_arch())
             if not make_concrete:
                 val = claripy.BVV(value, len(val)*8)
         elif isinstance(value, bytes):
@@ -280,9 +270,12 @@ class CommandLineDebugger(Debugger,StepHandler):
                 val = claripy.BVV(value)
             pass
         elif isinstance(value, str):
-            val = self._to_bytes(value)
+            val = DataType._to_bytes(value, archinfo.get_host_arch())
             if not make_concrete:
                 val = claripy.BVV(val)
+        elif isinstance(value, bool):
+            if not make_concrete:
+                val = claripy.BVV(1 if value else 0, 1)
         elif isinstance(value, Object):
             val = await value(context=self.context)
         if val == None:

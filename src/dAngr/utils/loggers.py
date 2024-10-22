@@ -84,5 +84,7 @@ class LogConfig:
         return result
 
 dAngr_log_config = LogConfig(logging.ERROR)
+# dAngr_log_config.set_module("angr", logging.DEBUG)
+
 
 get_logger = logging.getLogger

@@ -8,41 +8,43 @@ class FilterCommands(BaseCommand):
 
     def __init__(self, debugger:Debugger):
         super().__init__(debugger)
+        
 
-   
-    async def add_exclusion(self, *filters:Filter):
+    async def filter(self, exclude:bool = False, *filters:Filter):
         """
-        Add a filter to the list of exclusions.
+        Add filters to the list of breakpoints or exclusions.
 
         Args:
             filters (tuple): The filters to add. Can be an address, source file and line number, function name or stream text.
+            exclude (bool): True to add to exclusions, False to add to breakpoints.
         
         Short name: fae
         """
         if len(filters) == 0:
             raise DebuggerCommandError("At least one filter must be provided.")
+        lst = self.debugger.exclusions if exclude else self.debugger.breakpoints
         if len(filters) == 1:
-            self.debugger.exclusions.append(filters[0])
+            lst.append(filters[0])
         else:
-            self.debugger.exclusions.append(AndFilterList([f for f in filters]))
-        await self.send_info(f"{[str(f) for f in filters] if len(filters)>1 else str(filters[0])} added to exclusions.")
+            lst.append(AndFilterList([f for f in filters]))
+        await self.send_info(f"{[str(f) for f in filters] if len(filters)>1 else str(filters[0])} added to {'exclusions' if exclude else 'breakpoints'}.")
 
-    
-    async def remove_exclusion(self, index:int):
+    async def remove_filter(self, index:int, exclude:bool = False):
         """
-        Remove a filter from the list of exclusions.
+        Remove a filter from the list of breakpoints or exclusions.
 
         Args:
             index (int): Index of the filter found using list_filters.
+            exclude (bool): True to remove from exclusions, False to remove from breakpoints.
         
         Short name: re
         """
-        list = self.debugger.exclusions
-        if index >= len(list):
+        lst = self.debugger.exclusions if exclude else self.debugger.breakpoints
+        if index >= len(lst):
             raise DebuggerCommandError(f"Index {index} out of range.")
-        fltr = list.pop(index)
-        await self.send_info(f"{fltr} removed from exclusions.")
-        
+        fltr = lst.pop(index)
+        await self.send_info(f"{fltr} removed from {'exclusions' if exclude else 'breakpoints'}.")
+
     async def make_filter(self, function:str):
         """
         Add a filtering method. A method which returns a boolean value to indicate that the filter matches or not. When the method returns True, the filter matches and the breakpoint is triggered.
@@ -76,7 +78,7 @@ class FilterCommands(BaseCommand):
         """
         return AndFilterList([f for f in filters])
     
-    async def address_filter(self, address:int):
+    async def by_address(self, address:int):
         """
         Add an address filter.
 
@@ -87,7 +89,7 @@ class FilterCommands(BaseCommand):
         """
         return AddressFilter(address)
 
-    async def filter_at_line(self, source_file:str, line_nr:int):
+    async def by_line(self, source_file:str, line_nr:int):
         """
         Set a source line filter.
 
@@ -102,7 +104,7 @@ class FilterCommands(BaseCommand):
             raise DebuggerCommandError(f"No address found for {source_file}:{line_nr}.")
         return SourceFilter(address, source_file, line_nr)
 
-    async def filter_at_function(self, name:str):
+    async def by_function(self, name:str):
         """
         Specify a function by name in the binary to filter on.
 
@@ -115,7 +117,7 @@ class FilterCommands(BaseCommand):
             raise DebuggerCommandError(f"Function {name} not found.")
         return FunctionFilter(name)
 
-    async def filter_stream(self, text:str, stream:StreamType=StreamType.stdout):
+    async def by_stream(self, text:str, stream:StreamType=StreamType.stdout):
         """
         Set a stream filter.
 

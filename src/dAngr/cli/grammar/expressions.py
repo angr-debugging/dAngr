@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, auto
 import io
 from types import UnionType
 from typing import Dict, List, Any, Union, cast, get_args, get_origin
@@ -9,11 +9,13 @@ import claripy
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.exceptions import CommandError, InvalidArgumentError, ValueError, KeyError
 from dAngr.utils import AngrValueType, AngrExtendedType, StreamType, str_to_address
-from dAngr.utils.utils import DataType, Endness, check_signature_matches
+from dAngr.utils.utils import DataType, Endness, Operator, check_signature_matches
 from contextlib import redirect_stdout, redirect_stderr
 
 from dAngr.utils.loggers import get_logger
 log = get_logger(__name__)
+
+
 
 class Expression:
     def debugger(self, context):
@@ -40,7 +42,7 @@ class Expression:
             else:
                 return True
         return False
-        
+
 
     def __repr__(self):
         # class name followed by __str__
@@ -55,6 +57,7 @@ class Expression:
     @abstractmethod
     def __hash__(self):
         return hash(self.__repr__())
+
 
 class Object(Expression):
     # a symbol is a variable, argument, constant, memory, register, or stream
@@ -93,6 +96,7 @@ class Iterable():
         raise NotImplementedError
     def __set_item__(self, index, value):
         raise NotImplementedError
+    
 class Range(Primitive,Iterable):
     def __init__(self, start:int, end:int=-1):
         self.start = start
@@ -151,6 +155,7 @@ class Dictionary(Primitive,Iterable):
     def set_value(self, context, value: dict):
         for k, v in value.items():
             self.items[k].set_value(context, v)
+
 #Reference Objects
 class ReferenceObject(Object):
 
@@ -209,7 +214,7 @@ class Memory(ReferenceObject):
 
     def set_value(self, context, value):
         assert isinstance(value,AngrValueType)
-        self.debugger(context).set_memory(self.address, value, None,Endness.DEFAULT)
+        self.debugger(context).set_memory(self.address, value, None)
     
     def __str__(self):
         return f"&mem[{hex(self.address)}->{self.size}]"
@@ -339,58 +344,10 @@ class Slice(Property):
             o[self.start:self.end] = value
         else:
             raise InvalidArgumentError(f"Object {o} does not support slicing")
-    def __str__(self):
+    def __repr__(self):
         return f"{self.obj}[{self.start}:{self.end}]"
     def __eq__(self, other):
         return isinstance(other, Slice) and self.start == other.start and self.end == other.end
-    
-class Operator(Enum):
-    POW = 7
-    MOD = 6
-    MUL = 6
-    DIV = 6
-    FLOORDIV = 6  
-    ADD = 5
-    SUB = 5
-    LSHIFT = 4 
-    RSHIFT = 4  
-    XOR = 4     
-    BITWISE_AND = 3  
-    EQ = 3
-    NEQ = 3
-    GT = 3
-    LT = 3
-    LE = 3
-    GE = 3
-    BITWISE_OR = 2  
-    AND = 2  
-    OR = 1   
-
-    # Method resolution based on Python's magic methods
-def convert_to_magic_method(self):
-    switch = {
-        Operator.POW: "__pow__",
-        Operator.MOD: "__mod__",
-        Operator.MUL: "__mul__",
-        Operator.DIV: "__truediv__",  
-        Operator.FLOORDIV: "__floordiv__",  
-        Operator.ADD: "__add__",
-        Operator.SUB: "__sub__",
-        Operator.LSHIFT: "__lshift__",  
-        Operator.RSHIFT: "__rshift__",  
-        Operator.XOR: "__xor__",       
-        Operator.BITWISE_AND: "__and__",  
-        Operator.BITWISE_OR: "__or__",   
-        Operator.EQ: "__eq__",
-        Operator.NEQ: "__ne__",  
-        Operator.GT: "__gt__",
-        Operator.LT: "__lt__",
-        Operator.LE: "__le__",
-        Operator.GE: "__ge__",
-        Operator.AND: "__and__",  
-        Operator.OR: "__or__"     
-    }
-    return switch[self]
     
     
 class Comparison(Expression):
@@ -398,6 +355,7 @@ class Comparison(Expression):
         self.left = left
         self.operator:Operator = operator
         self.right = right
+        self.init = False
 
 
     def reorder_comparison(self,comp):
@@ -411,7 +369,7 @@ class Comparison(Expression):
 
         # If the right is a Comparison and has higher precedence than current,
         # restructure to respect precedence
-        if isinstance(right, Comparison) and right.operator.value > comp.operator.value: 
+        if isinstance(right, Comparison) and right.operator.precedence < comp.operator.precedence: 
             # Re-arrange: the right side will become a new left-side comparison
             new_left = Comparison(left, comp.operator, right.left)
             return Comparison(new_left, right.operator, right.right)
@@ -421,15 +379,17 @@ class Comparison(Expression):
 
     async def __call__(self, context:ExecutionContext):
         # handle operator precedence, the right side of the expression may be a comparison
-        
+        if not self.init:
+            self = self.reorder_comparison(self)
+            self.init = True
 
         left = await self.left(context)
         right = await self.right(context)
         switch = {
             Operator.AND: claripy.And,
             Operator.OR: claripy.Or
-
         }
+
         if isinstance(left, claripy.ast.Base) or isinstance(right, claripy.ast.Base):
             op = switch.get(self.operator, None)
             if op:
@@ -437,7 +397,9 @@ class Comparison(Expression):
                 if v == NotImplemented:
                     raise ValueError(f"Invalid operator {self.operator} for {type(left)} and {type(right)}")
                 return v
-        operation = convert_to_magic_method(self.operator)
+        operation = Operator.convert_to_magic_method(self.operator)
+        if operation is None:
+            raise ValueError(f"Invalid operator {self.operator}")
         v = getattr(type(left), operation)(left, right)
         if v == NotImplemented:
             v = getattr(type(right), operation)(left, right)
@@ -446,7 +408,7 @@ class Comparison(Expression):
         return v
     
     def __str__(self):
-        return f"{self.left}{self.operator}{self.right}"
+        return f"{self.left} {self.operator} {self.right}"
     
     def __eq__(self, value: object) -> bool:
         return isinstance(value, Comparison) and self.left == value.left and self.operator == value.operator and self.right == value.right
@@ -486,6 +448,33 @@ class Command(Expression):
     @abstractmethod
     async def __call__(self, context):
         raise NotImplementedError
+    
+class BASECommand(Command):
+    def __init__(self, base:str):
+        self.base = base
+
+    async def __call__(self, context:ExecutionContext):
+        raise NotImplementedError
+    
+    def __str__(self):
+        return f"{self.base}"
+    def __eq__(self, other):
+        return isinstance(other, BASECommand) and self.base == other.base
+
+BREAK = BASECommand('break')
+CONTINUE = BASECommand('continue')
+
+async def to_val(arg, context:ExecutionContext):
+    v = await arg(context)
+    if isinstance(arg, ReferenceObject):
+        if isinstance(v, str) or isinstance(v, bytes):
+            return repr(v)
+    if isinstance(v, claripy.ast.Base):
+        from dAngr.cli.command_line_debugger import dAngrExecutionContext
+        dbg = cast(dAngrExecutionContext, context.root).debugger
+        v = dbg.eval_symbol(v, DataType.bytes, endness =dbg.project.arch.memory_endness) # type: ignore
+        return repr(dbg.cast_to(v, DataType.str))
+    return v
 
 class PythonCommand(Command):
     def __init__(self, *cmds:Expression|str|int|bytes, **kwargs:Expression):
@@ -493,20 +482,12 @@ class PythonCommand(Command):
         self.cmds:List[Expression] = self._merge_consecutive_literals(cc)
         self.kwargs:Dict[str,Expression] = kwargs
 
-    async def _to_val(self, arg, context:ExecutionContext):
-        v = await arg(context)
-        if isinstance(arg, ReferenceObject):
-            if isinstance(v, str) or isinstance(v, bytes):
-                return repr(v)
-        if isinstance(v, claripy.ast.BV):
-            return repr(self.debugger(context).cast_to(v, DataType.str))
-        return v
     
     async def __call__(self, context:ExecutionContext):
         # copy the commands locally
         # execute the commands if it is an Expression and replace the entry in the copy with the result
         c = context.clone()
-        results = [await self._to_val(a,c) for a in self.cmds] + [f"{k}={await v(c)}" for k,v in self.kwargs.items()]
+        results = [await to_val(a,c) for a in self.cmds] + [f"{k}={await to_val(v,c)}" for k,v in self.kwargs.items()]
         stdout_buffer = io.StringIO()
         stderr_buffer = io.StringIO()
         with redirect_stdout(stdout_buffer), redirect_stderr(stderr_buffer):
@@ -533,6 +514,8 @@ class BashCommand(Command):
 
     async def __call__(self, context):
         c = context.clone()
+        results = [await to_val(a,c) for a in self.cmds]
+
         results = [await a(c) for a in self.cmds]
         context.return_value = subprocess.run(" ".join(results), capture_output=True, text=True).stdout.strip()
         return context.return_value
@@ -543,8 +526,9 @@ class BashCommand(Command):
         return isinstance(other, BashCommand) and self.cmds == other.cmds
          
 class DangrCommand(Command):
-    def __init__(self, cmd:str, *args:Expression, **kwargs:Expression):
+    def __init__(self, cmd:str, package:str|None, *args:Expression, **kwargs:Expression):
         self.cmd = cmd
+        self.package = package
         self.args:List[Expression] = [*args]
         self.kwargs:Dict[str,Expression] = kwargs
 
@@ -584,31 +568,36 @@ class DangrCommand(Command):
     async def __call__(self, context:ExecutionContext):
         from dAngr.cli.command_line_debugger import BuiltinFunctionDefinition
         spec = None
-        if self.cmd in context.functions :
-            spec = context.functions[self.cmd]
-        elif self.cmd in [f.short_name for f in context.functions.values() if isinstance(f, BuiltinFunctionDefinition)]:
-            spec = next((f for f in context.functions.values() if cast(BuiltinFunctionDefinition,f).short_name == self.cmd), None)
+        spec = context.find_function(self.package, self.cmd)
         if not spec:
+            if self.package:
+                raise CommandError(f"Unknown command: {self.package}.{self.cmd}")
             if context.find_variable(self.cmd):
                 return context[self.cmd].value
             else:
                 raise CommandError(f"Unknown command: {self.cmd}")
+        # spec = cast(BuiltinFunctionDefinition, spec)
+        #handle function arguments
         s_args = spec.args
+
         if len(spec.args) < len(self.args):
+            #handle variable arguments
             if spec.args and  spec.args[-1].dtype == tuple:
                 # copy the last argument until there are enough arguments
                 while len(s_args) < len(self.args):
                     s_args.append(s_args[-1])
             else:
                 raise CommandError(f"Too many arguments. Expected {len(spec.args)} but got {len(self.args)}")
-        spec = cast(BuiltinFunctionDefinition, spec)
-        func = spec.func
+        # check arg type and if the arguments match the function signature
         arguments = [ await self._check_arg(arg, context, s_args[i]) for i,arg in enumerate(self.args) ]
-        named_args = {k: await self._check_arg(v,context, spec.get_arg_by_name(k)) for k,v in self.kwargs.items()}   
-        # self._check_args(arguments, named_args, spec)
+        named_args = {k: await self._check_arg(v,context, spec.get_arg_by_name(k)) for k,v in self.kwargs.items()}
+        if isinstance(spec, BuiltinFunctionDefinition):
+            # check if the function signature matches
+            check_signature_matches(spec.func, spec, arguments, named_args)
 
-        check_signature_matches(func, spec, arguments, named_args)
         log.debug(lambda:f"Calling {self.cmd} with {arguments} {named_args}")
+
+        # call the function
         context.return_value = await spec(context, *arguments, **named_args)
         return context.return_value
 
@@ -617,6 +606,6 @@ class DangrCommand(Command):
     def __str__(self):
         return f"{self.cmd} {[str(a) for a in self.args]}"
     def __eq__(self, other):
-        return isinstance(other, DangrCommand) and self.cmd == other.cmd and self.args == other.args and self.kwargs == other.kwargs
+        return isinstance(other, DangrCommand) and self.cmd == other.cmd and self.package == other.package and self.args == other.args and self.kwargs == other.kwargs
 
     

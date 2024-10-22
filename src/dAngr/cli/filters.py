@@ -70,7 +70,7 @@ class FilterList(Filter):
         return self._combination(f._filter(state) for f in self.filters)
     def __len__(self):
         return len(self.filters)
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"FilterList: {', '.join(str(f) for f in self.filters)}"
     def __iter__(self):
         return iter(self.filters)
@@ -82,13 +82,13 @@ class OrFilterList(FilterList):
     def __init__(self, filters:List[Filter]):
         super().__init__(filters)
         self._combination = any
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"OrFilterList: {', '.join(str(f) for f in self.filters)}"
 class AndFilterList(FilterList):
     def __init__(self, filters:List[Filter]):
         super().__init__(filters)
         self._combination = all
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"AndFilterList: {', '.join(str(f) for f in self.filters)}"
     
 class FilterFunction(Filter):
@@ -115,7 +115,7 @@ class FilterFunction(Filter):
         finally:
             self.debugger.current_state = prev
     
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"Filter Function: {self.func.name}"
     
 class AddressFilter(Filter):
@@ -146,7 +146,7 @@ class AddressFilter(Filter):
         end = instrs[-1] # type: ignore
         return start <= self.address <= end
     
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"Address Filter: {hex(self.address)}"
 
 class FunctionFilter(Filter):
@@ -169,7 +169,7 @@ class FunctionFilter(Filter):
             self.f_addr = func = state.project.kb.functions(name=self.function_name) # type: ignore
         return self.f_addr == state.callstack.func_addr
     
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"Function Filter: {self.function_name}"
     
 class StdStreamFilter(Filter):
@@ -198,7 +198,7 @@ class StdStreamFilter(Filter):
             return self.value in std_data
         raise ExecutionError(f"Stream {self.stream} not found.")
     
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"Standard Stream Filter: {self.stream}"
     
 class InputFileFilter(Filter):
@@ -219,7 +219,7 @@ class InputFileFilter(Filter):
     def _filter(self, state:SimState):
         return self.value in str(state.posix.dump_file_by_path(self.path))
     
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"Input File Filter: {self.path}"
 
 class SourceFilter(AddressFilter):
@@ -228,7 +228,7 @@ class SourceFilter(AddressFilter):
         self.source_file = source_file
         self.line_nr = line_nr
         
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"Source Filter: {self.source_file}:{self.line_nr} ({hex(self.address)})"
     
 class SymbolicFilter(AddressFilter):
@@ -249,23 +249,5 @@ class SymbolicFilter(AddressFilter):
         a = state.mem[self.address].int.resolved
         return state.solver.symbolic(a)
     
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"Symbolic Filter: memory address {hex(self.address)}"
-    
-# class BreakpointFilter(AddressFilter):
-#     def __init__(self, address:int, source_file:str|None=None, line_nr:int|None = None, enabled:bool = True):
-#         self.breakpoint = Breakpoint(address,source_file,line_nr,enabled)
-#         self.address = address
-#         super().__init__(address)
-    
-#     @property
-#     def enabled(self):
-#         return self.breakpoint.enabled
-    
-#     @enabled.setter
-#     def enabled(self, value:bool):
-#         self.breakpoint.enabled = value
-#         self._enabled = value
-    
-#     def __str__(self) -> str:
-#         return f"{str(self.breakpoint)}"   

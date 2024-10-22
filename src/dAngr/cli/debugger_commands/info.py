@@ -88,7 +88,7 @@ class InformationCommands(BaseCommand):
         Short name: iap
         """
         paths = self.debugger.list_paths(stash)
-        return f"Paths Found: {"\n".join( [str(State(index, path.addr)) for index, path in enumerate(paths)])}"
+        return paths
 
     async def list_binary_strings(self, min_length:int = 4):
         """

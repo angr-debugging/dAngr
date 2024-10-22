@@ -32,7 +32,7 @@ class TestDebugInfoCommands:
         dbg = CommandLineDebugger(conn)
         assert await dbg.handle("load example")
         assert await dbg.handle("add_breakpoint 0x400566")
-        assert await dbg.handle("continue")
+        assert await dbg.handle("run")
         return dbg
 
     # @pytest.mark.asyncio
@@ -54,15 +54,15 @@ class TestDebugInfoCommands:
     @pytest.mark.asyncio
     async def test_list_active_paths(self, dbg, conn):
         assert await dbg.handle("list_states 'active'")
-        assert "Paths Found: State 0 at 0x400566" == str(conn.send_result.call_args[0][0])    
+        assert "[<SimState @ 0x400566>]" == str(conn.send_result.call_args[0][0])    
     @pytest.mark.asyncio
     async def test_list_active_paths2(self, dbg, conn):
         assert await dbg.handle("list_states")
-        assert "Paths Found: State 0 at 0x400566" == str(conn.send_result.call_args[0][0])    
+        assert "[<SimState @ 0x400566>]" == str(conn.send_result.call_args[0][0])    
     @pytest.mark.asyncio
     async def test_list_deadended_paths(self, dbg, conn):
         assert await dbg.handle("list_states 'deadended'")
-        assert "Paths Found: " == str(conn.send_result.call_args[0][0])    
+        assert "[]" == str(conn.send_result.call_args[0][0])    
 
     @pytest.mark.asyncio
     async def test_list_binary_symbols(self, dbg, conn):

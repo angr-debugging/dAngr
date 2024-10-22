@@ -29,42 +29,34 @@ class ScriptProcessor:
     def process_text(self, file_obj, until=lambda line: False):
         # if definition or control flow (end with :), read until back to 0 indentation
         l = ""
+        line = None
+        stack = False
         while True:
-            line = next(file_obj, None)
+            if not line:
+                line = next(file_obj, None)
             if line is None:
                 break
             if until(line):
+                if l:
+                    yield l
                 break
-            l = line.rstrip()
             if line == "":
+                line = None
                 continue
             if line.strip('\r\n').endswith(":"):
-                # Read until indentation is back to 0
-                indentation = line.find(line.lstrip())
-                while True:
-                    line = next(file_obj, None)
-                    if line is None:
-                        break
-                    if until(line):
-                        yield l
-                        return
-                    line = line.rstrip()
-                    if line == "":
-                        continue
-                    if line.find(line.lstrip()) == indentation:
-                        yield l
-                        l = line.rstrip()
-                        break
-                    l += "\n" + line
-            if l is not None:
-                yield l
-
-        # for line in file_obj:
-        #     # Yield each line in a non-markdown file
-
-        #     if line.strip() == "":
-        #         continue
-        #     yield line.strip()  # Yield each line without leading/trailing whitespace
+                stack = True
+            elif line.find(line.lstrip()) == 0:
+                stack = False
+            if stack:
+                l += "\n" + line.rstrip() if l else line.rstrip()
+                line = None
+            else:
+                if l:
+                    yield l
+                    l = ""
+                else:
+                    yield line.strip()
+                    line = None
 
     def process_markdown(self, file_obj):
 

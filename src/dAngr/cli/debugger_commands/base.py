@@ -50,7 +50,7 @@ class IBaseCommand(metaclass=AutoRunMeta):
 
 class BuiltinFunctionDefinition(FunctionDefinition):
     def __init__(self, name:str, cmd_class:type[IBaseCommand], func: Callable,  description:str, args:List[ArgumentSpec], short_name:str, example:str, package:str):
-        super().__init__(name, args)
+        super().__init__(name, package, args)
         self._cmd_class = cmd_class
         self._func = func
         self._description = description
@@ -101,6 +101,12 @@ def convert_args(args, signature):
         #check if the type matches the function definitions arg type
         if a.kind == inspect.Parameter.VAR_POSITIONAL:
             if tp != tuple:
+                raise InvalidArgumentError(f"Function {signature} parameter {name} has type {a.annotation} but expected {tp}")
+            else:
+                # get the type of the elements in the tuple
+                pargs.append(ArgumentSpec(name, tp, undefined, arg["description"]))
+        elif a.kind == inspect.Parameter.VAR_KEYWORD:
+            if tp != dict:
                 raise InvalidArgumentError(f"Function {signature} parameter {name} has type {a.annotation} but expected {tp}")
             else:
                 # get the type of the elements in the tuple

@@ -56,12 +56,16 @@ class ArgumentSpec:
 
 #Definitions    
 class FunctionDefinition(Definition):
-    def __init__(self, name, args:List[ArgumentSpec]):
+    def __init__(self, name, package:str|None, args:List[ArgumentSpec]):
         self._name = name
+        self._package = package if package else ""
         self._args:List[ArgumentSpec] = args
     @property
     def name(self):
         return self._name
+    @property
+    def package(self):
+        return self._package
     @property
     def args(self):
         return self._args
@@ -76,6 +80,9 @@ class FunctionDefinition(Definition):
         for arg in self._args:
             if arg.name == name:
                 return arg
+        if n:= next((arg for arg in self._args if arg.name == 'kwargs'), None):
+            return arg
+        
         raise InvalidArgumentError(f"Unknown argument {name}")
     def __repr__(self):
         return f"def {self.name}({",".join([str(a) for a in self.args])})"
@@ -95,7 +102,7 @@ class FunctionContext(ExecutionContext):
     
 class CustomFunctionDefinition(FunctionDefinition):
     def __init__(self, name, args:List[ArgumentSpec], body):
-        super().__init__(name, args)
+        super().__init__(name, None, args)
         self.body:Body = body
 
 

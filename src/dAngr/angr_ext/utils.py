@@ -53,18 +53,8 @@ def get_function_address(project, function_name):
         return f.addr
     return None
 
-# def value_to_simtype(value):
-#     if isinstance(value, int):
-        
-#         return angr.types.SimTypeInt()
-#     elif isinstance(value, float):
-#         return angr.types.SimTypeDouble()
-#     elif isinstance(value, str):
-#         return angr.types.SimTypePointer()
-#     else:
-#         raise InvalidArgumentError(f"arg_type {type(value)} not implemented")
+
 def convert_string(sim_type, value):
-    #TODO: support references to mem, symbols, etc
     if isinstance(sim_type, types.SimTypeInt):
         return int(value,0)
     elif isinstance(sim_type, types.SimTypePointer) :

@@ -3,7 +3,7 @@ from claripy import List
 
 from dAngr.cli.grammar.definitions import Definition, FunctionContext
 from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import VariableRef
+from dAngr.cli.grammar.expressions import BREAK, CONTINUE, VariableRef
 from dAngr.cli.grammar.statements import Assignment, Statement
 
 
@@ -30,11 +30,17 @@ class Body:
             func_name = "main"
         context = ExecutionContext(parent=ctx)
         for s in self.statements:
+            if s == BREAK:
+                return s
+            elif s == CONTINUE:
+                return
             if self.is_static(s):
                 await self._prepare_static(context, func_name, s)
             result = await s(context)
+
         self._repair_static(context, func_name)
         return result
+    
     async def _prepare_static(self, context:ExecutionContext, func_name:str, s:Statement):
         var = None
         if isinstance(s, Assignment) and isinstance(s.variable, VariableRef):

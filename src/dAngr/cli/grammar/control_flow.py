@@ -3,7 +3,7 @@ from textwrap import indent
 from typing import List
 
 from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import Expression, Iterable, Range, VariableRef
+from dAngr.cli.grammar.expressions import BREAK, Expression, Iterable, Range, VariableRef
 from .statements import Statement
 from .script import Body
 
@@ -23,7 +23,7 @@ class IfThenElse(ControlFlow):
             return await self.body(ExecutionContext(context))
         elif self.else_body.statements:
             return await self.else_body(ExecutionContext(context))
-        return
+        return None
 
     def __repr__(self):
         return f"if {self.condition}:\n{indent(str(self.body), '   ')}\nelse:\n{indent(str(self.else_body), '   ')}"
@@ -37,8 +37,10 @@ class WhileLoop(ControlFlow):
         self.condition = condition
 
     async def __call__(self, context: ExecutionContext):
-        while self.condition(context):
-            await self.body(ExecutionContext(context))
+        while await self.condition(context):
+            r = await self.body(ExecutionContext(context))
+            if r == BREAK:
+                break
 
     def __repr__(self):
         return f"while {self.condition}:\n{indent(str(self.body), '   ')}"
@@ -63,12 +65,16 @@ class ForLoop(ControlFlow):
                 ctx = ExecutionContext(context)
                 ctx[self.index] = index
                 ctx[self.item.name] = item
-                await self.body(ctx)
+                r = await self.body(ctx)
+                if r == BREAK:
+                    break
         else:
             for item in iterable:
                 ctx = ExecutionContext(context)
                 ctx[self.item.name] = item
-                await self.body(ctx)
+                r = await self.body(ctx)
+                if r == BREAK:
+                    break
 
     def __repr__(self):
         if self.index:

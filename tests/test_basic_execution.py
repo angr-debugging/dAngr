@@ -37,7 +37,7 @@ class TestBasicExecutionCommands:
 
     @pytest.mark.asyncio
     async def test_continue(self, dbg, conn):
-        assert await dbg.handle("continue")
+        assert await dbg.handle("run")
         conn.send_info.assert_called_with("Terminated.")
 
     @pytest.mark.asyncio
@@ -53,7 +53,7 @@ class TestBasicExecutionCommands:
 
     @pytest.mark.asyncio
     async def test_set_start_address(self, dbg, conn):
-        assert await dbg.handle("set_start_address 0x40054d")
+        assert await dbg.handle("set_entry_state 0x40054d")
         conn.send_info.assert_called_with("Execution will start at address 0x40054d.")
         assert await dbg.handle("run")
         conn.send_info.assert_called_with("Terminated.")
@@ -81,31 +81,31 @@ class TestBasicExecutionCommands:
     
     @pytest.mark.asyncio
     async def test_select_path(self, dbg, conn):
-        assert await dbg.handle("select_path 0")
+        assert await dbg.handle("select_state 0")
         assert 'Path 0 selected: 0x4003e0' in str(conn.send_info.call_args[0][0])
     
     @pytest.mark.asyncio
     async def test_exclude_function(self, dbg, conn):
-        await dbg.handle("f = filter_at_function 'main'")
-        await dbg.handle("add_exclusion f")
+        await dbg.handle("f = by_function 'main'")
+        await dbg.handle("exclude f")
         conn.send_info.assert_called_with("Function Filter: main added to exclusions.")
-        assert await dbg.handle("remove_exclusion 0")
+        assert await dbg.handle("remove_exclusion_filter 0")
         conn.send_info.assert_called_with("Function Filter: main removed from exclusions.")
     
     @pytest.mark.asyncio
     async def test_exclude_address(self, dbg, conn):
-        assert await dbg.handle("f = address_filter 0x40054d")
-        await dbg.handle("add_exclusion f")
+        assert await dbg.handle("f = by_address 0x40054d")
+        await dbg.handle("exclude f")
         conn.send_info.assert_called_with("Address Filter: 0x40054d added to exclusions.")
-        assert await dbg.handle("f = address_filter 0x40054d")
-        await dbg.handle("remove_exclusion 0")
+        assert await dbg.handle("f = by_address 0x40054d")
+        await dbg.handle("remove_exclusion_filter 0")
         conn.send_info.assert_called_with("Address Filter: 0x40054d removed from exclusions.")
 
     @pytest.mark.asyncio
     async def test_list_exclusions(self, dbg, conn):
         assert await dbg.handle("list_exclusions")
         conn.send_info.assert_called_with("No exclusions found.")
-        await dbg.handle("f = address_filter 0x40054d")
-        await dbg.handle("add_exclusion f")
+        await dbg.handle("f = by_address 0x40054d")
+        await dbg.handle("exclude f")
         assert await dbg.handle("list_exclusions")
         conn.send_result.assert_called_with("Exclusion(s): [0] Address Filter: 0x40054d")
