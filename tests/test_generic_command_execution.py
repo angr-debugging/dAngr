@@ -1,42 +1,56 @@
+import os
 import pytest
 
-from unittest.mock import AsyncMock
+from unittest.mock import Mock
 
 from dAngr.cli.cli_connection import CliConnection
 from dAngr.cli.command_line_debugger import CommandLineDebugger, dAngrExecutionContext
 from dAngr.cli.grammar.control_flow import ForLoop, IfThenElse
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.cli.grammar.parser import lex_input, parse_input
-from dAngr.cli.grammar.expressions import BashCommand, Comparison, Dictionary, Expression, Iterable, Listing, Literal, DangrCommand, PythonCommand, Range, VariableRef
+from dAngr.cli.grammar.expressions import BashCommand, Comparison, Dictionary, Expression, Listing, Literal, DangrCommand, PythonCommand, Range, VariableRef
 from dAngr.cli.grammar.script import Body, Script
 from dAngr.cli.grammar.statements import Assignment
 from dAngr.exceptions import ParseError
 
 
 class TestGenericCommandExecution:
+    old_dir = os.getcwd()
 
     def setup_method(self):
-        pass
+        os.chdir(os.path.dirname(__file__))
+
     def teardown_method(self):
-        pass
+        os.chdir(self.old_dir)
+
+
     
     @pytest.fixture
     def conn(self):
         c = CliConnection()
-        c.send_output = AsyncMock()
+        c.send_output = Mock()
         return c
 
     @pytest.fixture
-    async def dbg(self,conn):
+    def dbg(self,conn):
         dbg = CommandLineDebugger(conn)
         return dbg
 
-    async def test_python_command(self,capsys,dbg):
+    def test_python_command(self,capsys,dbg):
         input = "!print('x')"
         result = parse_input(input)
         
         assert isinstance(result, Script)
         ctx = dAngrExecutionContext(dbg,{})
-        r = await result(ctx)
+        r = result(ctx)
         assert r == None
         assert str(dbg.conn.send_output.call_args[0][0])  == "x\n"
+    
+    def test_test_claripy(self,capsys,dbg):
+        r = dbg.handle("load 'example'")
+        assert r == True
+        r = dbg.handle("add_symbol a 1")
+        r = dbg.handle("add_symbol b 1")
+        r = dbg.handle("add_constraint &sym.a + &sym.b == b'ab'")
+        assert r == True, "add_constraints failed"
+

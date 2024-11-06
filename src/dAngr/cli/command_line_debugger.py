@@ -67,7 +67,6 @@ class dAngrExecutionContext(ExecutionContext):
 
 class CommandLineDebugger(Debugger,StepHandler):
     def __init__(self, *args):
-        print(args)
         conn = args[0]
         Debugger.__init__(self, conn)
         self._breakpoints:FilterList = FilterList([])
@@ -99,26 +98,24 @@ class CommandLineDebugger(Debugger,StepHandler):
         return self._exclusions
 
     # step callback methods
-    async def handle_output(self, output:str):
-        await self.conn.send_output(f"{output}")
+    def handle_output(self, output:str):
+        self.conn.send_output(f"{output}")
     
-    async def handle_step(self,reason:StopReason, state:angr.SimState|None):
+    def handle_step(self,reason:StopReason, state:angr.SimState|None):
         if reason == StopReason.TERMINATE:
-            await self.conn.send_info(f"Terminated.") # type: ignore
+            self.conn.send_info(f"Terminated.") # type: ignore
         elif state is None:
-            await self.conn.send_warning(f"Stopped with unknown reason.")
+            self.conn.send_warning(f"Stopped with unknown reason.")
         elif reason == StopReason.STEP:
-            await self.conn.send_info(f"Stepped to: {hex(state.addr)}.") # type: ignore
+            self.conn.send_info(f"Stepped to: {hex(state.addr)}.") # type: ignore
         elif reason == StopReason.BREAKPOINT:
             for f in self.breakpoints.get_matching_filter(state):
-                await self.conn.send_info(f"Break: {f}.")
-        elif reason == StopReason.PAUSE:
-            await self.conn.send_info(f"Paused at: {hex(state.addr)}.") # type: ignore
+                self.conn.send_info(f"Break: {f}.")
         else:
-            await self.conn.send_warning(f"Stopped with unknown reason at: {hex(start)}.") # type: ignore
+            self.conn.send_warning(f"Stopped with unknown reason at: {hex(start)}.") # type: ignore
 
     # command methods
-    async def handle(self, command:str, raise_error:bool = True):
+    def handle(self, command:str, raise_error:bool = True):
         try:
             if not command:
                 return True
@@ -127,18 +124,18 @@ class CommandLineDebugger(Debugger,StepHandler):
             # command = command.strip()
             script = parse_input(command)
             if not script:
-                await self.conn.send_info("No command entered.")
+                self.conn.send_info("No command entered.")
                 return True
-            r = await script(self.context)
+            r = script(self.context)
             if r is not None:
-                await self.conn.send_result(r)
+                self.conn.send_result(r, True)
                 cast(CliConnection,self.conn).clear_output()
             return True
         except CommandError as e:
             if raise_error:
                 raise e
             else:
-                await self.conn.send_error(e)
+                self.conn.send_error(e)
                 return True
             # raise e
         
@@ -259,7 +256,7 @@ class CommandLineDebugger(Debugger,StepHandler):
         return table_data, style
 
 
-    async def render_argument(self, value:int|bytes|str|Object, make_concrete:bool ):
+    def render_argument(self, value:int|bytes|str|Object, make_concrete:bool ):
         val = None
         if isinstance(value, int):
             val = DataType._to_bytes(value, archinfo.get_host_arch())
@@ -277,12 +274,12 @@ class CommandLineDebugger(Debugger,StepHandler):
             if not make_concrete:
                 val = claripy.BVV(1 if value else 0, 1)
         elif isinstance(value, Object):
-            val = await value(context=self.context)
+            val = value(context=self.context)
         if val == None:
             raise DebuggerCommandError(f"Could not convert value {value}")
         return val
     
-    async def list_commands(self, withArgs:bool = False):
+    def list_commands(self, withArgs:bool = False):
 
         table_data, style = self.list_commands_data(withArgs)
         # Create HTML table
@@ -296,9 +293,9 @@ class CommandLineDebugger(Debugger,StepHandler):
 
         # Create formatted HTML text with style
         formatted_html = f"{html_table}"
-        await self.conn.send_result(formatted_html,style=style)
+        self.conn.send_result(formatted_html,style=style)
 
-    async def list_args(self, spec :BuiltinFunctionDefinition):
+    def list_args(self, spec :BuiltinFunctionDefinition):
         table_data, style = self.list_args_table(spec)
 
         html_table = ""
@@ -308,9 +305,9 @@ class CommandLineDebugger(Debugger,StepHandler):
                 html_table += f"{cell}"
             html_table += "\n"
         
-        await self.conn.send_result(html_table, style=style)
+        self.conn.send_result(html_table, style=style)
     
-    async def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False):
+    def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False):
         u = check_until
         exclusions = self.exclusions
         def check(simgr:angr.SimulationManager):
@@ -328,4 +325,4 @@ class CommandLineDebugger(Debugger,StepHandler):
                 return True
             return any([f.filter(state) for f in exclusions])
         
-        await self._run(self, check,_exclude)
+        self._run(self, check,_exclude)

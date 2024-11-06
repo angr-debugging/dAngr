@@ -10,7 +10,7 @@ from dAngr.cli.grammar.expressions import ReferenceObject
 #Statements
 class Statement:
     @abstractmethod
-    async def __call__(self, context):
+    def __call__(self, context):
         raise NotImplementedError
     
     @staticmethod
@@ -35,8 +35,8 @@ class Assignment(Statement):
         self.variable:ReferenceObject = variable
         self.value = value
 
-    async def __call__(self, context:ExecutionContext):
-        value = await self.value(context)
+    def __call__(self, context:ExecutionContext):
+        value = self.value(context)
         self.variable.set_value(context, value)
         return None
 

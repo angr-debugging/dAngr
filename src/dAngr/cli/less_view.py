@@ -23,14 +23,14 @@ class Less:
         self.app:Application = None # type: ignore
         pass
             
-    async def show_less(self, txts:List[Tuple[str,Style|None]]):
+    def show_less(self, txts:List[Tuple[str,Style|None]]):
         self.app = Application(
             layout=self._get_less_layout(texts=txts),
             key_bindings=self._get_less_key_bindings(),
             full_screen=True,
             mouse_support=True,
         )
-        await self.app.run_async()
+        self.app.run()
 
     def _get_less_layout(self, texts:List[Tuple[str,Style|None]]):
         self.search_field = SearchToolbar()

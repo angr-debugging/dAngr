@@ -10,7 +10,7 @@ from dAngr.utils import undefined
 class Definition:
     def __init__(self, name):
         self.name = name
-    async def __call__(self, context:ExecutionContext, *args: Any, **kwds: Any) -> Any:
+    def __call__(self, context:ExecutionContext, *args: Any, **kwds: Any) -> Any:
         raise NotImplementedError
     def __repr__(self):
         return f"def {self.name}"
@@ -92,7 +92,7 @@ class FunctionDefinition(Definition):
 
 #declaration
 class Body:
-    async def __call__(self, context):
+    def __call__(self, context):
         raise NotImplementedError
     
 class FunctionContext(ExecutionContext):
@@ -106,7 +106,7 @@ class CustomFunctionDefinition(FunctionDefinition):
         self.body:Body = body
 
 
-    async def __call__(self, context, *arg_values, **named_args):
+    def __call__(self, context, *arg_values, **named_args):
         # add args
         context = FunctionContext(self, context)
         # match arg_values with required and optional args
@@ -115,7 +115,7 @@ class CustomFunctionDefinition(FunctionDefinition):
         for k,v in named_args.items():
             context[k] = v
             
-        result = await self.body(context)
+        result = self.body(context)
         # remove args
         for arg in self.args:
             if isinstance(arg, VariableRef):

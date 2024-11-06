@@ -10,7 +10,7 @@ class InformationCommands(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
 
-    async def get_basicblocks(self):
+    def get_basicblocks(self):
         """
         Show the assembly for the current basic block.
 
@@ -21,9 +21,9 @@ class InformationCommands(BaseCommand):
         """
         with ProgressBar(title="reconstructing basic blocks") as pb:
             for b in pb(self.debugger.get_bbs()):
-                await self.send_result(str(b))
+                self.send_result(str(b))
 
-    async def get_current_block(self):
+    def get_current_block(self):
         """
         Show the current basic block.
 
@@ -42,7 +42,7 @@ class InformationCommands(BaseCommand):
 
 
     
-    async def get_cfg(self):
+    def get_cfg(self):
         """
         Show the control flow graph of the current function.
 
@@ -65,7 +65,7 @@ class InformationCommands(BaseCommand):
 
         return f"http://localhost:8000/{filename}.svg"
     
-    async def get_stashes(self):
+    def get_stashes(self):
         """
         Get the available stashes.
 
@@ -76,7 +76,7 @@ class InformationCommands(BaseCommand):
         """
         return f"Stashes: {self.debugger.get_stashes()}"
 
-    async def list_states(self, stash:str = "active"):
+    def list_states(self, stash:str = "active"):
         """
         List all active paths.
 
@@ -90,7 +90,7 @@ class InformationCommands(BaseCommand):
         paths = self.debugger.list_paths(stash)
         return paths
 
-    async def list_binary_strings(self, min_length:int = 4):
+    def list_binary_strings(self, min_length:int = 4):
         """
         List all binary strings.
 
@@ -105,7 +105,7 @@ class InformationCommands(BaseCommand):
         strings = self.debugger.get_binary_string_constants(min_length=min_length)
         return f"\taddress\tvalue\n{"\n".join([f"{s[0]}\t{s[1]}" for s in strings])}"
 
-    async def list_binary_symbols(self): # type: ignore
+    def list_binary_symbols(self): # type: ignore
         """
         List the debugsymbols when available.
 
@@ -117,7 +117,7 @@ class InformationCommands(BaseCommand):
         symbols = self.debugger.get_binary_symbols()
         return f"Binary Symbols: {"\n".join([str(s) for s in symbols])}"
 
-    async def list_constraints(self):
+    def list_constraints(self):
         """
         List the current path's constraints and symbolic variables.
 
@@ -129,7 +129,7 @@ class InformationCommands(BaseCommand):
         ctrs = self.debugger.get_constraints()
         return f"Constraints: {"\n".join([str(c) for c in ctrs])}"
 
-    async def list_path_history(self, index:int = 0, stash:str = "active"):
+    def list_path_history(self, index:int = 0, stash:str = "active"):
         """
         List the history of a path.
 
@@ -147,7 +147,7 @@ class InformationCommands(BaseCommand):
         """
         return f"Path History: {"\n".join([str(p) for p in self.debugger.list_path_history(index, stash)])}"
     
-    async def get_binary_info(self):
+    def get_binary_info(self):
         """
         Get information about the binary.
 
@@ -159,7 +159,7 @@ class InformationCommands(BaseCommand):
         info = self.debugger.get_binary_info()
         return "\n".join([f"{i}: {info[i]}" for i in info])
     
-    async def get_binary_security_features(self):
+    def get_binary_security_features(self):
         """
         Get security features of the binary.
 

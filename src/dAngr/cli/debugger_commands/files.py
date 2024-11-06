@@ -8,7 +8,7 @@ class FileCommands(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
 
-    async def dump_stdstream(self, stream_type: StreamType = StreamType.stdout):
+    def dump_stdstream(self, stream_type: StreamType = StreamType.stdout):
         """
         Dump the standard stream.
 
@@ -21,7 +21,7 @@ class FileCommands(BaseCommand):
         return self.debugger.get_stdstream(stream_type)
 
 
-    async def create_symbolic_file(self, name:str, content:str|SymBitVector|Variable|None=None, size:int|None=None):
+    def create_symbolic_file(self, name:str, content:str|SymBitVector|Variable|None=None, size:int|None=None):
         """
         Create a symbolic file with name and size.
 
@@ -37,4 +37,4 @@ class FileCommands(BaseCommand):
         if not content is None:
             c = self.to_value(content)
         self.debugger.create_symbolic_file(name, c, size) # type: ignore
-        await self.send_info(f"Symbolic file {name} created.")
+        self.send_info(f"Symbolic file {name} created.")

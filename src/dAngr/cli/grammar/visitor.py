@@ -11,7 +11,7 @@ from dAngr.cli.grammar.statements import Assignment,  Statement
 from dAngr.cli.grammar.control_flow import IfThenElse, WhileLoop, ForLoop
 from dAngr.cli.grammar.script import Script, Body
 from dAngr.cli.grammar.definitions import ArgumentSpec, CustomFunctionDefinition
-from dAngr.cli.grammar.expressions import BREAK, CONTINUE, Constraint, DangrCommand, Dictionary, Expression, IfConstraint, Listing, Memory, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
+from dAngr.cli.grammar.expressions import BREAK, CONTINUE, Constraint, DangrCommand, Dictionary, Expression, IfConstraint, Inclusion, Listing, Memory, Negate, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
 from dAngr.utils.utils import parse_binary_string
 
 
@@ -39,7 +39,9 @@ class dAngrVisitor_(dAngrVisitor):
             "&&": Operator.AND,
             "||": Operator.OR
         }
-
+    def _replace_text(self, text:str):
+        return text.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
+    
     def getOperator(self, op):
         if op in self.operators:
             return self.operators[op]
@@ -50,7 +52,7 @@ class dAngrVisitor_(dAngrVisitor):
         if ctx.QMARK() or ctx.HELP():
             args = []
             if ctx.identifier():
-                cmd = Literal(ctx.identifier().getText())
+                cmd = self.visit(ctx.identifier())
                 args = [cmd]
             return Script([DangrCommand("help",None, *args)],[]) # type: ignore
         else:
@@ -69,9 +71,61 @@ class dAngrVisitor_(dAngrVisitor):
         elif ctx.ext_command():
             return self.visit(ctx.ext_command())
         elif ctx.static_var(): # static variable
-            return VariableRef(ctx.static_var().identifier().getText(),True)
+            return VariableRef(self.visit(ctx.static_var().identifier()),True)
         raise ParseError(f"Invalid statement {ctx.getText()}")
     
+    # def visitExpression(self, ctx: dAngrParser.ExpressionContext):
+    #     if ctx.identifier():
+    #         start = 0
+    #         if ctx.DOT():
+    #             package = ctx.identifier(0).getText()
+    #             cmd =  ctx.identifier(1).getText()
+    #             start = 3
+    #         else:
+    #             package = None
+    #             cmd = ctx.identifier(0).getText()
+    #             start = 1
+    #         args = []
+    #         kwargs  = {}
+    #         if ctx.expression_part():
+    #             children = ctx.children[start:]
+    #             for i in range(0, len(children)):
+    #                 #check if c is a terminalnode drop it
+    #                 c = children[i]
+    #                 if isinstance(c, TerminalNode):
+    #                     continue
+
+    #                 #if c is an identifier, it is a named argument
+    #                 if isinstance(c, dAngrParser.IdentifierContext):
+    #                     name = c.getText()
+    #                     for j in range(i+1, len(children)):
+    #                         if isinstance(children[j], TerminalNode):
+    #                             continue
+    #                         if isinstance(children[j], dAngrParser.IdentifierContext):
+    #                             name = children[j].getText()
+    #                         elif isinstance(children[j], dAngrParser.Expression_partContext):
+    #                             kwargs[name] = self.visit(children[j])
+    #                     break
+    #                 else:
+    #                     assert kwargs == {}
+    #                     args.append(self.visit(c))
+    #         return DangrCommand(cmd, package, *args, **kwargs)
+    #     elif ctx.constraint():
+    #         return self.visit(ctx.constraint())
+    #     elif ctx.expression_part():
+    #         return self.visit(ctx.expression_part(0))
+    #     else:
+    #         raise ParseError(f"Invalid expression {ctx.getText()}")
+    
+    # def visitConstraint(self, ctx: dAngrParser.ConstraintContext):
+    #     if ctx.CIF(): # if constraint
+    #         iif = self.visit(ctx.condition().expression())
+    #         cthen = self.visit(ctx.expression_part(0))
+    #         celse = self.visit(ctx.expression_part(1))
+    #         return IfConstraint(iif, cthen, celse)
+    #     else:
+    #         raise ParseError(f"Invalid constraint {ctx.getText()}")
+
     def visitExpression(self, ctx: dAngrParser.ExpressionContext):
         if ctx.identifier():
             start = 0
@@ -108,46 +162,40 @@ class dAngrVisitor_(dAngrVisitor):
                         assert kwargs == {}
                         args.append(self.visit(c))
             return DangrCommand(cmd, package, *args, **kwargs)
-        elif ctx.constraint():
-            return self.visit(ctx.constraint())
-        elif ctx.expression_part():
+        else:
             return self.visit(ctx.expression_part(0))
-        else:
-            raise ParseError(f"Invalid expression {ctx.getText()}")
+    def visitExpressionIf(self, ctx: dAngrParser.ExpressionIfContext):
+        iif = self.visit(ctx.condition())
+        cthen = self.visit(ctx.expression_part(0))
+        celse = self.visit(ctx.expression_part(1))
+        return IfConstraint(iif, cthen, celse)      
+    def visitExpressionIn(self, ctx: dAngrParser.ExpressionInContext):
+        return Inclusion(self.visit(ctx.expression_part(0)), self.visit(ctx.expression_part(1)))
+    def visitExpressionAlt(self, ctx: dAngrParser.ExpressionAltContext):
+        return self.visit(ctx.range_())
+    def visitExpressionParenthesis(self, ctx: dAngrParser.ExpressionParenthesisContext):
+        return self.visit(ctx.expression())
+    def visitExpressionBool(self, ctx: dAngrParser.ExpressionBoolContext):
+        return Literal(ctx.BOOL().getText() == "True")
+    def visitExpressionObjectContext(self, ctx: dAngrParser.ExpressionObjectContext):
+        return self.visit(ctx.object_())
+    def visitExpressionRange(self, ctx: dAngrParser.ExpressionRangeContext):
+        start = self.visit(ctx.expression_part(0))
+        if len(ctx.expression_part())==1:
+            return Range(start)
+        end = self.visit(ctx.expression_part(1))
+        return Range(start, end)
+    def visitExpressionOperation(self, ctx: dAngrParser.ExpressionOperationContext):
+        lhs = self.visit(ctx.object_())
+        op = self.getOperator(ctx.operation().getText())
+        rhs = self.visit(ctx.expression_part())
+        return Comparison(lhs, op, rhs)
+    def visitExpressionReference(self, ctx: dAngrParser.ExpressionReferenceContext):
+        return self.visit(ctx.reference())
     
-    def visitConstraint(self, ctx: dAngrParser.ConstraintContext):
-        if ctx.CIF(): # if constraint
-            iif = self.visit(ctx.condition().expression())
-            cthen = self.visit(ctx.expression_part(0))
-            celse = self.visit(ctx.expression_part(1))
-            return IfConstraint(iif, cthen, celse)
-        else:
-            raise ParseError(f"Invalid constraint {ctx.getText()}")
-    def visitExpression_part(self, ctx: dAngrParser.Expression_partContext):
-        if ctx.LPAREN():
-            if isinstance(ctx.expression(), list):
-                x=1
-            return self.visit(ctx.expression())
-        elif ctx.BOOL():
-            return Literal(ctx.BOOL().getText() == "True")            
-        elif ctx.range_():
-            return self.visit(ctx.range_())
-        elif ctx.reference():
-            return self.visit(ctx.reference())
-        elif ctx.object_():
-            lhs = self.visit(ctx.object_())
-            if ctx.operation():
-                op =  self.getOperator(ctx.operation().getText())
-                rhs = self.visit(ctx.expression())
-                return Comparison(lhs, op, rhs)
-            else:
-                return lhs
-        else:
-            return self.visit(ctx.range_())
-
     def visitAssignment(self, ctx: dAngrParser.AssignmentContext):
         if ctx.static_var():
-            var = VariableRef(ctx.static_var().identifier().getText(), True)
+            var = VariableRef(self.visit(ctx.static_var().identifier()),True)
         else:
             var = self.visit(ctx.object_())
 
@@ -173,10 +221,10 @@ class dAngrVisitor_(dAngrVisitor):
             index = None
             item = None
             if len(ctx.identifier())==2:
-                index = VariableRef(ctx.identifier(0).getText())
-                item = VariableRef(ctx.identifier(1).getText())
+                index = VariableRef(self.visit(ctx.identifier(0)))
+                item = VariableRef(self.visit(ctx.identifier(1)))
             else:
-                item = VariableRef(ctx.identifier(0).getText())
+                item = VariableRef(self.visit(ctx.identifier(0)))
             return ForLoop(self.visit(ctx.iterable()), self.visit(ctx.body()),item, index)
         raise ParseError("Invalid control flow")    
 
@@ -205,86 +253,76 @@ class dAngrVisitor_(dAngrVisitor):
             return self.visit(ctx.statement())
 
     def visitIterable(self, ctx: dAngrParser.IterableContext):
-        if ctx.object_():
-            return self.visit(ctx.object_())
-        else:
-            start = self.visit(ctx.numeric(0))
-            if len(ctx.numeric()) == 1:
-                return Range(start)
-            end = self.visit(ctx.numeric(1))
-            return Range(start, end)
+        # if not ctx.LPAREN():
+        return self.visit(ctx.expression())
+        # else:
         
     def visitParameters(self, ctx: dAngrParser.ParametersContext):
         return [ArgumentSpec(p.getText())for p in ctx.identifier()]
 
     def visitCondition(self, ctx: dAngrParser.ConditionContext):
         return self.visit(ctx.expression())
-        
-    def visitObject(self, ctx: dAngrParser.ObjectContext):
-        
-        if ctx.reference():
-            return self.visit(ctx.reference())
-        elif ctx.NUMBERS():
-            return Literal(int(ctx.NUMBERS().getText()))
-        elif ctx.HEX_NUMBERS():
-            return Literal(int(ctx.HEX_NUMBERS().getText(), 16))
-        elif ctx.STRING():
-            if ctx.BRACE(): # Dictionary
-                l = len(ctx.STRING())
-                d = {}
-                for i in range(l):
-                    d[ctx.STRING(i).getText()[1:-1]] = self.visit(ctx.object_(i))
-                return Dictionary(d)
-            else:
-                return Literal(ctx.getText()[1:-1])
-        elif ctx.BINARY_STRING():
-            return Literal(parse_binary_string(ctx.BINARY_STRING().getText()))
-        elif ctx.BOOL():
-            return Literal(ctx.BOOL().getText() == "True")
-        
-        elif ctx.object_():
-            o = self.visit(ctx.object_(0))
-            if ctx.DOT(): # Property
-                return Property(o, ctx.identifier().getText())
-            elif ctx.BRA():
-                if ctx.index(): # IndexedProperty
-                    index = self.visit(ctx.index())
-                    return IndexedProperty(o, index)
-                elif ctx.numeric():
-                    if ctx.COLON():
-
-                        start =  self.visit(ctx.numeric(0)) * (-1 if ctx.DASH(0) else 1)
-                        end = self.visit(ctx.numeric(1))* (-1 if ctx.DASH(1) else 1)
-                        return Slice(o,start, end)
-                    elif ctx.ARROW():
-                        start = int(ctx.numeric(0).getText()) * (-1 if ctx.DASH(0) else 1)
-                        end = start + int(ctx.NUMBERS().getText()) * (-1 if ctx.DASH(1) else 1)
-                        return Slice(o,start, end)
-                elif ctx.COMMA(): # Listing
-                    lst = [self.visit(o) for o in ctx.object_()]
-                    return Listing(lst)
-        elif ctx.identifier():
-            v = VariableRef(ctx.identifier().getText())
-            if ctx.BANG():
-                return DangrCommand("evaluate", None, v)
-            return v
-        raise ParseError("Invalid object")
     
-
-    # def visitReference(self, ctx: dAngrParser.ReferenceContext):
+#OBJECTS
+    def visitIDObject(self, ctx: dAngrParser.IDObjectContext):
+        v = VariableRef(self.visit(ctx.identifier()))
+        if ctx.BANG():
+            return DangrCommand("evaluate", None, v)
+        return v
+    def visitNumericObject(self, ctx: dAngrParser.NumericObjectContext):
+        if ctx.DASH():
+            return Negate(self.visit(ctx.numeric()))
+        return self.visit(ctx.numeric())
+    
+    def visitBoolObject(self, ctx: dAngrParser.BoolObjectContext):
+        return Literal(ctx.BOOL().getText() == "True")
+    def visitReferenceObject(self, ctx: dAngrParser.ReferenceObjectContext):
+        return self.visit(ctx.reference())
+    def visitPropertyObject(self, ctx: dAngrParser.PropertyObjectContext):
+        o = self.visit(ctx.object_())
+        return Property(o, ctx.identifier().getText())
+    
+    def visitIndexedPropertyObject(self, ctx: dAngrParser.IndexedPropertyObjectContext):
+        o = self.visit(ctx.object_())
+        index = self.visit(ctx.index())
+        return IndexedProperty(o, index)
+    def visitSliceStartEndObject(self, ctx: dAngrParser.SliceStartEndObjectContext):
+        o = self.visit(ctx.object_())
+        start = self.visit(ctx.index(0))
+        end = self.visit(ctx.index(1))
+        return Slice(o, start, end)
+    def visitSlideStartLengthObject(self, ctx: dAngrParser.SlideStartLengthObjectContext):
+        o = self.visit(ctx.object_())
+        start = self.visit(ctx.index(0))
+        length = self.visit(ctx.index(1))
+        return Slice(o, start, Comparison(start, Operator.ADD, length))
+    
+    def visitListObject(self, ctx: dAngrParser.ListObjectContext):
+        objs = [self.visit(o) for o in ctx.object_()]
+        return Listing(objs)
+    def visitDictionaryObject(self, ctx: dAngrParser.DictionaryObjectContext):
+        l = len(ctx.object_())
+        d = {}
+        for i in range(l):
+            d[ctx.STRING(i).getText().strip("'\"")] = self.visit(ctx.object_(i))
+        return Dictionary(d)
+    def visitStringObject(self, ctx: dAngrParser.StringObjectContext):
+        return Literal(self._replace_text(ctx.STRING().getText()[1:-1]))
+    def visitBinaryStringObject(self, ctx: dAngrParser.BinaryStringObjectContext):
+        return Literal(parse_binary_string(ctx.BINARY_STRING().getText()))
+#END OBJECTS
        
     def visitIndex(self, ctx: dAngrParser.IndexContext):
-        if ctx.identifier():
-            return ctx.identifier().getText()
-        elif ctx.numeric():
-            return self.visit(ctx.numeric())
-        raise ParseError(f"Invalid index {ctx.getText()}")
+        if ctx.DASH():
+            return Negate(self.visit(ctx.expression()))
+        else:    
+            return self.visit(ctx.expression())
     
     def visitIdentifier(self, ctx: dAngrParser.IdentifierContext):
-        raise ParseError(f"Invalid identifier {ctx.getText()}")
+        return Literal(ctx.getText())
     
     def visitNumeric(self, ctx: dAngrParser.NumericContext):
-        return int(ctx.NUMBERS().getText()) if ctx.NUMBERS() else int(ctx.HEX_NUMBERS().getText(), 16)
+        return Literal(int(ctx.NUMBERS().getText()) if ctx.NUMBERS() else int(ctx.HEX_NUMBERS().getText(), 16))
     
    
     def _isSTRING(self, ctx):
@@ -332,23 +370,25 @@ class dAngrVisitor_(dAngrVisitor):
     
     def visitReference(self, ctx: dAngrParser.ReferenceContext):
         if ctx.MEM_DB():
-            size = int(ctx.NUMBERS().getText()) if ctx.NUMBERS() else 0
-            m = Memory(self.visit(ctx.numeric()), size)
+            size = None
+            if len(ctx.index()) == 2:
+                size = self.visit(ctx.index(1))
+            m = Memory(self.visit(ctx.index(0)), size)
             if ctx.BANG():
                 return DangrCommand("evaluate", None, m)
             return m
         elif ctx.VARS_DB():
-            r = ReferenceObject.createNamedObject(ctx.VARS_DB().getText(), ctx.identifier().getText())
+            r = ReferenceObject.createNamedObject(ctx.VARS_DB().getText(), self.visit(ctx.identifier()))
             if ctx.BANG():
                 return DangrCommand("evaluate", None, r)
             return r
         elif ctx.REG_DB():
-            r = ReferenceObject.createNamedObject(ctx.REG_DB().getText(), ctx.identifier().getText())
+            r = ReferenceObject.createNamedObject(ctx.REG_DB().getText(), self.visit(ctx.identifier()))
             if ctx.BANG():
                 return DangrCommand("evaluate", None, r)
             return r
         elif ctx.SYM_DB():
-            r = ReferenceObject.createNamedObject(ctx.SYM_DB().getText(), ctx.identifier().getText())
+            r = ReferenceObject.createNamedObject(ctx.SYM_DB().getText(), self.visit(ctx.identifier()))
             if ctx.BANG():
                 return DangrCommand("evaluate", None, r)
             return r

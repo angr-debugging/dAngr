@@ -52,15 +52,15 @@ class rangesParser ( Parser ):
 
     symbolicNames = [ "<INVALID>", "HEX_NUMBERS", "NUMBERS", "NUMBER", "LETTERS", 
                       "LETTER", "SYM_DB", "REG_DB", "VARS_DB", "MEM_DB", 
-                      "STATE", "STRING", "ESCAPED_QUOTE", "ESCAPED_SINGLE_QUOTE", 
-                      "BINARY_STRING", "SESC_SEQ", "ESC_SEQ", "ARROW", "LPAREN", 
-                      "RPAREN", "BANG", "AMP", "DOLLAR", "COLON", "SCOLON", 
-                      "COMMA", "QUOTE", "SQUOTE", "AT", "DOT", "BAR", "BRA", 
-                      "KET", "BRACE", "KETCE", "HAT", "HASH", "PERC", "MUL", 
-                      "ADD", "DIV", "FLOORDIV", "LSHIFT", "RSHIFT", "POW", 
-                      "ASSIGN", "EQ", "NEQ", "LT", "GT", "LE", "GE", "AND", 
-                      "OR", "QMARK", "TILDE", "TICK", "UNDERSCORE", "DASH", 
-                      "NEWLINE", "WS" ]
+                      "STATE", "STRING", "BINARY_STRING", "ESCAPED_QUOTE", 
+                      "ESCAPED_SINGLE_QUOTE", "SESC_SEQ", "ESC_SEQ", "ARROW", 
+                      "LPAREN", "RPAREN", "BANG", "AMP", "DOLLAR", "COLON", 
+                      "SCOLON", "COMMA", "QUOTE", "SQUOTE", "AT", "DOT", 
+                      "BAR", "BRA", "KET", "BRACE", "KETCE", "HAT", "HASH", 
+                      "PERC", "MUL", "ADD", "DIV", "FLOORDIV", "LSHIFT", 
+                      "RSHIFT", "POW", "ASSIGN", "EQ", "NEQ", "LT", "GT", 
+                      "LE", "GE", "AND", "OR", "QMARK", "TILDE", "TICK", 
+                      "UNDERSCORE", "DASH", "NEWLINE", "WS" ]
 
     RULE_expression = 0
     RULE_range = 1
@@ -87,9 +87,9 @@ class rangesParser ( Parser ):
     MEM_DB=9
     STATE=10
     STRING=11
-    ESCAPED_QUOTE=12
-    ESCAPED_SINGLE_QUOTE=13
-    BINARY_STRING=14
+    BINARY_STRING=12
+    ESCAPED_QUOTE=13
+    ESCAPED_SINGLE_QUOTE=14
     SESC_SEQ=15
     ESC_SEQ=16
     ARROW=17

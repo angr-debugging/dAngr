@@ -12,7 +12,7 @@ class MemoryCommands(BaseCommand):
         super().__init__(debugger_core)
 
 
-    async def assign(self, target:ReferenceObject, value:int|bytes|str|SymBitVector|Variable):
+    def assign(self, target:ReferenceObject, value:int|bytes|str|SymBitVector|Variable):
         """
         Assign a value to some target symbol
 
@@ -24,10 +24,10 @@ class MemoryCommands(BaseCommand):
         
         """
         target.set_value(self.debugger.context,self.to_value(value))
-        await self.send_info(f"Value {value} assigned to {target}.")
+        self.send_info(f"Value {value} assigned to {target}.")
 
 
-    async def add_to_stack(self, value:int|bytes|str|SymBitVector|Variable):
+    def add_to_stack(self, value:int|bytes|str|SymBitVector|Variable):
         """
         Add a value to the stack.
 
@@ -38,9 +38,9 @@ class MemoryCommands(BaseCommand):
         
         """
         self.debugger.add_to_stack(self.get_angr_value(value))
-        await self.send_info(f"Value {value} added to the stack.")
+        self.send_info(f"Value {value} added to the stack.")
 
-    async def get_stack(self, length:int, offset:int=0):
+    def get_stack(self, length:int, offset:int=0):
         """
         Get the stack values.
 
@@ -53,7 +53,7 @@ class MemoryCommands(BaseCommand):
         """
         return self.debugger.get_stack(length, offset)
 
-    async def get_memory_string(self, address:int):
+    def get_memory_string(self, address:int):
         """
         Get the memory value at a specific address.
 
@@ -65,7 +65,7 @@ class MemoryCommands(BaseCommand):
         """
         return self.debugger.get_string_memory(address)
         
-    async def get_memory(self, address:int|SymBitVector, size:int|SymBitVector, endness:Endness=Endness.DEFAULT):
+    def get_memory(self, address:int|SymBitVector, size:int|SymBitVector, endness:Endness=Endness.DEFAULT):
         """
         Get the memory value at a specific address.
         Supported Conversion Types: int, bytes, bool, double, hex, none.
@@ -83,7 +83,7 @@ class MemoryCommands(BaseCommand):
     
 
     
-    async def set_memory(self, address:int|SymBitVector, value:AngrType, size:int|None=None, endness:Endness=Endness.DEFAULT):
+    def set_memory(self, address:int|SymBitVector, value:AngrType, size:int|None=None, endness:Endness=Endness.DEFAULT):
         """
         Set a memory value at a specific address.
         Supported Conversion Types: int, bytes, bool, double, hex, none.
@@ -102,9 +102,9 @@ class MemoryCommands(BaseCommand):
             a = str(address)
         else:
             a = hex(address)
-        await self.send_info(f"Memory at {a}: {value}.")
+        self.send_info(f"Memory at {a}: {value}.")
     
-    async def add_static_pointer(self, name:str, value:int, size_bytes:int = 4):
+    def add_static_pointer(self, name:str, value:int, size_bytes:int = 4):
         """
         Create a static pointer variable.
 
@@ -118,9 +118,9 @@ class MemoryCommands(BaseCommand):
         """
         val = claripy.BVV(value, size_bytes*8)
         self.debugger.context.add_variable(name, val)
-        await self.send_info(f"Pointer {name}: {value} added to variables.")
+        self.send_info(f"Pointer {name}: {value} added to variables.")
     
-    async def set_register(self, name:str, value:int|SymBitVector|Variable):
+    def set_register(self, name:str, value:int|SymBitVector|Variable):
         """
         Set a register value. Same as $reg.{name} = {value}.
 
@@ -132,9 +132,9 @@ class MemoryCommands(BaseCommand):
         
         """
         self.debugger.set_register(name, self.to_value(value)) # type: ignore
-        await self.send_info(f"Register {name}: {hex(value) if isinstance(value, int) else value}.")
+        self.send_info(f"Register {name}: {hex(value) if isinstance(value, int) else value}.")
     
-    # async def set_register_to_symbol(self, name:str, value:Variable):
+    # def set_register_to_symbol(self, name:str, value:Variable):
     #     """
     #     Set a register value to a symbol.
 
@@ -150,9 +150,9 @@ class MemoryCommands(BaseCommand):
     #     if isinstance(v, claripy.ast.FP) or isinstance(v, claripy.ast.String):
     #         raise ValueError("Symbol cannot be a floating point or string value.")
     #     self.debugger.set_register(name, v)
-    #     await self.send_info(f"Register {name}: {value}.")
+    #     self.send_info(f"Register {name}: {value}.")
 
-    async def get_register(self, name:str):
+    def get_register(self, name:str):
         """
         Get a register value, same as $reg.{name}.
 
@@ -164,7 +164,7 @@ class MemoryCommands(BaseCommand):
         """
         return self.debugger.get_register(name)
 
-    async def list_registers(self):
+    def list_registers(self):
         """
         List all the registers.
 
@@ -180,7 +180,7 @@ class MemoryCommands(BaseCommand):
         
         return  f"{"\n".join([str(r) for r in regs])}"
 
-    async def unconstrained_fill(self, symbolic:bool=False):
+    def unconstrained_fill(self, symbolic:bool=False):
         """
         Fill the memory and registers with symbolic values.
 
@@ -190,5 +190,5 @@ class MemoryCommands(BaseCommand):
         Short name: uf
         
         """
-        await self.debugger.unconstrained_fill(symbolic)
-        await self.send_info( f"Fill {'with symbols' if symbolic else 'with zeros'}.")
+        self.debugger.unconstrained_fill(symbolic)
+        self.send_info( f"Fill {'with symbols' if symbolic else 'with zeros'}.")

@@ -35,21 +35,84 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by dAngrParser#constraint.
-    def enterConstraint(self, ctx:dAngrParser.ConstraintContext):
+    # Enter a parse tree produced by dAngrParser#ExpressionRange.
+    def enterExpressionRange(self, ctx:dAngrParser.ExpressionRangeContext):
         pass
 
-    # Exit a parse tree produced by dAngrParser#constraint.
-    def exitConstraint(self, ctx:dAngrParser.ConstraintContext):
+    # Exit a parse tree produced by dAngrParser#ExpressionRange.
+    def exitExpressionRange(self, ctx:dAngrParser.ExpressionRangeContext):
         pass
 
 
-    # Enter a parse tree produced by dAngrParser#expression_part.
-    def enterExpression_part(self, ctx:dAngrParser.Expression_partContext):
+    # Enter a parse tree produced by dAngrParser#ExpressionIn.
+    def enterExpressionIn(self, ctx:dAngrParser.ExpressionInContext):
         pass
 
-    # Exit a parse tree produced by dAngrParser#expression_part.
-    def exitExpression_part(self, ctx:dAngrParser.Expression_partContext):
+    # Exit a parse tree produced by dAngrParser#ExpressionIn.
+    def exitExpressionIn(self, ctx:dAngrParser.ExpressionInContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#ExpressionObject.
+    def enterExpressionObject(self, ctx:dAngrParser.ExpressionObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#ExpressionObject.
+    def exitExpressionObject(self, ctx:dAngrParser.ExpressionObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#ExpressionBool.
+    def enterExpressionBool(self, ctx:dAngrParser.ExpressionBoolContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#ExpressionBool.
+    def exitExpressionBool(self, ctx:dAngrParser.ExpressionBoolContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#ExpressionReference.
+    def enterExpressionReference(self, ctx:dAngrParser.ExpressionReferenceContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#ExpressionReference.
+    def exitExpressionReference(self, ctx:dAngrParser.ExpressionReferenceContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#ExpressionIf.
+    def enterExpressionIf(self, ctx:dAngrParser.ExpressionIfContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#ExpressionIf.
+    def exitExpressionIf(self, ctx:dAngrParser.ExpressionIfContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#ExpressionAlt.
+    def enterExpressionAlt(self, ctx:dAngrParser.ExpressionAltContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#ExpressionAlt.
+    def exitExpressionAlt(self, ctx:dAngrParser.ExpressionAltContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#ExpressionParenthesis.
+    def enterExpressionParenthesis(self, ctx:dAngrParser.ExpressionParenthesisContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#ExpressionParenthesis.
+    def exitExpressionParenthesis(self, ctx:dAngrParser.ExpressionParenthesisContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#ExpressionOperation.
+    def enterExpressionOperation(self, ctx:dAngrParser.ExpressionOperationContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#ExpressionOperation.
+    def exitExpressionOperation(self, ctx:dAngrParser.ExpressionOperationContext):
         pass
 
 
@@ -224,12 +287,111 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by dAngrParser#object.
-    def enterObject(self, ctx:dAngrParser.ObjectContext):
+    # Enter a parse tree produced by dAngrParser#SlideStartLengthObject.
+    def enterSlideStartLengthObject(self, ctx:dAngrParser.SlideStartLengthObjectContext):
         pass
 
-    # Exit a parse tree produced by dAngrParser#object.
-    def exitObject(self, ctx:dAngrParser.ObjectContext):
+    # Exit a parse tree produced by dAngrParser#SlideStartLengthObject.
+    def exitSlideStartLengthObject(self, ctx:dAngrParser.SlideStartLengthObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#ReferenceObject.
+    def enterReferenceObject(self, ctx:dAngrParser.ReferenceObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#ReferenceObject.
+    def exitReferenceObject(self, ctx:dAngrParser.ReferenceObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#BinaryStringObject.
+    def enterBinaryStringObject(self, ctx:dAngrParser.BinaryStringObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#BinaryStringObject.
+    def exitBinaryStringObject(self, ctx:dAngrParser.BinaryStringObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#ListObject.
+    def enterListObject(self, ctx:dAngrParser.ListObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#ListObject.
+    def exitListObject(self, ctx:dAngrParser.ListObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#IndexedPropertyObject.
+    def enterIndexedPropertyObject(self, ctx:dAngrParser.IndexedPropertyObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#IndexedPropertyObject.
+    def exitIndexedPropertyObject(self, ctx:dAngrParser.IndexedPropertyObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#DictionaryObject.
+    def enterDictionaryObject(self, ctx:dAngrParser.DictionaryObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#DictionaryObject.
+    def exitDictionaryObject(self, ctx:dAngrParser.DictionaryObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#NumericObject.
+    def enterNumericObject(self, ctx:dAngrParser.NumericObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#NumericObject.
+    def exitNumericObject(self, ctx:dAngrParser.NumericObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#SliceStartEndObject.
+    def enterSliceStartEndObject(self, ctx:dAngrParser.SliceStartEndObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#SliceStartEndObject.
+    def exitSliceStartEndObject(self, ctx:dAngrParser.SliceStartEndObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#StringObject.
+    def enterStringObject(self, ctx:dAngrParser.StringObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#StringObject.
+    def exitStringObject(self, ctx:dAngrParser.StringObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#IDObject.
+    def enterIDObject(self, ctx:dAngrParser.IDObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#IDObject.
+    def exitIDObject(self, ctx:dAngrParser.IDObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#PropertyObject.
+    def enterPropertyObject(self, ctx:dAngrParser.PropertyObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#PropertyObject.
+    def exitPropertyObject(self, ctx:dAngrParser.PropertyObjectContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#BoolObject.
+    def enterBoolObject(self, ctx:dAngrParser.BoolObjectContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#BoolObject.
+    def exitBoolObject(self, ctx:dAngrParser.BoolObjectContext):
         pass
 
 

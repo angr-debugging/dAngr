@@ -3,7 +3,8 @@ from textwrap import indent
 from typing import List
 
 from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import BREAK, Expression, Iterable, Range, VariableRef
+from dAngr.cli.grammar.expressions import BREAK, Expression, Range, VariableRef
+from dAngr.utils.utils import is_iterable
 from .statements import Statement
 from .script import Body
 
@@ -18,11 +19,11 @@ class IfThenElse(ControlFlow):
         self.condition = condition
         self.else_body: Body = else_body if else_body else Body([])
 
-    async def __call__(self, context: ExecutionContext):
-        if Expression.toBool(await self.condition(context)):
-            return await self.body(ExecutionContext(context))
+    def __call__(self, context: ExecutionContext):
+        if Expression.toBool(self.condition(context)):
+            return self.body(ExecutionContext(context))
         elif self.else_body.statements:
-            return await self.else_body(ExecutionContext(context))
+            return self.else_body(ExecutionContext(context))
         return None
 
     def __repr__(self):
@@ -36,9 +37,9 @@ class WhileLoop(ControlFlow):
         super().__init__(body)
         self.condition = condition
 
-    async def __call__(self, context: ExecutionContext):
-        while await self.condition(context):
-            r = await self.body(ExecutionContext(context))
+    def __call__(self, context: ExecutionContext):
+        while self.condition(context):
+            r = self.body(ExecutionContext(context))
             if r == BREAK:
                 break
 
@@ -49,30 +50,33 @@ class WhileLoop(ControlFlow):
         return isinstance(value, WhileLoop) and self.condition == value.condition and self.body == value.body
 
 class ForLoop(ControlFlow):
-    def __init__(self, iterable: Iterable|VariableRef, body: Body, item: VariableRef, index:VariableRef|None= None):
+    def __init__(self, iterable: Expression, body: Body, item: VariableRef, index:VariableRef|None= None):
         super().__init__(body)
         self.index = index
         self.item = item
-        self.iterable:VariableRef|Iterable = iterable
+        self.iterable:Expression = iterable
 
-    async def __call__(self, context: ExecutionContext):
-        if isinstance(self.iterable, VariableRef):
-            iterable = await self.iterable(context)
+    def __call__(self, context: ExecutionContext):
+        if isinstance(self.iterable, Expression):
+            iterable = self.iterable(context)
+            #check if iterable is iterable
+            if not is_iterable(iterable):
+                raise ValueError(f"{iterable} is not iterable")
         else:
             iterable = self.iterable
         if self.index:
-            for index, item in iterable:
+            for index, item in enumerate(iterable): # type: ignore
                 ctx = ExecutionContext(context)
-                ctx[self.index] = index
-                ctx[self.item.name] = item
-                r = await self.body(ctx)
+                ctx[self.index.name(context)] = index
+                ctx[self.item.name(context)] = item
+                r = self.body(ctx)
                 if r == BREAK:
                     break
         else:
-            for item in iterable:
+            for item in iterable: # type: ignore
                 ctx = ExecutionContext(context)
-                ctx[self.item.name] = item
-                r = await self.body(ctx)
+                ctx[self.item.name(context)] = item
+                r = self.body(ctx)
                 if r == BREAK:
                     break
 

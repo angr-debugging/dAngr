@@ -7,9 +7,9 @@ import subprocess
 import claripy
 
 from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.exceptions import CommandError, InvalidArgumentError, ValueError, KeyError
+from dAngr.exceptions import CommandError, DebuggerCommandError, InvalidArgumentError, ValueError, KeyError
 from dAngr.utils import AngrValueType, AngrExtendedType, StreamType, str_to_address
-from dAngr.utils.utils import DataType, Endness, Operator, check_signature_matches
+from dAngr.utils.utils import DataType, Endness, Operator, check_signature_matches, is_indexable
 from contextlib import redirect_stdout, redirect_stderr
 
 from dAngr.utils.loggers import get_logger
@@ -23,7 +23,7 @@ class Expression:
         return cast(CommandLineDebugger, context.root.debugger)
 
     @abstractmethod
-    async def __call__(self, context:ExecutionContext):
+    def __call__(self, context:ExecutionContext):
         raise NotImplementedError
     
     @staticmethod
@@ -61,7 +61,7 @@ class Expression:
 
 class Object(Expression):
     # a symbol is a variable, argument, constant, memory, register, or stream
-    async def __call__(self, context: ExecutionContext):
+    def __call__(self, context: ExecutionContext):
         return self.get_value(context)
     @abstractmethod
     def get_value(self, context)-> Any:
@@ -86,41 +86,37 @@ class Literal(Primitive):
     def __str__(self):
         return f"{self.value}"
     
+    def __repr__(self):
+        return self.__str__()
+    
     def __eq__(self, other):
         return isinstance(other,Literal) and self.value == other.value
 
-class Iterable():
-    def __iter__(self):
-        raise NotImplementedError
-    def __get_item__(self, index):
-        raise NotImplementedError
-    def __set_item__(self, index, value):
-        raise NotImplementedError
-    
-class Range(Primitive,Iterable):
-    def __init__(self, start:int, end:int=-1):
+
+class Range(Primitive):
+    def __init__(self, start:Expression, end:Expression|None=None):
         self.start = start
         self.end = end
     def __str__(self):
-        if self.end == -1:
+        if not self.end:
             return f"range({self.start})"
         else:
             return f"range({self.start},{self.end})"
-    def __iter__(self):
-        if self.end == -1:
-            return iter(range(self.start))
-        else:
-            return iter(range(self.start, self.end))
 
     def __eq__(self, other):
         return isinstance(other, Range) and self.start == other.start and self.end == other.end
     
     def get_value(self, context):
-        return list(self)
+        start = self.start(context) if isinstance(self.start, Expression) else self.start
+        if not self.end:
+            return range(start)
+        end = self.end(context) if isinstance(self.end, Expression) else self.end
+        return range(start, end)
+    
     def set_value(self, context, value):
         raise ValueError("Cannot set value to a range object")
     
-class Listing(Primitive,Iterable):
+class Listing(Primitive):
     def __init__(self, items:List[Object]):
         self.items = items
 
@@ -129,9 +125,6 @@ class Listing(Primitive,Iterable):
     
     def __eq__(self, other):
         return isinstance(other, Listing) and self.items == other.items
-    
-    def __iter__(self):
-        return self.items.__iter__()
 
     def get_value(self, context):
         return [i.get_value(context) for i in self.items]
@@ -140,7 +133,7 @@ class Listing(Primitive,Iterable):
         for i, v in enumerate(value):
             self.items[i].set_value(context, v)
 
-class Dictionary(Primitive,Iterable):
+class Dictionary(Primitive):
     def __init__(self, items:Dict[str,Object]):
         self.items = items
 
@@ -159,11 +152,11 @@ class Dictionary(Primitive,Iterable):
 #Reference Objects
 class ReferenceObject(Object):
 
-    def __init__(self, name:str):
-        self.name = name
+    def __init__(self, name:Expression):
+        self._name = name
 
     @staticmethod
-    def createNamedObject(db:str, name:str):
+    def createNamedObject(db:str, name:Expression):
         switcher = {
             "&reg": Register,
             "&sym": SymbolicValue,
@@ -174,13 +167,16 @@ class ReferenceObject(Object):
         
         
 class Stream(ReferenceObject):
-    def __init__(self, stream:StreamType):
-        super().__init__(f"{stream}")
-        self.stream = stream
+    def __init__(self, stream:Expression):
+        super().__init__(stream)
+    @property
+    def stream(self):
+        return self._name
+    
     def __str__(self):
         return f"&io.{self.stream}"
     def get_value(self, context):
-        return self.debugger(context).get_stream(self.stream)
+        return self.debugger(context).get_stream(self.stream(context))
     def set_value(self, context, value):
         raise ValueError("Cannot set value to a stream object")
     def __eq__(self, other):
@@ -192,32 +188,35 @@ class SymbolicValue(ReferenceObject):
 
     def get_value(self, context):
         #get variable value and 
-        return self.debugger(context).get_symbol(self.name)
+        return self.debugger(context).get_symbol(self._name(context))
     
     def set_value(self, context, value):
         assert isinstance(value,AngrValueType)
-        self.debugger(context).set_symbol(self.name, value)
+        self.debugger(context).set_symbol(self._name(context), value)
 
     def __str__(self):
-        return f"&sym.{self.name}"
+        return f"&sym.{self._name}"
     def __eq__(self, other):
-        return isinstance(other, SymbolicValue) and self.name == other.name
+        return isinstance(other, SymbolicValue) and self._name == other._name
     
 class Memory(ReferenceObject):
-    def __init__(self, address:int, size:int):
-        super().__init__(f"{address}->{size}")
+    def __init__(self, address:Expression, size:Expression|None):
+        super().__init__(Literal(f"{address}->{size}"))
         self.address = address
         self.size = size 
 
     def get_value(self, context):
-        return self.debugger(context).get_memory(self.address, self.size)
+        return self.debugger(context).get_memory(self.address(context), self.size(context) if self.size else 0)
 
     def set_value(self, context, value):
         assert isinstance(value,AngrValueType)
-        self.debugger(context).set_memory(self.address, value, None)
+        self.debugger(context).set_memory(self.address(context), value, self.size(context) if self.size else None)
     
     def __str__(self):
-        return f"&mem[{hex(self.address)}->{self.size}]"
+        if isinstance(self.address, Literal):
+            return f"&mem[{hex(self.address.value)}->{self.size}]"
+        else:
+            return f"&mem[{self.address}->{self.size}]"
     def __eq__(self, other):
         return isinstance(other, Memory) and self.address == other.address and self.size == other.size
     
@@ -229,11 +228,11 @@ class Register(ReferenceObject):
     def register(self):
         return self.name
     def get_value(self, context):
-        return self.debugger(context).get_register(self.register)
+        return self.debugger(context).get_register(self.register(context))
     
     def set_value(self, context, value):
         if isinstance(value, int) or isinstance(value, claripy.ast.BV):
-            self.debugger(context).set_register(self.register, value)
+            self.debugger(context).set_register(self.register(context), value)
         else:
             raise ValueError(f"Invalid value type: {value}")    
     def __str__(self):
@@ -243,7 +242,7 @@ class Register(ReferenceObject):
     
 class StateObject(ReferenceObject):
     def __init__(self):
-        super().__init__("state")
+        super().__init__(Literal("state"))
     def get_value(self, context):
         return self.debugger(context).current_state
     def set_value(self, context, value):
@@ -252,10 +251,22 @@ class StateObject(ReferenceObject):
         return f"&state"
     def __eq__(self, other):
         return isinstance(other, StateObject)
+class Negate(Expression):
+    def __init__(self, expr:Expression):
+        self.expr = expr
 
+    def __call__(self, context:ExecutionContext):
+        return -self.expr(context)
+    
+    def __str__(self):
+        return f"-{self.expr}"
+    
+    def __eq__(self, other):
+        return isinstance(other, Negate) and self.expr == other.expr
+    
 class VariableRef(ReferenceObject):
-    def __init__(self, name:str, is_static=False):
-        self.name = name
+    def __init__(self, name:Expression, is_static=False):
+        self.name:Expression = name
         self._is_static = is_static
     
     @property
@@ -273,14 +284,24 @@ class VariableRef(ReferenceObject):
     def __eq__(self, other):
         return isinstance(other, VariableRef) and self.name == other.name
     
+    def var_exists(self, context):
+        return self.name(context) in context.variables
+
+    
     def get_value(self, context):
-        return context[self.name].value
+        if self.var_exists(context):
+            return context[self.name(context)].value
+        sym = self.debugger(context).find_symbol(self.name(context))
+        if not sym is None:
+            return sym
+        raise KeyError(f"Unknown variable: {self.name}")
+        
     def set_value(self, context, value):
-        context[self.name] = value
+        context[self.name(context)] = value
 
 class Property(ReferenceObject):
-    def __init__(self, obj:Object, prop):
-        super().__init__(f"{obj}.{prop}")
+    def __init__(self, obj:Object, prop:str):
+        super().__init__(Literal(f"{obj}.{prop}"))
         self.obj = obj
         self.prop = prop
 
@@ -296,52 +317,59 @@ class Property(ReferenceObject):
         else:
             raise InvalidArgumentError(f"Object {o} does not have property {self.prop}")
     def get_value(self, context):
-        o = self.obj.get_value(context)
+        o = None
+        if isinstance(self.obj, VariableRef) and not self.obj.var_exists(context):
+            if e := context.find_enum(self.obj.name(context)):
+                o = e
+            else:
+                raise InvalidArgumentError(f"Unknown variable: {self.obj}")
+        else:
+            o = self.obj.get_value(context)
         if hasattr(o, self.prop):
             return getattr(o, self.prop)
         else:
             raise InvalidArgumentError(f"Object {o} does not have property {self.prop}")
         
 class IndexedProperty(Property):
-    def __init__(self, obj:Object, index):
-        super().__init__(obj, index)
-
-    @property
-    def index(self):
-        return self.prop
+    def __init__(self, obj:Object, index:Expression):
+        super().__init__(obj, f"{index}")
+        self.index = index
     
     def __str__(self):
         return f"{self.obj}[{self.index}]"
     
     def set_value(self, context, value: Any):
         o = self.obj.get_value(context)
-        if isinstance(o, list):
-            o[self.index] = value
+        if is_indexable(o):
+            index = self.index(context)
+            o[index] = value
         else:
             raise InvalidArgumentError(f"Object {o} does not support indexing")
     def get_value(self, context):
         o = self.obj.get_value(context)
-        if isinstance(o, list):
-            return o[self.index]
+        index = self.index(context)
+        if is_indexable(o):
+            return o[index]
         else:
             raise InvalidArgumentError(f"Object {o} does not support indexing")
 
 class Slice(Property):
-    def __init__(self, obj:Object, start:int, end:int):
+    def __init__(self, obj:Object, start:int|Expression, end:int|Expression):
         super().__init__(obj, f"{start}:{end}")
         self.start = start
         self.end = end
-    @property
-    def size(self):
-        return self.end - self.start
     
     def get_value(self, context):
-        return self.obj.get_value(context)[self.start:self.end]
+        start = self.start(context) if isinstance(self.start, Expression) else self.start
+        end = self.end(context) if isinstance(self.end, Expression) else self.end
+        return self.obj.get_value(context)[start:end]
     
     def set_value(self, context, value: list):
         o = self.obj.get_value(context)
         if isinstance(value, list):
-            o[self.start:self.end] = value
+            start = self.start(context) if isinstance(self.start, Expression) else self.start
+            end = self.end(context) if isinstance(self.end, Expression) else self.end
+            o[start:end] = value
         else:
             raise InvalidArgumentError(f"Object {o} does not support slicing")
     def __repr__(self):
@@ -349,6 +377,21 @@ class Slice(Property):
     def __eq__(self, other):
         return isinstance(other, Slice) and self.start == other.start and self.end == other.end
     
+class Inclusion(Expression):
+    def __init__(self, obj:Object, item:Object):
+        self.obj = obj
+        self.item = item
+    
+    def __call__(self, context: ExecutionContext):
+        o = self.obj.get_value(context)
+        i = self.item.get_value(context)
+        return i in o
+    
+    def __str__(self):
+        return f"{self.item} in {self.obj}"
+    
+    def __eq__(self, other):
+        return isinstance(other, Inclusion) and self.obj == other.obj and self.item == other.item
     
 class Comparison(Expression):
     def __init__(self, left:Expression, operator:Operator, right:Expression):
@@ -377,20 +420,21 @@ class Comparison(Expression):
         # Otherwise, just return the current comparison
         return Comparison(left, comp.operator, right)
 
-    async def __call__(self, context:ExecutionContext):
+    def __call__(self, context:ExecutionContext):
         # handle operator precedence, the right side of the expression may be a comparison
         if not self.init:
             self = self.reorder_comparison(self)
             self.init = True
 
-        left = await self.left(context)
-        right = await self.right(context)
+        left = self.left(context)
+        right = self.right(context)
         switch = {
             Operator.AND: claripy.And,
-            Operator.OR: claripy.Or
+            Operator.OR: claripy.Or,
         }
-
-        if isinstance(left, claripy.ast.Base) or isinstance(right, claripy.ast.Base):
+        if self.operator == Operator.ADD and isinstance(left, claripy.ast.BV) and isinstance(right, claripy.ast.BV):
+            return claripy.Concat(left, right)
+        elif isinstance(left, claripy.ast.Base) or isinstance(right, claripy.ast.Base):
             op = switch.get(self.operator, None)
             if op:
                 v= op(left, right)
@@ -421,14 +465,14 @@ class IfConstraint(Constraint):
         self.true_constraint = true_constraint
         self.false_constraint = false_constraint
 
-    async def __call__(self, context:ExecutionContext):
-        cthen =  await self.true_constraint(context)
+    def __call__(self, context:ExecutionContext):
+        cthen =  self.true_constraint(context)
         if not isinstance(cthen, claripy.ast.Base):
-            cthen = await self.debugger(context).render_argument(cthen,False)
-        celse = await self.false_constraint(context)
+            cthen = self.debugger(context).render_argument(cthen,False)
+        celse = self.false_constraint(context)
         if not isinstance(celse, claripy.ast.Base):
-            celse = await self.debugger(context).render_argument(celse,False)
-        return claripy.If(await self.condition(context), cthen, celse)
+            celse = self.debugger(context).render_argument(celse,False)
+        return claripy.If(self.condition(context), cthen, celse)
     
     def __str__(self):
         return f"if {self.condition} then {self.true_constraint} else {self.false_constraint}"
@@ -446,14 +490,14 @@ class Command(Expression):
                 cc.append(c)
         return cc
     @abstractmethod
-    async def __call__(self, context):
+    def __call__(self, context):
         raise NotImplementedError
     
 class BASECommand(Command):
     def __init__(self, base:str):
         self.base = base
 
-    async def __call__(self, context:ExecutionContext):
+    def __call__(self, context:ExecutionContext):
         raise NotImplementedError
     
     def __str__(self):
@@ -464,8 +508,8 @@ class BASECommand(Command):
 BREAK = BASECommand('break')
 CONTINUE = BASECommand('continue')
 
-async def to_val(arg, context:ExecutionContext):
-    v = await arg(context)
+def to_val(arg, context:ExecutionContext):
+    v = arg(context)
     if isinstance(arg, ReferenceObject):
         if isinstance(v, str) or isinstance(v, bytes):
             return repr(v)
@@ -483,11 +527,11 @@ class PythonCommand(Command):
         self.kwargs:Dict[str,Expression] = kwargs
 
     
-    async def __call__(self, context:ExecutionContext):
+    def __call__(self, context:ExecutionContext):
         # copy the commands locally
         # execute the commands if it is an Expression and replace the entry in the copy with the result
         c = context.clone()
-        results = [await to_val(a,c) for a in self.cmds] + [f"{k}={await to_val(v,c)}" for k,v in self.kwargs.items()]
+        results = [to_val(a,c) for a in self.cmds] + [f"{k}={to_val(v,c)}" for k,v in self.kwargs.items()]
         stdout_buffer = io.StringIO()
         stderr_buffer = io.StringIO()
         with redirect_stdout(stdout_buffer), redirect_stderr(stderr_buffer):
@@ -497,9 +541,9 @@ class PythonCommand(Command):
             except Exception as e:
                 raise CommandError(f"Error executing python command: {cmd} ({e})")
         if stdout := stdout_buffer.getvalue():
-            await self.debugger(context).conn.send_output(stdout)
+            self.debugger(context).conn.send_output(stdout)
         if stderr := stderr_buffer.getvalue():
-            await self.debugger(context).conn.send_error(stderr)
+            self.debugger(context).conn.send_error(stderr)
         return context.return_value
     
     def __str__(self):
@@ -512,11 +556,11 @@ class BashCommand(Command):
         cc = [ Literal(c) if isinstance(c, (str,int,bytes)) else c for c in cmds if isinstance(c, (Expression,str,int,bytes))]
         self.cmds:List[Expression] = self._merge_consecutive_literals(cc)
 
-    async def __call__(self, context):
+    def __call__(self, context):
         c = context.clone()
-        results = [await to_val(a,c) for a in self.cmds]
+        results = [to_val(a,c) for a in self.cmds]
 
-        results = [await a(c) for a in self.cmds]
+        results = [a(c) for a in self.cmds]
         context.return_value = subprocess.run(" ".join(results), capture_output=True, text=True).stdout.strip()
         return context.return_value
     
@@ -532,40 +576,51 @@ class DangrCommand(Command):
         self.args:List[Expression] = [*args]
         self.kwargs:Dict[str,Expression] = kwargs
 
-    async def _check_arg(self, arg, context:ExecutionContext, spec):
-        try:
-            #TODO, what if  dtype is a tuple
-            if spec.dtype == str and isinstance(arg, VariableRef):
-                return arg.name
-            elif isinstance(spec.dtype, type) and issubclass(spec.dtype, ReferenceObject):
-                return arg
-            elif isinstance(spec.dtype, type) and issubclass(spec.dtype,Enum):
-                return spec.dtype[arg.name]
-            else:
-                return await arg(context) 
-        except KeyError as e:
-            if "Unknown variable: " in e.args[0]:
-                # if dtype is a typle, get list of types
-                # check if dtype is a tuple
-                if get_origin(spec.dtype) is UnionType:
-                    types = get_args(spec.dtype)
-                else:
-                    types = [spec.dtype]
- 
-                if isinstance(arg, VariableRef) and (str in types or Enum in types):
-                    for t in types:
-                        if issubclass(t, Enum):
-                            if arg.name in t.__members__: # type: ignore
-                                return t[arg.name] # type: ignore
-                    if str in types:
-                        return arg.name
-                log.debug(f"{arg.name} not found in variables, using value as is")
-                return arg.name
-            else:
-                raise e
+    def _get_enum_value(self, name, spec):
+        if get_origin(spec.dtype) is UnionType:
+            types = get_args(spec.dtype)
+        else:
+            types = [spec.dtype]
+
+        if Enum in types:
+            for t in types:
+                if issubclass(t, Enum):
+                    if name in t.__members__: # type: ignore
+                        return t[name] # type: ignore
+        return None
+    def _accept_string(self, name, spec):
+        if get_origin(spec.dtype) is UnionType:
+            types = get_args(spec.dtype)
+        else:
+            types = [spec.dtype]
+        if str in types:
+            return name
+        return None
+
+    def _check_arg(self, arg, context:ExecutionContext, spec):
+
+        #TODO, what if  dtype is a tuple
+        # if spec.dtype == str and isinstance(arg, VariableRef):
+        #     return arg.name
+        if isinstance(spec.dtype, type) and issubclass(spec.dtype, ReferenceObject):
+            return arg
+        elif isinstance(spec.dtype, type) and issubclass(spec.dtype, Enum):
+            return spec.dtype[arg.name(context)]
+        else:
+            if isinstance(arg, VariableRef):
+                if arg.var_exists(context):
+                    return arg(context)
+                name = arg.name(context)
+                if e:= self._get_enum_value(name, spec):
+                    return e
+                if s:= self._accept_string(name, spec):
+                    return s
+                raise DebuggerCommandError(f"Unknown variable: {arg.name}")
+        return arg(context) 
+
         
 
-    async def __call__(self, context:ExecutionContext):
+    def __call__(self, context:ExecutionContext):
         from dAngr.cli.command_line_debugger import BuiltinFunctionDefinition
         spec = None
         spec = context.find_function(self.package, self.cmd)
@@ -574,6 +629,8 @@ class DangrCommand(Command):
                 raise CommandError(f"Unknown command: {self.package}.{self.cmd}")
             if context.find_variable(self.cmd):
                 return context[self.cmd].value
+            elif e:= context.find_enum(self.cmd):
+                return e
             else:
                 raise CommandError(f"Unknown command: {self.cmd}")
         # spec = cast(BuiltinFunctionDefinition, spec)
@@ -589,8 +646,8 @@ class DangrCommand(Command):
             else:
                 raise CommandError(f"Too many arguments. Expected {len(spec.args)} but got {len(self.args)}")
         # check arg type and if the arguments match the function signature
-        arguments = [ await self._check_arg(arg, context, s_args[i]) for i,arg in enumerate(self.args) ]
-        named_args = {k: await self._check_arg(v,context, spec.get_arg_by_name(k)) for k,v in self.kwargs.items()}
+        arguments = [ self._check_arg(arg, context, s_args[i]) for i,arg in enumerate(self.args) ]
+        named_args = {k: self._check_arg(v,context, spec.get_arg_by_name(k)) for k,v in self.kwargs.items()}
         if isinstance(spec, BuiltinFunctionDefinition):
             # check if the function signature matches
             check_signature_matches(spec.func, spec, arguments, named_args)
@@ -598,13 +655,13 @@ class DangrCommand(Command):
         log.debug(lambda:f"Calling {self.cmd} with {arguments} {named_args}")
 
         # call the function
-        context.return_value = await spec(context, *arguments, **named_args)
+        context.return_value = spec(context, *arguments, **named_args)
         return context.return_value
 
             
 
     def __str__(self):
-        return f"{self.cmd} {[str(a) for a in self.args]}"
+        return f"{self.cmd} {[str(a) for a in self.args]} {self.kwargs}"
     def __eq__(self, other):
         return isinstance(other, DangrCommand) and self.cmd == other.cmd and self.package == other.package and self.args == other.args and self.kwargs == other.kwargs
 

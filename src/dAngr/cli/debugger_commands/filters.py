@@ -10,7 +10,7 @@ class FilterCommands(BaseCommand):
         super().__init__(debugger)
         
 
-    async def filter(self, exclude:bool = False, *filters:Filter):
+    def filter(self, exclude:bool = False, *filters:Filter):
         """
         Add filters to the list of breakpoints or exclusions.
 
@@ -27,9 +27,9 @@ class FilterCommands(BaseCommand):
             lst.append(filters[0])
         else:
             lst.append(AndFilterList([f for f in filters]))
-        await self.send_info(f"{[str(f) for f in filters] if len(filters)>1 else str(filters[0])} added to {'exclusions' if exclude else 'breakpoints'}.")
+        self.send_info(f"{[str(f) for f in filters] if len(filters)>1 else str(filters[0])} added to {'exclusions' if exclude else 'breakpoints'}.")
 
-    async def remove_filter(self, index:int, exclude:bool = False):
+    def remove_filter(self, index:int, exclude:bool = False):
         """
         Remove a filter from the list of breakpoints or exclusions.
 
@@ -43,9 +43,9 @@ class FilterCommands(BaseCommand):
         if index >= len(lst):
             raise DebuggerCommandError(f"Index {index} out of range.")
         fltr = lst.pop(index)
-        await self.send_info(f"{fltr} removed from {'exclusions' if exclude else 'breakpoints'}.")
+        self.send_info(f"{fltr} removed from {'exclusions' if exclude else 'breakpoints'}.")
 
-    async def make_filter(self, function:str):
+    def make_filter(self, function:str):
         """
         Add a filtering method. A method which returns a boolean value to indicate that the filter matches or not. When the method returns True, the filter matches and the breakpoint is triggered.
 
@@ -57,7 +57,7 @@ class FilterCommands(BaseCommand):
         func = self.debugger.context.get_definition(function)
         return FilterFunction(func, debugger=self.debugger)
     
-    async def or_filters(self, *filters:Filter):
+    def or_filters(self, *filters:Filter):
         """
         Add an OR filter.
 
@@ -67,7 +67,7 @@ class FilterCommands(BaseCommand):
         Short name: f_or
         """
         return OrFilterList([f for f in filters])
-    async def and_filters(self, *filters:Filter):
+    def and_filters(self, *filters:Filter):
         """
         Add an AND filter.
 
@@ -78,7 +78,7 @@ class FilterCommands(BaseCommand):
         """
         return AndFilterList([f for f in filters])
     
-    async def by_address(self, address:int):
+    def by_address(self, address:int):
         """
         Add an address filter.
 
@@ -89,7 +89,7 @@ class FilterCommands(BaseCommand):
         """
         return AddressFilter(address)
 
-    async def by_line(self, source_file:str, line_nr:int):
+    def by_line(self, source_file:str, line_nr:int):
         """
         Set a source line filter.
 
@@ -104,7 +104,7 @@ class FilterCommands(BaseCommand):
             raise DebuggerCommandError(f"No address found for {source_file}:{line_nr}.")
         return SourceFilter(address, source_file, line_nr)
 
-    async def by_function(self, name:str):
+    def by_function(self, name:str):
         """
         Specify a function by name in the binary to filter on.
 
@@ -117,7 +117,7 @@ class FilterCommands(BaseCommand):
             raise DebuggerCommandError(f"Function {name} not found.")
         return FunctionFilter(name)
 
-    async def by_stream(self, text:str, stream:StreamType=StreamType.stdout):
+    def by_stream(self, text:str, stream:StreamType=StreamType.stdout):
         """
         Set a stream filter.
 

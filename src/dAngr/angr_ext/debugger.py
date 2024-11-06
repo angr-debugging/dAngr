@@ -1,4 +1,3 @@
-import asyncio
 import os
 import re
 import subprocess
@@ -27,10 +26,6 @@ from dAngr.utils.loggers import get_logger
 log = get_logger(__name__)
 from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
 
-import nest_asyncio
-
-# Apply the nest_asyncio patch
-nest_asyncio.apply()
 
 
 
@@ -45,7 +40,6 @@ class Debugger:
         self._default_state_options = set([angr.options.ZERO_FILL_UNCONSTRAINED_MEMORY,angr.options.ZERO_FILL_UNCONSTRAINED_REGISTERS])
 
         self._pause:bool = False
-        self._condition:asyncio.Condition = asyncio.Condition()
 
         self._base_addr:int = 0x400000
         self._function_prototypes = {}
@@ -67,9 +61,8 @@ class Debugger:
     @property
     def cfg(self):
         if self._cfg is None:
-            #call async function
-            asyncio.run(self.conn.send_info("Constructing cfg, this may take a while..."))
-            self._cfg = self.project.analyses.CFGFast(normalize=True) 
+            self.conn.send_info("Constructing cfg, this may take a while...")
+            self._cfg = self.project.analyses.CFGFast(normalize=True)
         return self._cfg
 
     @property
@@ -99,15 +92,12 @@ class Debugger:
             return self._simgr and self._simgr.deadended
     
 
-    async def unconstrained_fill(self, symbolic:bool ):
+    def unconstrained_fill(self, symbolic:bool ):
         if not symbolic:
             self._default_state_options = set([angr.options.ZERO_FILL_UNCONSTRAINED_MEMORY,angr.options.ZERO_FILL_UNCONSTRAINED_REGISTERS])            
         else:
             self._default_state_options = set([angr.options.SYMBOL_FILL_UNCONSTRAINED_MEMORY,angr.options.SYMBOL_FILL_UNCONSTRAINED_REGISTERS])            
 
-    async def pause(self,value=True):
-        async with self._condition:
-            self._pause = value
     @property
     def current_state(self):
         self.throw_if_not_initialized()
@@ -146,20 +136,7 @@ class Debugger:
         state = self.simgr.stashes[from_stash][stateID]
         self.simgr.move(from_stash, to_stash, state)
         return state
-    
-    @property  
-    def is_paused(self):
-        async def _is_paused_async():
-            async with self._condition:
-                return self._pause
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # If the event loop is already running, use create_task and run it in the loop
-            future = asyncio.ensure_future(_is_paused_async())
-            return loop.run_until_complete(future)
-        else:
-            return asyncio.run(_is_paused_async())
-        
+            
     def throw_if_not_initialized(self):
         if self._project is None:
             raise DebuggerCommandError("project not initialized.")
@@ -209,9 +186,31 @@ class Debugger:
             kwargs['addr'] = addr
         if args:
             kwargs['args'] = args
+        if kwargs.get('add_options') is None:
+            kwargs['add_options'] = self._default_state_options
         self._set_current_state(self.project.factory.entry_state(
-                    add_options = self._default_state_options, **kwargs))
+                     **kwargs))
+    
+    def set_full_state(self, *args, **kwargs):
+        if self._simgr is not None:
+            self.reset_state()
+        if args:
+            kwargs['args'] = args
+        if kwargs.get('add_options') is None:
+            kwargs['add_options'] = self._default_state_options
+        self._set_current_state(self.project.factory.full_init_state(
+                    **kwargs))
 
+    def set_blank_state(self, *args, **kwargs):
+        if self._simgr is not None:
+            self.reset_state()
+        if args:
+            kwargs['args'] = args
+        if kwargs.get('add_options') is None:
+            kwargs['add_options'] = self._default_state_options
+        self._set_current_state(self.project.factory.blank_state(
+                    kwargs=kwargs))
+        
     @property
     def keep_unconstrained(self):
         return self._save_unconstrained
@@ -289,7 +288,7 @@ class Debugger:
             return self.from_src_path + path[len(self.to_src_path):]
         return path
     
-    def init(self, binary_path:str, base_addr:int=0, from_src_path=None, to_src_path=None, veritesting:bool=False): #support passing custom angr arguments to project
+    def init(self, binary_path:str, base_addr:int=0, from_src_path=None, to_src_path=None, veritesting:bool=False, **kwargs): #support passing custom angr arguments to project
         self.reset_state()
         self.veritesting = veritesting
         self._binary_path = binary_path
@@ -351,7 +350,12 @@ class Debugger:
         if name in self._symbols:
             return self._symbols[name]
         else : raise DebuggerCommandError(f"Symbol {name} not found.")
-
+    
+    def find_symbol(self, name:str):
+        if name in self._symbols:
+            return self._symbols[name]
+        return None
+    
     def eval_symbol(self, sym:SymBitVector|Constraint, dtype:DataType, **kwargs):
         if isinstance(sym, SymBitVector):
             return self.current_state.solver.eval(sym, cast_to=dtype.to_type(), **kwargs)
@@ -366,10 +370,7 @@ class Debugger:
     def satisfiable(self, constraint=None):
         return self.current_state.satisfiable(extra_constraints=[constraint])
 
-    def find_symbol(self, name:str):
-        if name in self._symbols:
-            return self._symbols[name]
-        return None
+
 
     def set_symbol(self, name, value):
         self._symbols[name] = value
@@ -415,9 +416,8 @@ class Debugger:
     # @param check_until: callable return reason to stop, else None
     # @param exclude: callable returns True to exclude state from active stash
     
-    async def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False):
+    def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False):
         self.throw_if_not_initialized()
-        await self.pause(False)
         self.stop_reason:StopReason = StopReason.NONE
         #make sure current state is an active state and move it to the front if it is not
         if self.simgr.active:
@@ -425,8 +425,9 @@ class Debugger:
                 self._current_state = self.simgr.one_active
             else:
                 #move current state to the front
-                self.simgr.active.remove(self._current_state)
-                self.simgr.active.insert(0,self._current_state)
+                if self._current_state != self.simgr.one_active:
+                    self.simgr.active.remove(self._current_state)
+                    self.simgr.active.insert(0,self._current_state)
         else:
             raise DebuggerCommandError("No active states.")
         
@@ -448,26 +449,34 @@ class Debugger:
                 state = simgr.one_active
                 std:StdTracker = state.get_plugin('stdout_tracker')
                 std_data = std.get_new_string()
-                if std_data:
-                    loop = asyncio.get_event_loop()
-                    future = asyncio.ensure_future(handler.handle_output(std_data))
-                    loop.run_until_complete(future)
+                if std_data:handler.handle_output(std_data)
 
         def until_func(simgr):
             if not simgr.active:
                 self.stop_reason = StopReason.TERMINATE
-                return True
-            #paused
-            if self.is_paused:
-                self.stop_reason = StopReason.PAUSE
                 return True
             self.stop_reason = check_until(simgr)
             return self.stop_reason != StopReason.NONE
         
         self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func,step_func=step_func)
         self._set_current_state( self.simgr.one_active if self.simgr.active else None)
-        await handler.handle_step(self.stop_reason, self._current_state)
+        handler.handle_step(self.stop_reason, self._current_state)
 
+    def back(self):
+        #get the previous state
+        if self.simgr.active:
+            cur = self.simgr.one_active
+            #remove the current state from the active stash
+            self.simgr.active.remove(cur)
+            #add parent state to the active stash
+            if cur.history.parent:
+                new_state = cur.history.parent.state.copy()
+                self.simgr.active.insert(0,new_state)
+                self._set_current_state(new_state)
+            else:
+                raise DebuggerCommandError("No parent state.")
+        elif self.simgr.deadended:
+            self._set_current_state(self.simgr.one_deadended)
   
     def get_current_addr(self):
         return self.current_state.addr
@@ -552,7 +561,7 @@ class Debugger:
         # Store the byte value in memory
         self.current_state.memory.store(address, val,size, endness=en,)
     
-    def get_memory(self, address:int|SymBitVector, size:int|SymBitVector = 0, endness:Endness = Endness.DEFAULT):
+    def get_memory(self, address:int|SymBitVector, size:int|SymBitVector|None = None, endness:Endness = Endness.DEFAULT):
         state = self.current_state
         if address is int: 
             if size == 0:

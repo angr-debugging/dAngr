@@ -6,7 +6,7 @@ import pytest
 
 
 import os
-from unittest.mock import AsyncMock
+from unittest.mock import Mock
 
 
 class TestDebugExecutionCommands:
@@ -22,59 +22,59 @@ class TestDebugExecutionCommands:
     @pytest.fixture
     def conn(self):
         c = CliConnection()
-        c.send_result = AsyncMock()
-        c.send_info = AsyncMock()
-        c.send_error = AsyncMock()
+        c.send_result = Mock()
+        c.send_info = Mock()
+        c.send_error = Mock()
         return c
 
     @pytest.fixture
-    async def dbg(self,conn):
+    def dbg(self,conn):
         dbg = CommandLineDebugger(conn)
-        assert await dbg.handle("load example")
+        assert dbg.handle("load example")
         return dbg
 
-    @pytest.mark.asyncio
-    async def test_continue(self, dbg, conn):
-        assert await dbg.handle("add_breakpoint 0x400611")
-        assert await dbg.handle("run")
+    
+    def test_continue(self, dbg, conn):
+        assert dbg.handle("add_breakpoint 0x400611")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x400611.")
 
-    @pytest.mark.asyncio
-    async def test_set_start_address(self, dbg, conn):
-        assert await dbg.handle("add_breakpoint 0x400611")
+    
+    def test_set_start_address(self, dbg, conn):
+        assert dbg.handle("add_breakpoint 0x400611")
         conn.send_info.assert_called_with("Address 0x400611 added to breakpoints.")
-        assert await dbg.handle("add_breakpoint 0x4005de")
-        assert await dbg.handle("set_entry_state 0x40054d")
+        assert dbg.handle("add_breakpoint 0x4005de")
+        assert dbg.handle("set_entry_state 0x40054d")
         conn.send_info.assert_called_with("Execution will start at address 0x40054d.")
-        assert await dbg.handle("run")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x4005de.") # should not stop at 0x400611
     # - start
-    @pytest.mark.asyncio
-    async def test_start(self, dbg, conn):
-        assert await dbg.handle("add_breakpoint 0x400611")
-        assert await dbg.handle("run")
+    
+    def test_start(self, dbg, conn):
+        assert dbg.handle("add_breakpoint 0x400611")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x400611.")
 
     # - step into
-    @pytest.mark.asyncio
-    async def test_step_into(self, dbg, conn):
-        assert await dbg.handle("add_breakpoint 0x40062a")
-        assert await dbg.handle("run")
-        assert await dbg.handle("step")
+    
+    def test_step_into(self, dbg, conn):
+        assert dbg.handle("add_breakpoint 0x40062a")
+        assert dbg.handle("run")
+        assert dbg.handle("step")
         conn.send_info.assert_called_with("Stepped to: 0x40054d.")
 
     # - step out
-    @pytest.mark.asyncio
-    async def test_step_out(self, dbg, conn):
-        assert await dbg.handle("add_breakpoint 0x40054d")
-        assert await dbg.handle("run")
-        assert await dbg.handle("step_out")
+    
+    def test_step_out(self, dbg, conn):
+        assert dbg.handle("add_breakpoint 0x40054d")
+        assert dbg.handle("run")
+        assert dbg.handle("step_out")
         conn.send_info.assert_called_with("Stepped to: 0x40062f.")
 
     # - step over
-    @pytest.mark.asyncio
-    async def test_step_over(self, dbg, conn):
-        assert await dbg.handle("add_breakpoint 0x40062a")
-        assert await dbg.handle("run")
-        assert await dbg.handle("step_over")
+    
+    def test_step_over(self, dbg, conn):
+        assert dbg.handle("add_breakpoint 0x40062a")
+        assert dbg.handle("run")
+        assert dbg.handle("step_over")
         conn.send_info.assert_called_with("Stepped to: 0x40062f.")

@@ -22,7 +22,7 @@ class Body:
         return False
 
         
-    async def __call__(self, ctx:ExecutionContext):
+    def __call__(self, ctx:ExecutionContext):
         result = None
         if isinstance(ctx, FunctionContext):
             func_name = ctx.function.name
@@ -35,13 +35,13 @@ class Body:
             elif s == CONTINUE:
                 return
             if self.is_static(s):
-                await self._prepare_static(context, func_name, s)
-            result = await s(context)
+                self._prepare_static(context, func_name, s)
+            result = s(context)
 
         self._repair_static(context, func_name)
         return result
     
-    async def _prepare_static(self, context:ExecutionContext, func_name:str, s:Statement):
+    def _prepare_static(self, context:ExecutionContext, func_name:str, s:Statement):
         var = None
         if isinstance(s, Assignment) and isinstance(s.variable, VariableRef):
             var = s.variable
@@ -53,9 +53,9 @@ class Body:
         if context.root.find_variable(stat_name) is None:
             context.root.add_variable(stat_name, None)
         if isinstance(s, Assignment): #set global variable on each execution
-            val = await s.value(context)
+            val = s.value(context)
             context.root[stat_name].value = val
-        context.add_variable(var.name, context.root[stat_name].value)
+        context.add_variable(var.name(context), context.root[stat_name].value)
 
     def _repair_static(self, context:ExecutionContext, func_name:str):
         #for all statements that are static, copy the value from context to the root context
@@ -80,12 +80,12 @@ class Script(Body):
         super().__init__(statements)
         self.definitions:List[Definition] = definitions
 
-    async def __call__(self, context:ExecutionContext):
+    def __call__(self, context:ExecutionContext):
         for d in self.definitions:
             context.add_definition(d.name, d) # type: ignore
         result = None
         for s in self.statements:
-            result = await s(context)
+            result = s(context)
         return result
 
     def __repr__(self):

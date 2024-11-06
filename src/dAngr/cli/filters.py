@@ -1,6 +1,5 @@
 
 from abc import abstractmethod
-import asyncio
 from typing import List, override
 
 from angr import SimState
@@ -110,8 +109,7 @@ class FilterFunction(Filter):
         try:
             prev = self.debugger.current_state
             self.debugger.current_state = state
-            loop = asyncio.get_event_loop()
-            return loop.run_until_complete(self.func(self.debugger.context))
+            return self.func(self.debugger.context)
         finally:
             self.debugger.current_state = prev
     

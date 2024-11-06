@@ -43,7 +43,7 @@ class IBaseCommand(metaclass=AutoRunMeta):
         return next((specs[s] for s in specs if specs[s].name.strip() == command or specs[s].short_name == command), None)
     
     @abstractmethod
-    async def execute(self, cmd, *args):
+    def execute(self, cmd, *args):
         pass
 
 
@@ -79,7 +79,7 @@ class BuiltinFunctionDefinition(FunctionDefinition):
     def package(self):
         return self._package
     
-    async def __call__(self, context:ExecutionContext,*args, **named_args) -> Any:
+    def __call__(self, context:ExecutionContext,*args, **named_args) -> Any:
         from dAngr.cli.command_line_debugger import dAngrExecutionContext
         o = self._cmd_class(cast(dAngrExecutionContext,context.root).debugger)
         # get the function from the class
@@ -87,7 +87,7 @@ class BuiltinFunctionDefinition(FunctionDefinition):
         if not f:
             f = getattr(o, self._name + '_')
 
-        return await f(*args, **named_args)
+        return f(*args, **named_args)
     
 def convert_args(args, signature):
     # convert the args to the correct type
@@ -293,9 +293,9 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
         else:
             return ref
 
-    async def run_angr(self, until:Callable[[SimulationManager],StopReason] = lambda _: StopReason.NONE):
+    def run_angr(self, until:Callable[[SimulationManager],StopReason] = lambda _: StopReason.NONE):
         u = until
-        await self.debugger.run(u)
+        self.debugger.run(u)
 
     # def get_example(self):
     #     args_lst = [f"<{a[0].replace(' ','_')}>"  for a in self.arg_specs]
@@ -322,8 +322,8 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
     def send_warning(self, data):
         return self.debugger.conn.send_warning(data)
     
-    def send_result(self, data):
-        return self.debugger.conn.send_result(data)
+    def send_result(self, data, newline = True):
+        return self.debugger.conn.send_result(data, newline)
     
 
     

@@ -38,21 +38,21 @@ statement:  control_flow |
             static_var NEWLINE |
             ext_command NEWLINE ;
 
-expression
-    :     (identifier DOT)? identifier (WS (identifier ASSIGN)?expression_part)* // dangr command
-    |     constraint
-    |     expression_part;
+expression :
+    (identifier DOT)? identifier (WS (identifier ASSIGN)?expression_part)*
+    | expression_part
+    ;
 
-constraint :
-           CIF WS? condition WS? CTHEN WS? expression_part WS? CELSE WS? expression_part;
-
-
-expression_part: LPAREN WS? expression WS? RPAREN
-    | range // python, bash, dangr
-    | reference
-    | BOOL
-    | object (WS? operation WS? expression)?
-    | object
+expression_part :
+    CIF WS? condition WS? CTHEN WS? expression_part WS? CELSE WS? expression_part # ExpressionIf
+    | LPAREN WS? expression WS? RPAREN # ExpressionParenthesis
+    | RANGE LPAREN WS? expression_part WS? (COMMA WS?expression_part WS?)?  RPAREN # ExpressionRange
+    | expression_part WS IN WS expression_part # ExpressionIn
+    | range # ExpressionAlt // python, bash, dangr
+    | reference # ExpressionReference
+    | BOOL # ExpressionBool
+    | object (WS? operation WS? expression_part) # ExpressionOperation
+    | object # ExpressionObject
     ;
 
 
@@ -83,7 +83,7 @@ body : INDENT (fstatement NEWLINE?)+ DEDENT ;
 
 fstatement: BREAK|CONTINUE|(RETURN WS expression)|statement ;
 
-iterable : object | 'range' LPAREN WS? numeric WS? (COMMA WS?numeric WS?)?  RPAREN ;
+iterable : expression ;
 
 parameters : identifier (WS? COMMA WS? identifier)* ;
 
@@ -117,32 +117,31 @@ py_content: (reference |range | anything | LPAREN py_content RPAREN)+ ;
 reference: 
         (VARS_DB|REG_DB|SYM_DB) DOT identifier BANG?| // ReferenceObject
         STATE |
-        MEM_DB BRA WS? numeric (WS? ARROW WS? NUMBERS)? KET BANG?// MemoryObject with size and length
+        MEM_DB BRA WS? index (WS? ARROW WS? index)? KET BANG?// MemoryObject with size and length
         ;
 
 bash_content: identifier (range|anything |reference)*;
 
 
-index : identifier | numeric;
+index : DASH? expression;
 identifier : (LETTERS|UNDERSCORE|special_words UNDERSCORE)(LETTERS|NUMBERS|UNDERSCORE|special_words)*;
 numeric : NUMBERS | HEX_NUMBERS;
 
-object : identifier BANG? | 
-    (ADD|DASH)? NUMBERS |
-    HEX_NUMBERS | 
-    BOOL |
-    reference |
-    object DOT identifier | // property
-    object BRA WS? index WS? KET | // indexed property
-    object BRA WS? DASH? numeric WS? COLON WS? DASH? numeric WS? KET | // slice from start to end
-    object BRA WS? DASH?numeric WS? ARROW WS? DASH? NUMBERS WS? KET | // slice from start to start + number
-    BRA WS? object (WS? COMMA WS? object)* WS? KET | // list
-    BRACE WS? (STRING WS? COLON WS? object (WS? COMMA WS? STRING WS? COLON WS? object))* WS? KETCE | // dict
-    STRING | 
-    BINARY_STRING
+object : identifier BANG?  # IDObject
+    | (DASH)? numeric # NumericObject
+    | BOOL # BoolObject
+    | reference # ReferenceObject
+    | object DOT identifier # PropertyObject
+    | object BRA WS? index WS? KET # IndexedPropertyObject
+    | object BRA WS? index WS? COLON WS? index WS? KET # SliceStartEndObject // slice from start to end
+    | object BRA WS? index WS? ARROW WS? index WS? KET #SlideStartLengthObject // slice from start to start + number
+    | BRA WS? object? (WS? COMMA WS? object)* WS? KET #ListObject // list
+    | BRACE WS? (STRING WS? COLON WS? object (WS? COMMA WS? STRING WS? COLON WS? object))* WS? KETCE # DictionaryObject // dict
+    | STRING #StringObject
+    | BINARY_STRING #BinaryStringObject
     ; 
 
-special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN | BREAK | CONTINUE;
+special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN | BREAK | CONTINUE | RANGE;
 
 STATIC : 'static';
 
@@ -150,6 +149,7 @@ CIF : 'IIF';
 CTHEN: 'THEN';
 CELSE: 'ELSE';
 
+RANGE : 'range';
 DEF : 'def';
 IF : 'if';
 ELSE : 'else';

@@ -10,7 +10,7 @@ class GeneralCommands(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
 
-    async def help(self, command: str|None = None):
+    def help(self, command: str|None = None):
         """
         Show dAngr help.
 
@@ -25,13 +25,13 @@ class GeneralCommands(BaseCommand):
         if command:
             spec = self.debugger.get_command_spec(command)
             if spec is None:
-                await self.send_error(f"Command '{command}' not found. Type 'help' or '?' for a list of available commands.")
+                self.send_error(f"Command '{command}' not found. Type 'help' or '?' for a list of available commands.")
             else:
-                await self.debugger.list_args(spec)
+                self.debugger.list_args(spec)
         else:
-             await self.debugger.list_commands()
+             self.debugger.list_commands()
 
-    async def set_log_level(self, module:str, level:str = "DEBUG"):
+    def set_log_level(self, module:str, level:str = "DEBUG"):
         """
         Set the log level for a module.
 
@@ -45,8 +45,9 @@ class GeneralCommands(BaseCommand):
 
         """
         dAngr_log_config.set_module(module, level)
-        await self.send_info(f"Set log level for module '{module}' to {level}")
-    async def list_loggers(self):
+        self.send_info(f"Set log level for module '{module}' to {level}")
+        
+    def list_loggers(self):
         """
         List all loggers.
 

@@ -8,7 +8,7 @@ class BreakpointCommands(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
         
-    async def add_breakpoint(self, address:int):  # type: ignore
+    def add_breakpoint(self, address:int):  # type: ignore
         """
         Set a breakpoint at a given address.
     
@@ -17,11 +17,11 @@ class BreakpointCommands(BaseCommand):
         
         Short name: ba
         """
-        f = await FilterCommands(self.debugger).by_address(address)
+        f = FilterCommands(self.debugger).by_address(address)
         self.debugger.breakpoints.append(f)
-        await self.send_info(f"Address {hex(address)} added to breakpoints.")
+        self.send_info(f"Address {hex(address)} added to breakpoints.")
     
-    async def add_breakpoint_at_line(self, source_file: str, line: int):  # type: ignore
+    def add_breakpoint_at_line(self, source_file: str, line: int):  # type: ignore
         """
         Set a breakpoint at a given line of a source file. Requires debug symbols to be loaded.
     
@@ -31,11 +31,11 @@ class BreakpointCommands(BaseCommand):
         
         Short name: bal
         """
-        f = await FilterCommands(self.debugger).by_line(source_file, line)
+        f = FilterCommands(self.debugger).by_line(source_file, line)
         self.debugger.breakpoints.append(f)
-        await self.send_info(f"Address {hex(f.address)} added to breakpoints.")
+        self.send_info(f"Address {hex(f.address)} added to breakpoints.")
     
-    async def add_breakpoint_at_function(self, function: str):  # type: ignore
+    def add_breakpoint_at_function(self, function: str):  # type: ignore
         """
         Set a breakpoint at a given function. Requires debug symbols to be loaded.
     
@@ -44,11 +44,11 @@ class BreakpointCommands(BaseCommand):
         
         Short name: baf
         """
-        f = await FilterCommands(self.debugger).by_function(function)
+        f = FilterCommands(self.debugger).by_function(function)
         self.debugger.breakpoints.append(f)
-        await self.send_info(f"Function {function} added to breakpoints.")
+        self.send_info(f"Function {function} added to breakpoints.")
     
-    async def remove_breakpoint(self, address:int):  # type: ignore
+    def remove_breakpoint(self, address:int):  # type: ignore
         """
         Remove a breakpoint at a given address.
     
@@ -60,13 +60,13 @@ class BreakpointCommands(BaseCommand):
 
         f = self.debugger.breakpoints.find(AddressFilter, lambda f: f.address == address) # type: ignore
         if f is None:
-            await self.send_error(f"Breakpoint at address {hex(address)} not found.")
+            self.send_error(f"Breakpoint at address {hex(address)} not found.")
             return
         self.debugger.breakpoints.remove(f)
-        await self.send_info(f"Address {hex(address)} removed from breakpoints.")
+        self.send_info(f"Address {hex(address)} removed from breakpoints.")
 
     
-    async def remove_breakpoint_at_line(self, source_file: str, line: int):  # type: ignore
+    def remove_breakpoint_at_line(self, source_file: str, line: int):  # type: ignore
         """
         Remove a breakpoint at a given line of a source file. Requires debug symbols to be loaded.
     
@@ -78,16 +78,16 @@ class BreakpointCommands(BaseCommand):
         """
         address = self.debugger.find_address(source_file, line)
         if address is None:
-            await self.send_error(f"Breakpoint at {source_file}:{line} not found.")
+            self.send_error(f"Breakpoint at {source_file}:{line} not found.")
             return
         f = self.debugger.breakpoints.find(FunctionFilter, lambda f: f.f_addr == address)
         if f is None:
-            await self.send_error(f"Breakpoint at {source_file}:{line} not found.")
+            self.send_error(f"Breakpoint at {source_file}:{line} not found.")
             return
         self.debugger.breakpoints.remove(f)
-        await self.send_info(f"Address {hex(address)} removed from breakpoints.")
+        self.send_info(f"Address {hex(address)} removed from breakpoints.")
     
-    async def remove_breakpoint_at_function(self, function: str):  # type: ignore
+    def remove_breakpoint_at_function(self, function: str):  # type: ignore
         """
         Remove a breakpoint at a given function. Requires debug symbols to be loaded.
     
@@ -99,12 +99,12 @@ class BreakpointCommands(BaseCommand):
         address = self.debugger.get_function_address(function)
         f = self.debugger.breakpoints.find(FunctionFilter, lambda f: f.f_addr == address)
         if f is None:
-            await self.send_error(f"Breakpoint at function {function} not found.")
+            self.send_error(f"Breakpoint at function {function} not found.")
             return
         self.debugger.breakpoints.remove(f)
-        await self.send_info(f"Function {function} removed from breakpoints.")
+        self.send_info(f"Function {function} removed from breakpoints.")
 
-    async def enable_breakpoint(self, index:int=0, enable:bool=True):
+    def enable_breakpoint(self, index:int=0, enable:bool=True):
         """
         Enable filter at given index.
 
@@ -118,8 +118,8 @@ class BreakpointCommands(BaseCommand):
         if index >= len(list):
             raise DebuggerCommandError(f"Index {index} out of range.")
         list[index].enabled = enable
-        await self.send_info(f"Breakpoint filter {'enabled' if enable else 'disabled'}.")
-    async def disable_breakpoint(self, index:int=0):
+        self.send_info(f"Breakpoint filter {'enabled' if enable else 'disabled'}.")
+    def disable_breakpoint(self, index:int=0):
         """
         Disable filter at given index.
 
@@ -132,9 +132,9 @@ class BreakpointCommands(BaseCommand):
         if index >= len(list):
             raise DebuggerCommandError(f"Index {index} out of range.")
         list[index].enabled = False
-        await self.send_info(f"Breakpoint filter disabled.")
+        self.send_info(f"Breakpoint filter disabled.")
 
-    async def list_breakpoints(self):
+    def list_breakpoints(self):
         """
         List all breakpoints.
         
@@ -142,11 +142,11 @@ class BreakpointCommands(BaseCommand):
         """
         list = self.debugger.breakpoints
         if len(list) == 0:
-            await self.send_info(f'No breakpoints found.')
+            self.send_info(f'No breakpoints found.')
             return []
         return f'Breakpoint(s): {"\n\t".join([f"[{i}] {b}" for i,b in enumerate(list)])}'
     
-    async def breakpoint(self, *filters:Filter):
+    def breakpoint(self, *filters:Filter):
             """
             Add a filter to the list of breakpoints.
 
@@ -156,9 +156,9 @@ class BreakpointCommands(BaseCommand):
             Short name: bf
             """
 
-            await FilterCommands(self.debugger).filter(False, *filters)
+            FilterCommands(self.debugger).filter(False, *filters)
 
-    async def remove_breakpoint_filter(self, index:int):
+    def remove_breakpoint_filter(self, index:int):
         """
         Remove a filter from the list of breakpoints.
 
@@ -167,13 +167,13 @@ class BreakpointCommands(BaseCommand):
         
         Short name: brf
         """
-        await FilterCommands(self.debugger).remove_filter(index, False)
+        FilterCommands(self.debugger).remove_filter(index, False)
 
-    async def clear_breakpoints(self):
+    def clear_breakpoints(self):
         """
         Clear all breakpoints.
 
         Short name: bc
         """
         self.debugger.breakpoints.clear()
-        await self.send_info( "All breakpoints cleared.")
+        self.send_info( "All breakpoints cleared.")

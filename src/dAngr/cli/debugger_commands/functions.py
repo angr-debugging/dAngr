@@ -11,7 +11,7 @@ class FunctionCommands(BaseCommand):
     def __init__(self, debugger_core):
         super().__init__(debugger_core)
         
-    async def get_return_value(self):
+    def get_return_value(self):
         """
         Get the return value after running the function.
 
@@ -23,7 +23,7 @@ class FunctionCommands(BaseCommand):
         val = self.debugger.get_return_value() 
         return str(val) if not val is None else ""
 
-    async def set_call_state(self, function_addr: int, *args):
+    def set_call_state(self, function_addr: int, *args):
         """
         Set the call state of a function.
 
@@ -37,9 +37,9 @@ class FunctionCommands(BaseCommand):
         Short name: scs
         """
         self.debugger.set_call_state(function_addr, args)
-        await self.send_info(f"Call state set for function at {hex(function_addr)}")
+        self.send_info(f"Call state set for function at {hex(function_addr)}")
 
-    async def set_function_call(self, function_call: str):
+    def set_function_call(self, function_call: str):
         """
         Set the prototype of a function.
 
@@ -101,9 +101,9 @@ class FunctionCommands(BaseCommand):
         except Exception as e:
             raise DebuggerCommandError(f"Error setting up function call: {e}")
 
-        await self.send_info(f"Function setup at {hex(addr)} with memory:{info}")
+        self.send_info(f"Function setup at {hex(addr)} with memory:{info}")
     
-    async def set_function_prototype(self, prt:str):
+    def set_function_prototype(self, prt:str):
         """
         Set the prototype of a function.
 
@@ -124,11 +124,11 @@ class FunctionCommands(BaseCommand):
         return_type, function_name, args_str = match.groups()
         self.debugger.set_function_prototype(return_type, function_name, args_str.split(','))
 
-        await self.send_info(f"Function signature set for {function_name}")
+        self.send_info(f"Function signature set for {function_name}")
 
 
 
-    async def decompiled_function(self, function:str):  # type: ignore
+    def decompiled_function(self, function:str):  # type: ignore
         """
         Show the decompiled function.
 
@@ -150,7 +150,7 @@ class FunctionCommands(BaseCommand):
     
     
 
-    async def decompiled_function_at_address(self, address:int, end:int):  # type: ignore
+    def decompiled_function_at_address(self, address:int, end:int):  # type: ignore
         """
         Show the decompiled function at a given address.
 
@@ -174,7 +174,7 @@ class FunctionCommands(BaseCommand):
             raise DebuggerCommandError("No basic block found.")
         return f"{b}"
 
-    async def get_function_info(self, function_name: str):
+    def get_function_info(self, function_name: str):
         """
         Get information about a function.
 

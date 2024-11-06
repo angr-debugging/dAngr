@@ -24,13 +24,48 @@ class dAngrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by dAngrParser#constraint.
-    def visitConstraint(self, ctx:dAngrParser.ConstraintContext):
+    # Visit a parse tree produced by dAngrParser#ExpressionRange.
+    def visitExpressionRange(self, ctx:dAngrParser.ExpressionRangeContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by dAngrParser#expression_part.
-    def visitExpression_part(self, ctx:dAngrParser.Expression_partContext):
+    # Visit a parse tree produced by dAngrParser#ExpressionIn.
+    def visitExpressionIn(self, ctx:dAngrParser.ExpressionInContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#ExpressionObject.
+    def visitExpressionObject(self, ctx:dAngrParser.ExpressionObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#ExpressionBool.
+    def visitExpressionBool(self, ctx:dAngrParser.ExpressionBoolContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#ExpressionReference.
+    def visitExpressionReference(self, ctx:dAngrParser.ExpressionReferenceContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#ExpressionIf.
+    def visitExpressionIf(self, ctx:dAngrParser.ExpressionIfContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#ExpressionAlt.
+    def visitExpressionAlt(self, ctx:dAngrParser.ExpressionAltContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#ExpressionParenthesis.
+    def visitExpressionParenthesis(self, ctx:dAngrParser.ExpressionParenthesisContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#ExpressionOperation.
+    def visitExpressionOperation(self, ctx:dAngrParser.ExpressionOperationContext):
         return self.visitChildren(ctx)
 
 
@@ -129,8 +164,63 @@ class dAngrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by dAngrParser#object.
-    def visitObject(self, ctx:dAngrParser.ObjectContext):
+    # Visit a parse tree produced by dAngrParser#SlideStartLengthObject.
+    def visitSlideStartLengthObject(self, ctx:dAngrParser.SlideStartLengthObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#ReferenceObject.
+    def visitReferenceObject(self, ctx:dAngrParser.ReferenceObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#BinaryStringObject.
+    def visitBinaryStringObject(self, ctx:dAngrParser.BinaryStringObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#ListObject.
+    def visitListObject(self, ctx:dAngrParser.ListObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#IndexedPropertyObject.
+    def visitIndexedPropertyObject(self, ctx:dAngrParser.IndexedPropertyObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#DictionaryObject.
+    def visitDictionaryObject(self, ctx:dAngrParser.DictionaryObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#NumericObject.
+    def visitNumericObject(self, ctx:dAngrParser.NumericObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#SliceStartEndObject.
+    def visitSliceStartEndObject(self, ctx:dAngrParser.SliceStartEndObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#StringObject.
+    def visitStringObject(self, ctx:dAngrParser.StringObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#IDObject.
+    def visitIDObject(self, ctx:dAngrParser.IDObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#PropertyObject.
+    def visitPropertyObject(self, ctx:dAngrParser.PropertyObjectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dAngrParser#BoolObject.
+    def visitBoolObject(self, ctx:dAngrParser.BoolObjectContext):
         return self.visitChildren(ctx)
 
 

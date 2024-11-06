@@ -10,7 +10,7 @@ class ExclusionCommands(BaseCommand):
     def __init__(self, debugger:Debugger):
         super().__init__(debugger)
 
-    async def add_exclusion(self, address:int):
+    def add_exclusion(self, address:int):
         """
         Add an exclusion filter for a given address.
 
@@ -19,9 +19,9 @@ class ExclusionCommands(BaseCommand):
         
         Short name: exa
         """
-        await FilterCommands(self.debugger).filter(True, await FilterCommands(self.debugger).by_address(address))
+        FilterCommands(self.debugger).filter(True, FilterCommands(self.debugger).by_address(address))
 
-    async def exclude(self, *filters:Filter):
+    def exclude(self, *filters:Filter):
         """
         Add a filter to the list of exclusions.
 
@@ -30,10 +30,10 @@ class ExclusionCommands(BaseCommand):
         
         Short name: exaf
         """
-        await FilterCommands(self.debugger).filter(True, *filters)
+        FilterCommands(self.debugger).filter(True, *filters)
 
     
-    async def remove_exclusion_filter(self, index:int):
+    def remove_exclusion_filter(self, index:int):
         """
         Remove a filter from the list of exclusions.
 
@@ -42,11 +42,11 @@ class ExclusionCommands(BaseCommand):
         
         Short name: exr
         """
-        await FilterCommands(self.debugger).remove_filter(index, True)
+        FilterCommands(self.debugger).remove_filter(index, True)
     
 
     
-    async def enable_exclusion(self, index:int=0, enable:bool=True):
+    def enable_exclusion(self, index:int=0, enable:bool=True):
         """
         Enable filter at given index.
 
@@ -60,10 +60,10 @@ class ExclusionCommands(BaseCommand):
         if index >= len(list):
             raise DebuggerCommandError(f"Index {index} out of range.")
         list[index].enabled = enable
-        await self.send_info(f"Exclusion filter {'enabled' if enable else 'disabled'}.")
+        self.send_info(f"Exclusion filter {'enabled' if enable else 'disabled'}.")
 
     
-    async def list_exclusions(self):
+    def list_exclusions(self):
         """
         List all exclusions.
         
@@ -71,16 +71,16 @@ class ExclusionCommands(BaseCommand):
         """
         list = self.debugger.exclusions
         if len(list) == 0:
-            await self.send_info(f'No exclusions found.')
+            self.send_info(f'No exclusions found.')
             return []
         return f'Exclusion(s): {"\n\t".join([f"[{i}] {b}" for i,b in enumerate(list)])}'
     
     
-    async def clear_exclusions(self):
+    def clear_exclusions(self):
         """
         Clear all exclusions.
 
         Short name: fc
         """
         self.debugger.exclusions.clear()
-        await self.send_info( "All exclusions cleared.")
+        self.send_info( "All exclusions cleared.")

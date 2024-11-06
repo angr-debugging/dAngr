@@ -1,6 +1,8 @@
 
 from typing import Any, Dict
 
+import angr
+
 from dAngr.utils import Variable
 
 from dAngr.exceptions import KeyError
@@ -13,6 +15,7 @@ class ExecutionContext:
         self._variables: Dict[str,Variable] = {}
         self._definitions:Dict[str,Definition] = {}
         self._parent:ExecutionContext|None= parent # type: ignore
+        self.enums = {"options":angr.options}
         self.return_value = None
         
     @property
@@ -42,8 +45,15 @@ class ExecutionContext:
             return self.root.variables["@"+name]
         return None
     
+    def find_enum(self, name:str):
+        if name in self.enums:
+            return self.enums[name]
+        if self._parent:
+            return self._parent.find_enum(name)
+        return None
     
-    def __setitem__(self, name, value):
+    
+    def __setitem__(self, name:str, value):
         assert not isinstance(value, Variable)
         if name in self._variables:
             self._variables[name]._value = value

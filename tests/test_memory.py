@@ -6,7 +6,7 @@ import pytest
 
 
 import os
-from unittest.mock import AsyncMock
+from unittest.mock import Mock
 
 
 class TestMemoryCommands:
@@ -22,91 +22,91 @@ class TestMemoryCommands:
     @pytest.fixture
     def conn(self):
         c = CliConnection()
-        c.send_result = AsyncMock()
-        c.send_info = AsyncMock()
-        c.send_error = AsyncMock()
+        c.send_result = Mock()
+        c.send_info = Mock()
+        c.send_error = Mock()
         return c
 
     @pytest.fixture
-    async def dbg(self,conn):
+    def dbg(self,conn):
         dbg = CommandLineDebugger(conn)
-        assert await dbg.handle("load example")
-        assert await dbg.handle("add_breakpoint 0x400566")
-        assert await dbg.handle("set_function_prototype 'int processMessage(char*, int, char**)'")
-        assert await dbg.handle("set_function_call 'processMessage(\"abc\",2,b\"0000000000\")'")
-        conn.send_result = AsyncMock()
-        conn.send_info = AsyncMock()
-        conn.send_error = AsyncMock()
+        assert dbg.handle("load example")
+        assert dbg.handle("add_breakpoint 0x400566")
+        assert dbg.handle("set_function_prototype 'int processMessage(char*, int, char**)'")
+        assert dbg.handle("set_function_call 'processMessage(\"abc\",2,b\"0000000000\")'")
+        conn.send_result = Mock()
+        conn.send_info = Mock()
+        conn.send_error = Mock()
 
         return dbg
 
-    @pytest.mark.asyncio
-    async def test_get_memory(self, dbg, conn):
-        assert await dbg.handle("m = memory.get_memory 0x1000 3")
-        assert await dbg.handle("evaluate m")
+    
+    def test_get_memory(self, dbg, conn):
+        assert dbg.handle("m = memory.get_memory 0x1000 3")
+        assert dbg.handle("evaluate m")
         assert "b'abc'" == str(conn.send_result.call_args[0][0])
     
-    # @pytest.mark.asyncio
-    # async def test_get_int_memory(self, dbg, conn):
-    #     assert await dbg.handle("get_int_memory 0x3000 3")
+    # 
+    # def test_get_int_memory(self, dbg, conn):
+    #     assert dbg.handle("get_int_memory 0x3000 3")
     #     assert r == True
     #     assert "Memory at 0x2000: 0 (int)" == str(conn.send_info.call_args[0][0])
-    @pytest.mark.asyncio
-    async def test_get_string_memory(self, dbg, conn):
-        assert await dbg.handle("get_memory_string 0x1000")
+    
+    def test_get_string_memory(self, dbg, conn):
+        assert dbg.handle("get_memory_string 0x1000")
         assert "abc" == str(conn.send_result.call_args[0][0])
-    @pytest.mark.asyncio
-    async def test_get_register(self, dbg, conn):
-        assert await dbg.handle("r = get_register ip")
-        assert await dbg.handle("cast_to (evaluate r) address")
+    
+    def test_get_register(self, dbg, conn):
+        assert dbg.handle("r = get_register ip")
+        assert dbg.handle("cast_to (evaluate r) address")
         assert "0x40054d" == str(conn.send_result.call_args[0][0])
 
-    @pytest.mark.asyncio
-    async def test_get_register_invalid(self, dbg, conn):
-        assert await dbg.handle("get_register invalid",False)
+    
+    def test_get_register_invalid(self, dbg, conn):
+        assert dbg.handle("get_register invalid",False)
         assert "Register 'invalid' not found." == str(conn.send_error.call_args[0][0])
     
-    @pytest.mark.asyncio
-    async def test_get_register_invalid_args(self, dbg, conn):
-        assert await dbg.handle("get_register",False)
+    
+    def test_get_register_invalid_args(self, dbg, conn):
+        assert dbg.handle("get_register",False)
         assert "missing a required argument: 'name'" == str(conn.send_error.call_args[0][0])
     
-    @pytest.mark.asyncio
-    async def test_list_registers(self, dbg, conn):
-        assert await dbg.handle("list_registers")
+    
+    def test_list_registers(self, dbg, conn):
+        assert dbg.handle("list_registers")
         assert "Register rax " in str(conn.send_result.call_args[0][0])
 
-    @pytest.mark.asyncio
-    async def test_set_register(self, dbg, conn):
-        assert await dbg.handle("set_register ip 0x4e")
+    
+    def test_set_register(self, dbg, conn):
+        assert dbg.handle("set_register ip 0x4e")
         assert "Register ip: 0x4e." == str(conn.send_info.call_args[0][0])
 
-    @pytest.mark.asyncio
-    async def test_set_memory_int(self, dbg, conn):
-        assert await dbg.handle("set_memory 0x1000 0x61")
+    
+    def test_set_memory_int(self, dbg, conn):
+        assert dbg.handle("set_memory 0x1000 0x61")
         assert "Memory at 0x1000: 97." == str(conn.send_info.call_args[0][0])
         
-    @pytest.mark.asyncio
-    async def test_set_memory_str(self, dbg, conn):
-        assert await dbg.handle("set_memory 0x1000 'abs'")
+    
+    def test_set_memory_str(self, dbg, conn):
+        assert dbg.handle("set_memory 0x1000 'abs'")
         assert "Memory at 0x1000: abs." == str(conn.send_info.call_args[0][0])
 
-    @pytest.mark.asyncio
-    async def test_set_memory_bytes(self, dbg, conn):
-        assert await dbg.handle("set_memory 0x1000 b'1234'")
+    
+    def test_set_memory_bytes(self, dbg, conn):
+        assert dbg.handle("set_memory 0x1000 b'1234'")
         assert "Memory at 0x1000: b'1234'." == str(conn.send_info.call_args[0][0])
 
-    @pytest.mark.asyncio
-    async def test_unconstrained_fill_memory(self, dbg, conn):
-        assert await dbg.handle("unconstrained_fill")
+    
+    def test_unconstrained_fill_memory(self, dbg, conn):
+        assert dbg.handle("unconstrained_fill")
         assert "Fill with zeros." == str(conn.send_info.call_args[0][0])
 
-        assert await dbg.handle("unconstrained_fill True")
+        assert dbg.handle("unconstrained_fill True")
         assert "Fill with symbols." == str(conn.send_info.call_args[0][0])
             
-    @pytest.mark.asyncio
-    async def test_get_return_value(self, dbg, conn):
-        assert await dbg.handle("run")
-        assert await dbg.handle("run")
-        assert await dbg.handle("get_return_value")
+    
+    def test_get_return_value(self, dbg, conn):
+        assert dbg.handle("run")
+        assert dbg.handle("run")
+        assert dbg.handle("get_return_value")
         assert "6" == str(conn.send_result.call_args[0][0])

@@ -1,10 +1,10 @@
 import pytest
 
-from unittest.mock import AsyncMock
+from unittest.mock import Mock
 
 from dAngr.cli.grammar.control_flow import ForLoop, IfThenElse
 from dAngr.cli.grammar.parser import lex_input, parse_input
-from dAngr.cli.grammar.expressions import BashCommand, Comparison, Dictionary, Expression, Iterable, Listing, Literal, DangrCommand, Operator, PythonCommand, Range, VariableRef
+from dAngr.cli.grammar.expressions import BashCommand, Comparison, Dictionary, Expression, Listing, Literal, DangrCommand, Operator, Property, PythonCommand, Range, VariableRef
 from dAngr.cli.grammar.script import Body, Script
 from dAngr.cli.grammar.statements import Assignment
 from dAngr.exceptions import ParseError
@@ -63,23 +63,23 @@ if a != "Hello from Bash":
         
     ]
 
-    @pytest.mark.asyncio
-    async def test_lex_false(self):
+    
+    def test_lex_false(self):
         for a in self.lex_neg_tests:
             #must raise exception
             with pytest.raises(ParseError) as exc_info:
                 r = lex_input(a)
             assert exc_info is not None, f"Expected exception when lexing {a}, got {r}"
 
-    @pytest.mark.asyncio
-    async def test_lex_true(self):
+    
+    def test_lex_true(self):
         for a in self.lex_tests:
             #must work
             r = lex_input(a)
             assert r is not None
 
-    @pytest.mark.asyncio
-    async def test_lex_compound(self):
+    
+    def test_lex_compound(self):
         for a in self.lex_compound_tests:
             #must work
             r = lex_input(a)
@@ -95,7 +95,7 @@ if a != "Hello from Bash":
         'cmd_0_1_': [DangrCommand('cmd_0_1_',None)],
         '_cmd_0_2': [DangrCommand('_cmd_0_2' ,None)],
         'cmd3 0 1 2': [DangrCommand('cmd3', None, Literal(0), Literal(1), Literal(2))],
-        "!print(&vars.x)" : [PythonCommand(Literal("print("), VariableRef('x'), Literal(")"))],
+        "!print(&vars.x)" : [PythonCommand(Literal("print("), VariableRef(Literal('x')), Literal(")"))],
         "!print('x')" : [PythonCommand(Literal("print('x')"))],
         '$ls' : [BashCommand(Literal('ls'))],
         '&cmd_0_3_' : [DangrCommand('cmd_0_3_', None)],
@@ -106,27 +106,28 @@ if a != "Hello from Bash":
 """
 for i in range(10):
     !print(&vars.i)
-""": [ForLoop(Range(10), Body([PythonCommand('print(',VariableRef('i'),')')]),VariableRef('i'))],
+""": [ForLoop(Range(Literal(10)), Body([PythonCommand('print(',VariableRef(Literal('i')),')')]),VariableRef(Literal('i')))],
 """
 for i,n in {"1":2, "3":4}:
     !print(&vars.i,&vars.n)
-""": [ForLoop(Dictionary({"1": Literal(2), "3": Literal(4)}), Body([PythonCommand('print(',VariableRef('i'),',',VariableRef("n"),')')]),VariableRef('n'), VariableRef('i'))],
+""": [ForLoop(Dictionary({"1": Literal(2), "3": Literal(4)}), Body([PythonCommand('print(',VariableRef(Literal('i')),',',VariableRef(Literal('n')),')')]),VariableRef(Literal('n')), VariableRef(Literal('i')))],
     '{"1":2, "3":4}': [Dictionary({"1": Literal(2), "3": Literal(4)})],
 """
 for i,n in [5,6,7,8,9]:
     !print(&vars.i,&vars.n)
-""": [ForLoop(Listing([Literal(5), Literal(6), Literal(7), Literal(8), Literal(9)]), Body([PythonCommand('print(',VariableRef('i'),',',VariableRef("n"),')')]),VariableRef('n'), VariableRef('i'))],
+""": [ForLoop(Listing([Literal(5), Literal(6), Literal(7), Literal(8), Literal(9)]), Body([PythonCommand('print(',VariableRef(Literal('i')),',',VariableRef(Literal("n")),')')]),VariableRef(Literal('n')), VariableRef(Literal('i')))],
 """
 if a != "Hello from Bash":
     !print("Printing from Python: ", &vars.a)
     x = 0
-""":[IfThenElse(Comparison(VariableRef('a'), Operator.NEQ, Literal('Hello from Bash')), Body([PythonCommand('print("Printing from Python: ", ', VariableRef("a"),')'), Assignment(VariableRef("x"),Literal(0))]))],
+""":[IfThenElse(Comparison(VariableRef(Literal('a')), Operator.NEQ, Literal('Hello from Bash')), Body([PythonCommand('print("Printing from Python: ", ', VariableRef(Literal("a")),')'), Assignment(VariableRef(Literal("x")),Literal(0))]))],
 """[1,2,3,4,5]""":[Listing([Literal(1), Literal(2), Literal(3), Literal(4), Literal(5)])],
-'!print("Printing from Python: ", &vars.a)': [PythonCommand('print("Printing from Python: ", ', VariableRef("a"),')')],
-"static i = 0": [Assignment(VariableRef('i',True), Literal(0))],
-'!("{:08x} {:08x} {:08x}".format(int(&vars.password0,16), int(&vars.password1,16), int(&vars.password2,16)))':[PythonCommand('"{:08x} {:08x} {:08x}"','.format(int(', VariableRef('password0'),',16), int(', VariableRef('password1'),',16), int(', VariableRef('password2'),',16))')],
-'a2 = (get_symbolic_value &vars.password2 "int")': [Assignment(VariableRef('a2'), DangrCommand('get_symbolic_value', None, VariableRef('password2'), Literal('int')))],
-'a2 = &(get_symbolic_value password2 "int")': [Assignment(VariableRef('a2'), DangrCommand('get_symbolic_value', None, VariableRef('password2'), Literal('int')))]
+'!print("Printing from Python: ", &vars.a)': [PythonCommand('print("Printing from Python: ", ', VariableRef(Literal("a")),')')],
+"static i = 0": [Assignment(VariableRef(Literal('i'),True), Literal(0))],
+'!("{:08x} {:08x} {:08x}".format(int(&vars.password0,16), int(&vars.password1,16), int(&vars.password2,16)))':[PythonCommand('"{:08x} {:08x} {:08x}"','.format(int(', VariableRef(Literal('password0')),',16), int(', VariableRef(Literal('password1')),',16), int(', VariableRef(Literal('password2')),',16))')],
+'a2 = (get_symbolic_value &vars.password2 "int")': [Assignment(VariableRef(Literal('a2')), DangrCommand('get_symbolic_value', None, VariableRef(Literal('password2')), Literal('int')))],
+'a2 = &(get_symbolic_value password2 "int")': [Assignment(VariableRef(Literal('a2')), DangrCommand('get_symbolic_value', None, VariableRef(Literal('password2')), Literal('int')))],
+'set_entry_state add_options=[options.LAZY_SOLVES]': [DangrCommand('set_entry_state', None, add_options= Listing([Property(VariableRef(Literal('options')), 'LAZY_SOLVES')]))],
     }
 
     def test_parse_false(self):

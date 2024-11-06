@@ -2,6 +2,7 @@
 from typing import cast
 from dAngr.cli.cli_connection import CliConnection
 from dAngr.cli.debugger_commands.base import BaseCommand
+from dAngr.cli.grammar.expressions import ReferenceObject
 from dAngr.cli.less_view import Less
 
 
@@ -10,26 +11,37 @@ class ViewerCommands(BaseCommand):
         super().__init__(debugger_core)
 
 
-    async def less(self):
+    def less(self):
         """
         View previously retrieved output in a scrollable pane.
 
         Short name: less
         """
-        await Less().show_less(cast(CliConnection,self.debugger.conn).output)
+        Less().show_less(cast(CliConnection,self.debugger.conn).output)
 
-    async def print(self, text:str):
+    def print(self, text:object|ReferenceObject):
         """
         Print a text.
 
         Args:
-            text (str): Text to print.
+            text (object|ReferenceObject): Text or object content to print.
 
         Short name: pr
         """
-        await self.send_result(text)
+        self.send_result(str(text), False)
+        
+    def println(self, text:object|ReferenceObject = ""):
+        """
+        Print a text, ending with a newline
+
+        Args:
+            text (object|ReferenceObject): Text or object content to print.
+
+        Short name: prnl
+        """
+        self.send_result(str(text), True)
     
-    async def history(self, n:int=10):
+    def history(self, n:int=10):
         """
         Print the last n commands.
 
@@ -48,14 +60,14 @@ class ViewerCommands(BaseCommand):
                     continue
                 h = "\n".join([str(s) for s in hs[0] if s])
                 #send first 70 chars of h
-                await self.send_result(f"${index}: {h[:70]}")
+                self.send_result(f"${index}: {h[:70]}")
             except IndexError:
                 break
-    async def clear_history(self):
+    def clear_history(self):
         """
         Clear the command history.
 
         Short name: ch
         """
         cast(CliConnection,self.debugger.conn).clear_history()
-        await self.send_info("Command history cleared.")
+        self.send_info("Command history cleared.")

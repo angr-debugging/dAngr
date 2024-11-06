@@ -1,4 +1,3 @@
-import asyncio
 import html
 import os
 import re
@@ -35,14 +34,14 @@ class Server:
         self.script_path = script_path
         self.stop = False
     
-    async def loop(self):
+    def loop(self):
         conn = CliConnection()
         dbg = CommandLineDebugger(conn)
-        await conn.send_info("Welcome to dAngr, the symbolic debugger. Type help or ? to list commands.")
+        conn.send_info("Welcome to dAngr, the symbolic debugger. Type help or ? to list commands.")
         prmpt = HTML('<darkcyan>(dAngr)> </darkcyan>')
         session = PromptSession(enable_history_search=True)
         if self.debug_file_path:
-            await dbg.handle(f"load {self.debug_file_path}", False)
+            dbg.handle(f"load {self.debug_file_path}", False)
         if self.script_path:
             try:
                 if os.path.dirname(self.script_path):
@@ -58,13 +57,15 @@ class Server:
                             prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {html.escape(line).strip()} <gray>(hit enter to proceed, Ctrl-c to end script)</gray>')
                             first = False
                         else:
-                            prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {html.escape(line.strip())}')
+                            l = line
+                            if '\n' in line:
+                                l = line.replace('\n', '\n' + " "*10)
+                            prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {html.escape(l.strip())}')
                         try:
-                            inp = await session.prompt_async(prmpt2, completer=self.completer)
+                            inp = session.prompt(prmpt2, completer=self.completer)
                             if not line.strip().startswith("#"):
                                 # line = self._preprocess_input(conn, line)
-                                
-                                if not await dbg.handle(line, False):
+                                if not dbg.handle(line, False):
                                     self.stop = True
                         except KeyboardInterrupt:
                             self.stop = True
@@ -74,28 +75,28 @@ class Server:
                             if DEBUG_COMMANDS:
                                 raise e
                             else:
-                                await conn.send_error(f"An unexpected error occurred: {e}")
+                                conn.send_error(f"An unexpected error occurred: {e}")
                     if self.stop:
                         break
             except Exception as e:
                 if DEBUG_COMMANDS:
                     raise e
                 else:
-                    await conn.send_error(f"Error during script handling of {self.script_path}: {str(e)}")
+                    conn.send_error(f"Error during script handling of {self.script_path}: {str(e)}")
                 return
         self.stop = False
         self.script_path = None
         while not self.stop:
             try:
                 with patch_stdout() as po:
-                    inp = await session.prompt_async(prmpt, completer=self.completer)
+                    inp = session.prompt(prmpt, completer=self.completer)
                     lines = inp
                     if inp.strip() == "":
                         continue
                     if inp.rstrip().endswith(":"):
                         # process multiline input
                         while True:
-                            inp = await session.prompt_async(" "*8, completer=self.completer)
+                            inp = session.prompt(" "*12 + "> ", completer=self.completer)
                             if inp.strip() == "":
                                 break
                             lines += "\n" + inp
@@ -103,7 +104,7 @@ class Server:
                     # lines = self._preprocess_input(conn, lines)
                     if not lines:
                         continue
-                    if not await dbg.handle(lines, False):
+                    if not dbg.handle(lines, False):
                         self.stop = True
             except KeyboardInterrupt:
                 return # Ctrl-C to exit
@@ -113,8 +114,8 @@ class Server:
                 if DEBUG_COMMANDS:
                     raise e
                 else:
-                    await conn.send_error(f"An unexpected error occurred: {e}")
+                    conn.send_error(f"An unexpected error occurred: {e}")
     
     def start_server(self):
-        asyncio.run(self.loop())
+        self.loop()
 

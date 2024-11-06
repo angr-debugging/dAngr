@@ -7,21 +7,21 @@ class Connection:
         pass
     
     @abstractmethod
-    async def send_result(self, data, style=None)->None:
+    def send_result(self, data,newline=True, style=None)->None:
         raise NotImplementedError
     
     @abstractmethod
-    async def send_info(self, data, style=None)->None:
+    def send_info(self, data, style=None)->None:
         raise NotImplementedError
 
     @abstractmethod
-    async def send_output(self, data, style=None)->None:
+    def send_output(self, data, style=None)->None:
         raise NotImplementedError
 
     @abstractmethod
-    async def send_error(self, data, style=None)->None:
+    def send_error(self, data, style=None)->None:
         raise NotImplementedError
     
     @abstractmethod
-    async def send_warning(self, data, style=None)->None:
+    def send_warning(self, data, style=None)->None:
         raise NotImplementedError

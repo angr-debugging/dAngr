@@ -12,15 +12,18 @@ MEM_DB : '&mem';
 STATE : '&state';
 
 
-STRING : '"' (ESCAPED_QUOTE | ~["\\])* '"' | '\'' (ESCAPED_SINGLE_QUOTE | ~['\\])* '\'';
+STRING : 
+    QUOTE (ESCAPED_QUOTE | ('\\x'[0-9]*)| ~["])* QUOTE 
+    | SQUOTE (ESCAPED_SINGLE_QUOTE | ('\\x'[0-9]*)| ~['])* SQUOTE;
+BINARY_STRING: 'b' STRING ;
+
 ESCAPED_QUOTE : '\\' ESC_SEQ;
 ESCAPED_SINGLE_QUOTE : '\\' SESC_SEQ;
 
 // Lexer rules for binary string matching
-BINARY_STRING: 'b' '\'' ( ESC_SEQ | ('\\x'[0-9]*) | ~('\\'|'\''))* '\'' ;
 // Rule for escape sequences
-SESC_SEQ: '\\' [btnrf\\'0]; 
-ESC_SEQ: '\\' [btnrf\\"0]; 
+SESC_SEQ: '\\' [\\'0]; 
+ESC_SEQ: '\\' [\\"0]; 
 
 ARROW: '->';
 LPAREN: '(';
@@ -69,3 +72,5 @@ DASH: '-';
 NEWLINE: '\r'? '\n';
 
 WS: [ \t]+;
+
+

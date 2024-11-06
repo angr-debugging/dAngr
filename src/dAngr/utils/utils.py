@@ -1,3 +1,4 @@
+from array import array
 import codecs
 from enum import Enum, auto
 import importlib
@@ -118,9 +119,7 @@ class Operator(Enum):
             Operator.GT: "__gt__",
             Operator.LT: "__lt__",
             Operator.LE: "__le__",
-            Operator.GE: "__ge__",
-            Operator.AND: "__and__",  
-            Operator.OR: "__or__"     
+            Operator.GE: "__ge__"
         }
         return switch.get(op, None)
     
@@ -322,6 +321,13 @@ class Variable:
     def __repr__(self):
         return f"{self.name}={self._value}"
 
+
+def is_indexable(obj):
+    return hasattr(obj, '__getitem__')
+
+def is_iterable(obj):
+    return hasattr(obj, '__iter__') or isinstance(obj, array)
+
 def str_to_type(dtype:str):
     #convert string dtype to typings type
     tp = None
@@ -339,6 +345,14 @@ def str_to_type(dtype:str):
         tp = int
     elif dtype == "tuple":
         tp = tuple
+    elif dtype == "list":
+        tp = list
+    elif dtype == "dict":
+        tp = dict
+    elif dtype == "set":
+        tp = set
+    elif dtype == 'array':
+        tp = array
     else:
         try:
             from dAngr.cli.grammar.expressions import ReferenceObject,VariableRef, SymbolicValue, Register, Property, IndexedProperty
