@@ -3,6 +3,7 @@ import logging
 
 from dAngr.cli.debugger_commands.base import BaseCommand
 from dAngr.cli.grammar.expressions import ReferenceObject
+from dAngr.exceptions import DebuggerCommandError
 from dAngr.utils.utils import DataType, AngrType, AngrValueType, AngrExtendedType, Endness
 
 from dAngr.utils.loggers import get_logger
@@ -23,7 +24,7 @@ class ToolCommands(BaseCommand):
         """
         try:
             #execute python code and send the result
-            return eval(code)
+            return exec(code)
         except Exception as e:
             self.send_error(f"Error: {e}")
 
@@ -142,3 +143,90 @@ class ToolCommands(BaseCommand):
 
         """
         return len(value) # type: ignore
+    
+    def strip(self, value:str|bytes, chars:str|bytes|None = None):
+        """
+        Strip the head and tail of the string or bytes
+
+        Args:
+            value (str|bytes): Value to strip.
+            chars (str|bytes|None): chars to strip. Default None = empty string. 
+
+        """
+
+        #extract \xDD chars
+
+        v = self.debugger.cast_to(value, DataType.bytes) if isinstance(value,str) else value
+        c = self.debugger.cast_to(chars, DataType.bytes) if isinstance(chars, str) else chars
+        if v and isinstance(v, bytes):
+            return v.strip(c)
+        else:
+            raise DebuggerCommandError("Failed to convert value")
+        
+    def lstrip(self, value:str|bytes, chars:str|bytes|None = None):
+        """
+        Strip the head of the string or bytes
+
+        Args:
+            value (str|bytes): Value to strip.
+            chars (str|bytes|None): chars to strip. Default None = empty string. 
+
+        """
+
+        #extract \xDD chars
+
+        v = self.debugger.cast_to(value, DataType.bytes) if isinstance(value,str) else value
+        c = self.debugger.cast_to(chars, DataType.bytes) if isinstance(chars, str) else chars
+        if v and isinstance(v, bytes):
+            return v.lstrip(c)
+        else:
+            raise DebuggerCommandError("Failed to convert value")
+    
+    def rstrip(self, value:str|bytes, chars:str|bytes|None = None):
+        """
+        Strip the tail of the string or bytes
+
+        Args:
+            value (str|bytes): Value to strip.
+            chars (str|bytes|None): chars to strip. Default None = empty string. 
+
+        """
+
+        #extract \xDD chars
+
+        v = self.debugger.cast_to(value, DataType.bytes) if isinstance(value,str) else value
+        c = self.debugger.cast_to(chars, DataType.bytes) if isinstance(chars, str) else chars
+        if v and isinstance(v, bytes):
+            return v.rstrip(c)
+        else:
+            raise DebuggerCommandError("Failed to convert value")
+        
+    def append(self, value:list, object):
+        """
+        Append the tail of the value
+
+        Args:
+            value (list): Value append to.
+            object (): object to append to value
+
+        """
+        if isinstance(value, list):
+             value.append(object)
+             return value
+        else:
+            raise DebuggerCommandError("Invalid format")
+        
+    def extend(self, value:list, iterable):
+        """
+        Extend the tail of the value
+
+        Args:
+            value (list): Value extend to.
+            iterable (): iterable to extend to value
+
+        """
+        if isinstance(value, list):
+             value.extend(iterable)
+             return value
+        else:
+            raise DebuggerCommandError("Invalid format")

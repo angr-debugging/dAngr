@@ -15,7 +15,7 @@ from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import Constraint
-from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, ObjectStore, StreamType, SymBitVector, remove_ansi_escape_codes
+from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, ObjectStore, SolverType, StreamType, SymBitVector, remove_ansi_escape_codes
 from dAngr.utils import utils
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, get_function_by_addr, hook_simprocedures, load_module_from_file
@@ -350,7 +350,9 @@ class Debugger:
         if name in self._symbols:
             return self._symbols[name]
         else : raise DebuggerCommandError(f"Symbol {name} not found.")
-    
+    def to_symbol(self, name:str, lst:list):
+        self.add_symbol(name, claripy.Concat(*lst))
+        
     def find_symbol(self, name:str):
         if name in self._symbols:
             return self._symbols[name]
@@ -364,6 +366,25 @@ class Debugger:
             if 'endness' in kwargs:
                 kwargs.pop('endness')
             return self.current_state.solver.eval(sym, cast_to=dtype.to_type(), **kwargs)
+        else:
+            raise DebuggerCommandError(f"Invalid symbol type {type(sym)}.")
+        
+    def eval_symbol_n(self, sym:SymBitVector|Constraint, n:int,solver_type:SolverType, dtype:DataType,  **kwargs):
+        switch = {
+            SolverType.UpTo: self.current_state.solver.eval_upto,
+            SolverType.AtLeast: self.current_state.solver.eval_atleast,
+            SolverType.Exact: self.current_state.solver.eval_exact
+        }
+        f = switch.get(solver_type)
+        if not f:
+            raise DebuggerCommandError(f"Invalid solver type {solver_type}.")
+        if isinstance(sym, SymBitVector):
+            return f(sym, n, cast_to=dtype.to_type(), **kwargs)
+        elif isinstance(sym, utils.Constraint):
+            #drop endness from kwargs
+            if 'endness' in kwargs:
+                kwargs.pop('endness')
+            return f(sym, n, cast_to=dtype.to_type(), **kwargs)
         else:
             raise DebuggerCommandError(f"Invalid symbol type {type(sym)}.")
 
@@ -575,7 +596,7 @@ class Debugger:
         std:StdTracker = state.get_plugin(f'{mapped}_tracker')
         return std.get_prev_string()
 
-    def cast_to(self, value:AngrValueType, dtype:DataType, **kwargs)-> AngrValueType:
+    def cast_to(self, value:AngrValueType, dtype:DataType, **kwargs):
         return dtype.convert(value,  self.project.arch, **kwargs)    
 
     def load_hooks(self, filename):

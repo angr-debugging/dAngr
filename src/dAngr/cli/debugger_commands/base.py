@@ -112,8 +112,9 @@ def convert_args(args, signature):
                 # get the type of the elements in the tuple
                 pargs.append(ArgumentSpec(name, tp, undefined, arg["description"]))
         else:
-            if a.annotation == inspect._empty:
-                raise InvalidArgumentError(f"Function {signature} parameter {name} does not have a type annotation")
+            if tp is None:
+                tp = inspect._empty
+                # raise InvalidArgumentError(f"Function {signature} parameter {name} does not have a type annotation")
             if tp != a.annotation:
                 # check if the type is a union
                 if not (tp in get_args(a.annotation)):
@@ -186,7 +187,7 @@ def parse_args(args):
         arg = arg.strip()
         if arg:
             if ":" in arg:
-                name_type, description = arg.split(":")
+                name_type, description = arg.split(":", 1)
                 name, dtype = name_type.strip().split(' ')
                 dtype = dtype.strip('(').strip(')').strip()
                 #convert string dtype to typings type

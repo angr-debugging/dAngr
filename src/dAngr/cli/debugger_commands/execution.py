@@ -281,6 +281,14 @@ class ExecutionCommands(BaseCommand):
         self.debugger.set_blank_state(*args, **kwargs)
         self.send_info(f"Blank state set.")
 
+    def get_current_state(self):
+        """
+        Get the current state.
+
+        Short name: gcs
+        """
+        return self.debugger.current_state
+
     def keep_unconstrained(self, keep:bool=True):
         """
         Keep unconstrained states.
@@ -349,17 +357,20 @@ class ExecutionCommands(BaseCommand):
             raise DebuggerCommandError(f"Failed to run script: {e}", e)
 
 
-    def select_state(self, index:int, stash:str="active"):
+    def select_state(self, index:int|angr.SimState, stash:str="active"):
         """
         Select a path to execute.
 
         Args:
-            index (int): The index of the path to select as shown in list_active_paths.
+            index (int|angr.SimState): The index of the path to select as shown in list_active_paths.
             stash (str): The stash to select the path from. Default is active.
         
         Short name: sp
         """
-        self.debugger.set_current_state(index, stash)
+        if isinstance(index, angr.SimState):
+            self.debugger.current_state = index
+        else:
+            self.debugger.set_current_state(index, stash)
         try:
             addr = f": {hex(self.debugger.current_state.addr)}" # type: ignore
         except angr.errors.SimValueError as e:

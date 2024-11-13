@@ -184,7 +184,10 @@ class dAngrVisitor_(dAngrVisitor):
         if len(ctx.expression_part())==1:
             return Range(start)
         end = self.visit(ctx.expression_part(1))
-        return Range(start, end)
+        if len(ctx.expression_part())==2:
+            return Range(start, end)
+        step = self.visit(ctx.expression_part(2))
+        return Range(start, self.visit(ctx.expression_part(1)), step)
     def visitExpressionOperation(self, ctx: dAngrParser.ExpressionOperationContext):
         lhs = self.visit(ctx.object_())
         op = self.getOperator(ctx.operation().getText())
@@ -289,7 +292,10 @@ class dAngrVisitor_(dAngrVisitor):
     def visitSliceStartEndObject(self, ctx: dAngrParser.SliceStartEndObjectContext):
         o = self.visit(ctx.object_())
         start = self.visit(ctx.index(0))
-        end = self.visit(ctx.index(1))
+        if len(ctx.index())>1:
+            end = self.visit(ctx.index(1))
+        else:
+            end = -1
         return Slice(o, start, end)
     def visitSlideStartLengthObject(self, ctx: dAngrParser.SlideStartLengthObjectContext):
         o = self.visit(ctx.object_())
@@ -356,10 +362,6 @@ class dAngrVisitor_(dAngrVisitor):
                 args.append(self.visit(c))
             elif isinstance(c, dAngrParser.ReferenceContext):
                 args.append(self.visit(c))
-            elif isinstance(c, dAngrParser.Py_basic_contentContext):
-                a = self.visit(c)
-                args.extend(a[0])
-                kwargs.update(a[1])
             elif isinstance(c, dAngrParser.Py_contentContext):
                 py:PythonCommand = self.visit(c)
                 args.extend(py.cmds)
@@ -399,16 +401,20 @@ class dAngrVisitor_(dAngrVisitor):
         
     
     def visitBash_content(self, ctx: dAngrParser.Bash_contentContext):
-        name = ctx.identifier().getText()
         args = []
-        for c in ctx.children[1:]:
-            if isinstance(c, dAngrParser.ReferenceContext):
+        for c in ctx.children:
+            if isinstance(c, dAngrParser.RangeContext):
                 args.append(self.visit(c))
-            elif isinstance(c, dAngrParser.RangeContext):
+            elif isinstance(c, dAngrParser.AnythingContext):
                 args.append(self.visit(c))
+            elif isinstance(c, dAngrParser.ReferenceContext):
+                args.append(self.visit(c))
+            elif isinstance(c, dAngrParser.Bash_contentContext):
+                ba:BashCommand = self.visit(c)
+                args.extend(ba.cmds)
             else:
                 args.append(Literal(c.getText()))
-        return [name]+args
+        return BashCommand(*args)
     
     def visitSymbol(self, ctx: dAngrParser.SymbolContext):
         return Literal(ctx.getText())
@@ -417,7 +423,7 @@ class dAngrVisitor_(dAngrVisitor):
 
     def visitRange(self, ctx: dAngrParser.RangeContext):
         if ctx.bash_range():
-            return BashCommand(*self.visit(ctx.bash_range().bash_content()))
+            return self.visit(ctx.bash_range().bash_content())
         elif ctx.python_range():
             return self.visit(ctx.python_range().py_content())
         else:

@@ -153,6 +153,10 @@ class Endness(Enum):
         en = switch.get(self, big)
         return cast(Literal["little", "big"], en)
 
+class SolverType(Enum):
+    UpTo = auto()
+    AtLeast = auto()
+    Exact = auto()
 
 class DataType(Enum):
     int = auto()
@@ -302,7 +306,8 @@ class Variable:
 AngrValueType = SymBitVector | int | str | bytes | bool
 AngrObjectType = AngrValueType | Variable
 AngrType = AngrValueType | AngrObjectType
-AngrExtendedType = Variable | dict[str, AngrValueType] | list[AngrValueType]
+AngrCompoundType = dict[str, AngrValueType] | list[AngrValueType]
+AngrExtendedType = Variable | AngrCompoundType
 
 class Variable:
     def __init__(self, name:str, value:AngrExtendedType):
@@ -315,7 +320,7 @@ class Variable:
         return self._value
     @value.setter
     def value(self, value:AngrExtendedType):
-        assert isinstance(value, (SymBitVector, int, str, bytes))
+        assert isinstance(value, AngrValueType) or isinstance(value, list) or isinstance(value, dict), "Invalid Variable Type"
         self._value = value
     
     def __repr__(self):
@@ -331,7 +336,9 @@ def is_iterable(obj):
 def str_to_type(dtype:str):
     #convert string dtype to typings type
     tp = None
-    if dtype == "int":
+    if dtype == '':
+        tp = None
+    elif dtype == "int":
         tp = int
     elif dtype == "str":
         tp = str
@@ -356,6 +363,7 @@ def str_to_type(dtype:str):
     else:
         try:
             from dAngr.cli.grammar.expressions import ReferenceObject,VariableRef, SymbolicValue, Register, Property, IndexedProperty
+            import angr
             tp = eval(dtype)
         except:
             raise ValueError(f"Invalid data type {dtype}")
@@ -399,12 +407,12 @@ def check_signature_matches(func, o, args, kwargs):
                 for k,v in param_value.items():
                     if expected_type != inspect._empty and  not isinstance(v, expected_type):
                         raise InvalidArgumentError(f"Argument '{param_name}' should be of type {expected_type.__name__ if isinstance(expected_type, type) else expected_type}, got {type(param_value).__name__}")
-            elif not isinstance(param_value, expected_type):
+            elif expected_type != inspect._empty and not isinstance(param_value, expected_type):
                 raise InvalidArgumentError(f"Argument '{param_name}' should be of type {expected_type.__name__ if isinstance(expected_type, type) else expected_type}, got {type(param_value).__name__}")
     
 def parse_binary_string(binary_string_text):
     # Strip the `b'` prefix and trailing `'`
-    if binary_string_text.startswith("b'") and binary_string_text.endswith("'"):
+    if (binary_string_text.startswith("b'") and binary_string_text.endswith("'")) or (binary_string_text.startswith("b\"") and binary_string_text.endswith("\"")):
         binary_string_text = binary_string_text[2:-1]
     else:
         raise ValueError("Invalid binary string format")

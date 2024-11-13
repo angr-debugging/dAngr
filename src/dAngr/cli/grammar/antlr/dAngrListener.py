@@ -242,21 +242,21 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by dAngrParser#reference.
-    def enterReference(self, ctx:dAngrParser.ReferenceContext):
-        pass
-
-    # Exit a parse tree produced by dAngrParser#reference.
-    def exitReference(self, ctx:dAngrParser.ReferenceContext):
-        pass
-
-
     # Enter a parse tree produced by dAngrParser#bash_content.
     def enterBash_content(self, ctx:dAngrParser.Bash_contentContext):
         pass
 
     # Exit a parse tree produced by dAngrParser#bash_content.
     def exitBash_content(self, ctx:dAngrParser.Bash_contentContext):
+        pass
+
+
+    # Enter a parse tree produced by dAngrParser#reference.
+    def enterReference(self, ctx:dAngrParser.ReferenceContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#reference.
+    def exitReference(self, ctx:dAngrParser.ReferenceContext):
         pass
 
 
@@ -395,6 +395,15 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by dAngrParser#anything.
+    def enterAnything(self, ctx:dAngrParser.AnythingContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#anything.
+    def exitAnything(self, ctx:dAngrParser.AnythingContext):
+        pass
+
+
     # Enter a parse tree produced by dAngrParser#special_words.
     def enterSpecial_words(self, ctx:dAngrParser.Special_wordsContext):
         pass
@@ -413,15 +422,6 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by dAngrParser#bash_range.
-    def enterBash_range(self, ctx:dAngrParser.Bash_rangeContext):
-        pass
-
-    # Exit a parse tree produced by dAngrParser#bash_range.
-    def exitBash_range(self, ctx:dAngrParser.Bash_rangeContext):
-        pass
-
-
     # Enter a parse tree produced by dAngrParser#dangr_range.
     def enterDangr_range(self, ctx:dAngrParser.Dangr_rangeContext):
         pass
@@ -431,21 +431,21 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by dAngrParser#bash_range.
+    def enterBash_range(self, ctx:dAngrParser.Bash_rangeContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#bash_range.
+    def exitBash_range(self, ctx:dAngrParser.Bash_rangeContext):
+        pass
+
+
     # Enter a parse tree produced by dAngrParser#python_range.
     def enterPython_range(self, ctx:dAngrParser.Python_rangeContext):
         pass
 
     # Exit a parse tree produced by dAngrParser#python_range.
     def exitPython_range(self, ctx:dAngrParser.Python_rangeContext):
-        pass
-
-
-    # Enter a parse tree produced by dAngrParser#anything.
-    def enterAnything(self, ctx:dAngrParser.AnythingContext):
-        pass
-
-    # Exit a parse tree produced by dAngrParser#anything.
-    def exitAnything(self, ctx:dAngrParser.AnythingContext):
         pass
 
 

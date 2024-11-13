@@ -45,6 +45,16 @@ class FilterCommands(BaseCommand):
         fltr = lst.pop(index)
         self.send_info(f"{fltr} removed from {'exclusions' if exclude else 'breakpoints'}.")
 
+    def clear_filters(self):
+        """
+        Clear all filters from the list of breakpoints and exclusions.
+  
+        Short name: cl
+        """
+        self.debugger.exclusions.clear()
+        self.debugger.breakpoints.clear()
+        self.send_info(f"All filters cleared.")
+
     def make_filter(self, function:str):
         """
         Add a filtering method. A method which returns a boolean value to indicate that the filter matches or not. When the method returns True, the filter matches and the breakpoint is triggered.

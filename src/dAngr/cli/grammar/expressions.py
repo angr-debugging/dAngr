@@ -94,24 +94,30 @@ class Literal(Primitive):
 
 
 class Range(Primitive):
-    def __init__(self, start:Expression, end:Expression|None=None):
+    def __init__(self, start:Expression, end:Expression|None=None, step:Expression|None=None):
         self.start = start
         self.end = end
+        self.step = step
     def __str__(self):
         if not self.end:
             return f"range({self.start})"
-        else:
+        elif not self.step:
             return f"range({self.start},{self.end})"
+        else:
+            return f"range({self.start},{self.end},{self.step})"
 
     def __eq__(self, other):
-        return isinstance(other, Range) and self.start == other.start and self.end == other.end
+        return isinstance(other, Range) and self.start == other.start and self.end == other.end and self.step == other.step
     
     def get_value(self, context):
         start = self.start(context) if isinstance(self.start, Expression) else self.start
         if not self.end:
             return range(start)
         end = self.end(context) if isinstance(self.end, Expression) else self.end
-        return range(start, end)
+        if not self.step:
+            return range(start, end)
+        step = self.step(context) if isinstance(self.step, Expression) else self.step
+        return range(start, end, step)
     
     def set_value(self, context, value):
         raise ValueError("Cannot set value to a range object")
@@ -362,7 +368,16 @@ class Slice(Property):
     def get_value(self, context):
         start = self.start(context) if isinstance(self.start, Expression) else self.start
         end = self.end(context) if isinstance(self.end, Expression) else self.end
-        return self.obj.get_value(context)[start:end]
+        if start == -1:
+            if end == -1:
+                return self.obj.get_value(context)
+            else:
+                return self.obj.get_value(context)[:end]
+        else:
+            if end == -1:
+                return self.obj.get_value(context)[start:]
+            else:
+                return self.obj.get_value(context)[start:end]
     
     def set_value(self, context, value: list):
         o = self.obj.get_value(context)
@@ -385,7 +400,7 @@ class Inclusion(Expression):
     def __call__(self, context: ExecutionContext):
         o = self.obj.get_value(context)
         i = self.item.get_value(context)
-        return i in o
+        return o in i
     
     def __str__(self):
         return f"{self.item} in {self.obj}"
@@ -534,10 +549,24 @@ class PythonCommand(Command):
         results = [to_val(a,c) for a in self.cmds] + [f"{k}={to_val(v,c)}" for k,v in self.kwargs.items()]
         stdout_buffer = io.StringIO()
         stderr_buffer = io.StringIO()
+        
         with redirect_stdout(stdout_buffer), redirect_stderr(stderr_buffer):
             try:
                 cmd = "".join([str(r) for r in results])
-                context.return_value = eval(cmd)
+                vars = context.python_context.get("global",{})
+                glo = context.python_context.get("local", {})
+                # split the last line, execute the first lines, and eval the last line
+                if "\n" in cmd:
+                    lines,line = cmd.rsplit("\n",1)
+                else:
+                    lines, line = "", cmd
+                
+                exec(lines,glo,vars)
+                try:
+                    context.return_value = eval(line,glo,vars)
+                except SyntaxError:
+                    exec(line,glo,vars)
+                context.python_context = {"global":glo, "local":vars}
             except Exception as e:
                 raise CommandError(f"Error executing python command: {cmd} ({e})")
         if stdout := stdout_buffer.getvalue():
@@ -558,10 +587,8 @@ class BashCommand(Command):
 
     def __call__(self, context):
         c = context.clone()
-        results = [to_val(a,c) for a in self.cmds]
-
-        results = [a(c) for a in self.cmds]
-        context.return_value = subprocess.run(" ".join(results), capture_output=True, text=True).stdout.strip()
+        args = "".join([str(a(c)) for a in self.cmds]).split(" ")
+        context.return_value = subprocess.run(args, capture_output=True, text=True).stdout.strip()
         return context.return_value
     
     def __str__(self):

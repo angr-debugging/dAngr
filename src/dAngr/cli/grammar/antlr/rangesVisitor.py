@@ -19,13 +19,13 @@ class rangesVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by rangesParser#bash_range.
-    def visitBash_range(self, ctx:rangesParser.Bash_rangeContext):
+    # Visit a parse tree produced by rangesParser#dangr_range.
+    def visitDangr_range(self, ctx:rangesParser.Dangr_rangeContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by rangesParser#dangr_range.
-    def visitDangr_range(self, ctx:rangesParser.Dangr_rangeContext):
+    # Visit a parse tree produced by rangesParser#bash_range.
+    def visitBash_range(self, ctx:rangesParser.Bash_rangeContext):
         return self.visitChildren(ctx)
 
 

@@ -16,6 +16,7 @@ class ExecutionContext:
         self._definitions:Dict[str,Definition] = {}
         self._parent:ExecutionContext|None= parent # type: ignore
         self.enums = {"options":angr.options}
+        self.python_context = {}
         self.return_value = None
         
     @property

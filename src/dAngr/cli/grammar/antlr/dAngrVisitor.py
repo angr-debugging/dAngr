@@ -139,13 +139,13 @@ class dAngrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by dAngrParser#reference.
-    def visitReference(self, ctx:dAngrParser.ReferenceContext):
+    # Visit a parse tree produced by dAngrParser#bash_content.
+    def visitBash_content(self, ctx:dAngrParser.Bash_contentContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by dAngrParser#bash_content.
-    def visitBash_content(self, ctx:dAngrParser.Bash_contentContext):
+    # Visit a parse tree produced by dAngrParser#reference.
+    def visitReference(self, ctx:dAngrParser.ReferenceContext):
         return self.visitChildren(ctx)
 
 
@@ -224,6 +224,11 @@ class dAngrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by dAngrParser#anything.
+    def visitAnything(self, ctx:dAngrParser.AnythingContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by dAngrParser#special_words.
     def visitSpecial_words(self, ctx:dAngrParser.Special_wordsContext):
         return self.visitChildren(ctx)
@@ -234,23 +239,18 @@ class dAngrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by dAngrParser#bash_range.
-    def visitBash_range(self, ctx:dAngrParser.Bash_rangeContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by dAngrParser#dangr_range.
     def visitDangr_range(self, ctx:dAngrParser.Dangr_rangeContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by dAngrParser#python_range.
-    def visitPython_range(self, ctx:dAngrParser.Python_rangeContext):
+    # Visit a parse tree produced by dAngrParser#bash_range.
+    def visitBash_range(self, ctx:dAngrParser.Bash_rangeContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by dAngrParser#anything.
-    def visitAnything(self, ctx:dAngrParser.AnythingContext):
+    # Visit a parse tree produced by dAngrParser#python_range.
+    def visitPython_range(self, ctx:dAngrParser.Python_rangeContext):
         return self.visitChildren(ctx)
 
 

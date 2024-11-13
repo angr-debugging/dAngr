@@ -10,23 +10,24 @@ else:
 
 def serializedATN():
     return [
-        4,1,60,57,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,60,59,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,1,0,1,0,1,1,1,1,1,1,3,1,24,8,1,1,2,1,2,1,2,1,2,
         1,2,1,3,1,3,1,3,1,3,1,3,1,4,1,4,1,4,1,4,1,4,1,5,1,5,1,6,1,6,1,7,
-        1,7,1,7,1,7,1,7,1,7,1,7,1,7,3,7,53,8,7,1,8,1,8,1,8,0,0,9,0,2,4,6,
-        8,10,12,14,16,0,1,2,0,20,58,60,60,53,0,18,1,0,0,0,2,23,1,0,0,0,4,
-        25,1,0,0,0,6,30,1,0,0,0,8,35,1,0,0,0,10,40,1,0,0,0,12,42,1,0,0,0,
-        14,52,1,0,0,0,16,54,1,0,0,0,18,19,3,2,1,0,19,1,1,0,0,0,20,24,3,4,
-        2,0,21,24,3,6,3,0,22,24,3,8,4,0,23,20,1,0,0,0,23,21,1,0,0,0,23,22,
-        1,0,0,0,24,3,1,0,0,0,25,26,5,22,0,0,26,27,5,18,0,0,27,28,3,10,5,
-        0,28,29,5,19,0,0,29,5,1,0,0,0,30,31,5,21,0,0,31,32,5,18,0,0,32,33,
-        3,0,0,0,33,34,5,19,0,0,34,7,1,0,0,0,35,36,5,20,0,0,36,37,5,18,0,
-        0,37,38,3,12,6,0,38,39,5,19,0,0,39,9,1,0,0,0,40,41,3,14,7,0,41,11,
-        1,0,0,0,42,43,3,14,7,0,43,13,1,0,0,0,44,53,5,4,0,0,45,53,5,2,0,0,
-        46,53,3,16,8,0,47,53,5,11,0,0,48,49,5,18,0,0,49,50,3,14,7,0,50,51,
-        5,19,0,0,51,53,1,0,0,0,52,44,1,0,0,0,52,45,1,0,0,0,52,46,1,0,0,0,
-        52,47,1,0,0,0,52,48,1,0,0,0,53,15,1,0,0,0,54,55,7,0,0,0,55,17,1,
-        0,0,0,2,23,52
+        1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,3,7,55,8,7,1,8,1,8,1,8,0,0,9,
+        0,2,4,6,8,10,12,14,16,0,1,2,0,20,58,60,60,57,0,18,1,0,0,0,2,23,1,
+        0,0,0,4,25,1,0,0,0,6,30,1,0,0,0,8,35,1,0,0,0,10,40,1,0,0,0,12,42,
+        1,0,0,0,14,54,1,0,0,0,16,56,1,0,0,0,18,19,3,2,1,0,19,1,1,0,0,0,20,
+        24,3,4,2,0,21,24,3,6,3,0,22,24,3,8,4,0,23,20,1,0,0,0,23,21,1,0,0,
+        0,23,22,1,0,0,0,24,3,1,0,0,0,25,26,5,21,0,0,26,27,5,18,0,0,27,28,
+        3,0,0,0,28,29,5,19,0,0,29,5,1,0,0,0,30,31,5,22,0,0,31,32,5,18,0,
+        0,32,33,3,10,5,0,33,34,5,19,0,0,34,7,1,0,0,0,35,36,5,20,0,0,36,37,
+        5,18,0,0,37,38,3,12,6,0,38,39,5,19,0,0,39,9,1,0,0,0,40,41,3,14,7,
+        0,41,11,1,0,0,0,42,43,3,14,7,0,43,13,1,0,0,0,44,55,5,4,0,0,45,55,
+        5,2,0,0,46,55,3,16,8,0,47,55,5,11,0,0,48,55,5,12,0,0,49,55,5,60,
+        0,0,50,51,5,18,0,0,51,52,3,14,7,0,52,53,5,19,0,0,53,55,1,0,0,0,54,
+        44,1,0,0,0,54,45,1,0,0,0,54,46,1,0,0,0,54,47,1,0,0,0,54,48,1,0,0,
+        0,54,49,1,0,0,0,54,50,1,0,0,0,55,15,1,0,0,0,56,57,7,0,0,0,57,17,
+        1,0,0,0,2,23,54
     ]
 
 class rangesParser ( Parser ):
@@ -64,15 +65,15 @@ class rangesParser ( Parser ):
 
     RULE_expression = 0
     RULE_range = 1
-    RULE_bash_range = 2
-    RULE_dangr_range = 3
+    RULE_dangr_range = 2
+    RULE_bash_range = 3
     RULE_python_range = 4
     RULE_bash_content = 5
     RULE_py_content = 6
     RULE_anything = 7
     RULE_symbol = 8
 
-    ruleNames =  [ "expression", "range", "bash_range", "dangr_range", "python_range", 
+    ruleNames =  [ "expression", "range", "dangr_range", "bash_range", "python_range", 
                    "bash_content", "py_content", "anything", "symbol" ]
 
     EOF = Token.EOF
@@ -201,12 +202,12 @@ class rangesParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def bash_range(self):
-            return self.getTypedRuleContext(rangesParser.Bash_rangeContext,0)
-
-
         def dangr_range(self):
             return self.getTypedRuleContext(rangesParser.Dangr_rangeContext,0)
+
+
+        def bash_range(self):
+            return self.getTypedRuleContext(rangesParser.Bash_rangeContext,0)
 
 
         def python_range(self):
@@ -241,15 +242,15 @@ class rangesParser ( Parser ):
             self.state = 23
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [22]:
+            if token in [21]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 20
-                self.bash_range()
+                self.dangr_range()
                 pass
-            elif token in [21]:
+            elif token in [22]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 21
-                self.dangr_range()
+                self.bash_range()
                 pass
             elif token in [20]:
                 self.enterOuterAlt(localctx, 3)
@@ -259,69 +260,6 @@ class rangesParser ( Parser ):
             else:
                 raise NoViableAltException(self)
 
-        except RecognitionException as re:
-            localctx.exception = re
-            self._errHandler.reportError(self, re)
-            self._errHandler.recover(self, re)
-        finally:
-            self.exitRule()
-        return localctx
-
-
-    class Bash_rangeContext(ParserRuleContext):
-        __slots__ = 'parser'
-
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
-            super().__init__(parent, invokingState)
-            self.parser = parser
-
-        def DOLLAR(self):
-            return self.getToken(rangesParser.DOLLAR, 0)
-
-        def LPAREN(self):
-            return self.getToken(rangesParser.LPAREN, 0)
-
-        def bash_content(self):
-            return self.getTypedRuleContext(rangesParser.Bash_contentContext,0)
-
-
-        def RPAREN(self):
-            return self.getToken(rangesParser.RPAREN, 0)
-
-        def getRuleIndex(self):
-            return rangesParser.RULE_bash_range
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBash_range" ):
-                listener.enterBash_range(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBash_range" ):
-                listener.exitBash_range(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBash_range" ):
-                return visitor.visitBash_range(self)
-            else:
-                return visitor.visitChildren(self)
-
-
-
-
-    def bash_range(self):
-
-        localctx = rangesParser.Bash_rangeContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 4, self.RULE_bash_range)
-        try:
-            self.enterOuterAlt(localctx, 1)
-            self.state = 25
-            self.match(rangesParser.DOLLAR)
-            self.state = 26
-            self.match(rangesParser.LPAREN)
-            self.state = 27
-            self.bash_content()
-            self.state = 28
-            self.match(rangesParser.RPAREN)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -374,15 +312,78 @@ class rangesParser ( Parser ):
     def dangr_range(self):
 
         localctx = rangesParser.Dangr_rangeContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 6, self.RULE_dangr_range)
+        self.enterRule(localctx, 4, self.RULE_dangr_range)
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 25
+            self.match(rangesParser.AMP)
+            self.state = 26
+            self.match(rangesParser.LPAREN)
+            self.state = 27
+            self.expression()
+            self.state = 28
+            self.match(rangesParser.RPAREN)
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+
+    class Bash_rangeContext(ParserRuleContext):
+        __slots__ = 'parser'
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def DOLLAR(self):
+            return self.getToken(rangesParser.DOLLAR, 0)
+
+        def LPAREN(self):
+            return self.getToken(rangesParser.LPAREN, 0)
+
+        def bash_content(self):
+            return self.getTypedRuleContext(rangesParser.Bash_contentContext,0)
+
+
+        def RPAREN(self):
+            return self.getToken(rangesParser.RPAREN, 0)
+
+        def getRuleIndex(self):
+            return rangesParser.RULE_bash_range
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBash_range" ):
+                listener.enterBash_range(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBash_range" ):
+                listener.exitBash_range(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBash_range" ):
+                return visitor.visitBash_range(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+
+
+    def bash_range(self):
+
+        localctx = rangesParser.Bash_rangeContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 6, self.RULE_bash_range)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 30
-            self.match(rangesParser.AMP)
+            self.match(rangesParser.DOLLAR)
             self.state = 31
             self.match(rangesParser.LPAREN)
             self.state = 32
-            self.expression()
+            self.bash_content()
             self.state = 33
             self.match(rangesParser.RPAREN)
         except RecognitionException as re:
@@ -573,6 +574,12 @@ class rangesParser ( Parser ):
         def STRING(self):
             return self.getToken(rangesParser.STRING, 0)
 
+        def BINARY_STRING(self):
+            return self.getToken(rangesParser.BINARY_STRING, 0)
+
+        def WS(self):
+            return self.getToken(rangesParser.WS, 0)
+
         def LPAREN(self):
             return self.getToken(rangesParser.LPAREN, 0)
 
@@ -609,35 +616,48 @@ class rangesParser ( Parser ):
         self.enterRule(localctx, 14, self.RULE_anything)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 52
+            self.state = 54
             self._errHandler.sync(self)
-            token = self._input.LA(1)
-            if token in [4]:
+            la_ = self._interp.adaptivePredict(self._input,1,self._ctx)
+            if la_ == 1:
                 self.state = 44
                 self.match(rangesParser.LETTERS)
                 pass
-            elif token in [2]:
+
+            elif la_ == 2:
                 self.state = 45
                 self.match(rangesParser.NUMBERS)
                 pass
-            elif token in [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60]:
+
+            elif la_ == 3:
                 self.state = 46
                 self.symbol()
                 pass
-            elif token in [11]:
+
+            elif la_ == 4:
                 self.state = 47
                 self.match(rangesParser.STRING)
                 pass
-            elif token in [18]:
+
+            elif la_ == 5:
                 self.state = 48
-                self.match(rangesParser.LPAREN)
+                self.match(rangesParser.BINARY_STRING)
+                pass
+
+            elif la_ == 6:
                 self.state = 49
-                self.anything()
+                self.match(rangesParser.WS)
+                pass
+
+            elif la_ == 7:
                 self.state = 50
+                self.match(rangesParser.LPAREN)
+                self.state = 51
+                self.anything()
+                self.state = 52
                 self.match(rangesParser.RPAREN)
                 pass
-            else:
-                raise NoViableAltException(self)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -802,7 +822,7 @@ class rangesParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 54
+            self.state = 56
             _la = self._input.LA(1)
             if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 1729382256909221888) != 0)):
                 self._errHandler.recoverInline(self)

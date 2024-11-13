@@ -46,7 +46,7 @@ expression :
 expression_part :
     CIF WS? condition WS? CTHEN WS? expression_part WS? CELSE WS? expression_part # ExpressionIf
     | LPAREN WS? expression WS? RPAREN # ExpressionParenthesis
-    | RANGE LPAREN WS? expression_part WS? (COMMA WS?expression_part WS?)?  RPAREN # ExpressionRange
+    | RANGE LPAREN WS? expression_part WS? (COMMA WS?expression_part WS?(COMMA WS?expression_part WS?)?)?  RPAREN # ExpressionRange
     | expression_part WS IN WS expression_part # ExpressionIn
     | range # ExpressionAlt // python, bash, dangr
     | reference # ExpressionReference
@@ -113,6 +113,9 @@ operation : ADD |
 
 py_basic_content: identifier WS? LPAREN WS? (py_content)* RPAREN  ;
 py_content: (reference |range | anything | LPAREN py_content RPAREN)+ ;
+bash_content: (reference | range | anything | LPAREN bash_content RPAREN)*;
+
+
 
 reference: 
         (VARS_DB|REG_DB|SYM_DB) DOT identifier BANG?| // ReferenceObject
@@ -120,7 +123,6 @@ reference:
         MEM_DB BRA WS? index (WS? ARROW WS? index)? KET BANG?// MemoryObject with size and length
         ;
 
-bash_content: identifier (range|anything |reference)*;
 
 
 index : DASH? expression;
@@ -133,13 +135,15 @@ object : identifier BANG?  # IDObject
     | reference # ReferenceObject
     | object DOT identifier # PropertyObject
     | object BRA WS? index WS? KET # IndexedPropertyObject
-    | object BRA WS? index WS? COLON WS? index WS? KET # SliceStartEndObject // slice from start to end
+    | object BRA WS? index WS? COLON WS? index? WS? KET # SliceStartEndObject // slice from start to end
     | object BRA WS? index WS? ARROW WS? index WS? KET #SlideStartLengthObject // slice from start to start + number
     | BRA WS? object? (WS? COMMA WS? object)* WS? KET #ListObject // list
     | BRACE WS? (STRING WS? COLON WS? object (WS? COMMA WS? STRING WS? COLON WS? object))* WS? KETCE # DictionaryObject // dict
     | STRING #StringObject
     | BINARY_STRING #BinaryStringObject
     ; 
+
+anything: (LETTERS | NUMBERS | symbol | STRING | BINARY_STRING | WS | LPAREN anything RPAREN | special_words);
 
 special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN | BREAK | CONTINUE | RANGE;
 

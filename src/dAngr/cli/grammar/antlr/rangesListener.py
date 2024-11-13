@@ -26,21 +26,21 @@ class rangesListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by rangesParser#bash_range.
-    def enterBash_range(self, ctx:rangesParser.Bash_rangeContext):
-        pass
-
-    # Exit a parse tree produced by rangesParser#bash_range.
-    def exitBash_range(self, ctx:rangesParser.Bash_rangeContext):
-        pass
-
-
     # Enter a parse tree produced by rangesParser#dangr_range.
     def enterDangr_range(self, ctx:rangesParser.Dangr_rangeContext):
         pass
 
     # Exit a parse tree produced by rangesParser#dangr_range.
     def exitDangr_range(self, ctx:rangesParser.Dangr_rangeContext):
+        pass
+
+
+    # Enter a parse tree produced by rangesParser#bash_range.
+    def enterBash_range(self, ctx:rangesParser.Bash_rangeContext):
+        pass
+
+    # Exit a parse tree produced by rangesParser#bash_range.
+    def exitBash_range(self, ctx:rangesParser.Bash_rangeContext):
         pass
 
 

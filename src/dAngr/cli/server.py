@@ -21,7 +21,7 @@ from dAngr.cli.script_processor import ScriptProcessor
 from dAngr.utils.loggers import get_logger
 logger = get_logger(__name__)
 
-DEBUG_COMMANDS = False
+DEBUG_COMMANDS = True
 class Server:
     def __init__(self, debug_file_path = None, script_path=None):
         logger.info("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
