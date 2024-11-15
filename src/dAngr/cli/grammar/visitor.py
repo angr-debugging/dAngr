@@ -212,7 +212,7 @@ class dAngrVisitor_(dAngrVisitor):
         elif ctx.AMP():
             return self.visit(ctx.expression())
         elif ctx.DOLLAR():
-            return BashCommand(*self.visit(ctx.bash_content()))
+            return self.visit(ctx.bash_content())
         raise ParseError(f"Invalid command {ctx.getText()}")
     
     def visitControl_flow(self, ctx: dAngrParser.Control_flowContext):

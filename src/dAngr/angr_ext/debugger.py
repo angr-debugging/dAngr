@@ -37,7 +37,7 @@ class Debugger:
         self._project:angr.project.Project|None = None
         self._simgr:angr.sim_manager.SimulationManager|None = None
         self._current_state:angr.SimState|None = None
-        self._default_state_options = set([angr.options.ZERO_FILL_UNCONSTRAINED_MEMORY,angr.options.ZERO_FILL_UNCONSTRAINED_REGISTERS])
+        self._default_state_options = set()
 
         self._pause:bool = False
 
@@ -208,8 +208,9 @@ class Debugger:
             kwargs['args'] = args
         if kwargs.get('add_options') is None:
             kwargs['add_options'] = self._default_state_options
-        self._set_current_state(self.project.factory.blank_state(
-                    kwargs=kwargs))
+        log.debug(f"Creating blank state with kwargs: {kwargs}")
+        state = self.project.factory.blank_state(**kwargs)
+        self._set_current_state(state)
         
     @property
     def keep_unconstrained(self):
@@ -604,8 +605,8 @@ class Debugger:
         hooks = hook_simprocedures(self.project,mod)
         return hooks
     
-    def add_hook(self, address:int, function:Callable, skip_length:int = 0):
-        self.project.hook(address, function, length=skip_length, replace=True)
+    def add_hook(self, address:int, function:Callable, skip_length:int = 0, replace = True):
+        self.project.hook(address, function, length=skip_length, replace=replace)
 
     def add_function_hook(self, target:int|str, function:SimProcedure):
         self.project.hook_symbol(target, function, replace=True)
@@ -685,6 +686,9 @@ class Debugger:
             endness = state.arch.memory_endness
             byte = state.memory.load(address, 1, endness=endness)
             if state.solver.is_true(byte == 0):
+                break
+            if not byte.concrete:
+                log.error(f"Failed to get concrete value for byte at address {hex(address)}")
                 break
             string_array.append(byte.concrete_value)
             address += 1

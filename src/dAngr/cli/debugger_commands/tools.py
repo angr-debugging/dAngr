@@ -134,12 +134,12 @@ class ToolCommands(BaseCommand):
         
         """
         return self.cast_to(value, DataType.bool)
-    def len(self, value:list|array):
+    def len(self, value:str|list|array):
         """
         Get the length of the value object
 
         Args:
-            value (list|array): Value object to get the length of.
+            value (str|list|array): Value object to get the length of.
 
         """
         return len(value) # type: ignore

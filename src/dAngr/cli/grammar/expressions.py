@@ -368,13 +368,13 @@ class Slice(Property):
     def get_value(self, context):
         start = self.start(context) if isinstance(self.start, Expression) else self.start
         end = self.end(context) if isinstance(self.end, Expression) else self.end
-        if start == -1:
-            if end == -1:
+        if isinstance(start,int) and start == -1:
+            if isinstance(end,int) and end == -1:
                 return self.obj.get_value(context)
             else:
                 return self.obj.get_value(context)[:end]
         else:
-            if end == -1:
+            if isinstance(end,int) and end == -1:
                 return self.obj.get_value(context)[start:]
             else:
                 return self.obj.get_value(context)[start:end]

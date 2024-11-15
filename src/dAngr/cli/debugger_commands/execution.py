@@ -159,7 +159,7 @@ class ExecutionCommands(BaseCommand):
         self.debugger.add_function_hook(target, proc)
         self.send_info(f"Hook added at {target}.")
 
-    def hook_region(self,  definition:str, location:int|str, skip_length:int = 0):
+    def hook_region(self,  definition:str, location:int|str, skip_length:int = 0, replace:bool = True):
         """
         Add a hook at a specific location/call site, and skip 'skip_length' instructions.
 
@@ -167,6 +167,7 @@ class ExecutionCommands(BaseCommand):
             definition (str): The definition of the hook.
             location (int|str): The location to add the hook (int for an address, string for a function name).
             skip_length (int): The length of the instruction to skip. Default is 0.
+            replace (bool): replaces the region. Default = True
 
         Short name: hr
         """
@@ -188,7 +189,7 @@ class ExecutionCommands(BaseCommand):
                 finally:
                     self.debugger._set_current_state(prev)
         
-        self.debugger.add_hook(address, run_sync , skip_length)
+        self.debugger.add_hook(address, run_sync , skip_length, replace)
         self.send_info(f"Hook added at {location}.")
 
     def add_to_state(self, name:str, value:AngrType):
