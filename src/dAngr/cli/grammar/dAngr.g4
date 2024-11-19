@@ -39,7 +39,7 @@ statement:  control_flow |
             ext_command NEWLINE ;
 
 expression :
-    (identifier DOT)? identifier (WS (identifier ASSIGN)?expression_part)*
+    (identifier DOT)? (DIV)? identifier (WS (identifier ASSIGN)?expression_part)*
     | expression_part
     ;
 

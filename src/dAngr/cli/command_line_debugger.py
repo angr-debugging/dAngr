@@ -9,7 +9,6 @@ import angr
 import archinfo
 import claripy
 from prompt_toolkit.styles import Style
-from prompt_toolkit.styles.named_colors import NAMED_COLORS
 
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.cli.debugger_commands import *
@@ -28,7 +27,7 @@ from dAngr.utils.utils import DataType, get_union_members
 from .cli_connection import CliConnection
 from .debugger_commands import *
 
-from dAngr.utils.loggers import dAngr_log_config, get_logger
+from dAngr.utils.loggers import get_logger
 log = get_logger(__name__)
 
 
@@ -129,7 +128,7 @@ class CommandLineDebugger(Debugger,StepHandler):
             r = script(self.context)
             if r is not None:
                 self.conn.send_result(r, True)
-                cast(CliConnection,self.conn).clear_output()
+            cast(CliConnection,self.conn).clear_output()
             return True
         except CommandError as e:
             if raise_error:

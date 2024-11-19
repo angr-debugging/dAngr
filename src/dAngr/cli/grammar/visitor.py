@@ -1,17 +1,14 @@
 
-import re
-from typing import List, Sequence
 
 from antlr4 import TerminalNode
-import claripy
-from dAngr.exceptions import ParseError, ValueError
+from dAngr.exceptions import ParseError
 from dAngr.cli.grammar.antlr.dAngrParser import dAngrParser
 from dAngr.cli.grammar.antlr.dAngrVisitor import dAngrVisitor
 from dAngr.cli.grammar.statements import Assignment,  Statement
 from dAngr.cli.grammar.control_flow import IfThenElse, WhileLoop, ForLoop
 from dAngr.cli.grammar.script import Script, Body
 from dAngr.cli.grammar.definitions import ArgumentSpec, CustomFunctionDefinition
-from dAngr.cli.grammar.expressions import BREAK, CONTINUE, Constraint, DangrCommand, Dictionary, Expression, IfConstraint, Inclusion, Listing, Memory, Negate, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
+from dAngr.cli.grammar.expressions import BREAK, CONTINUE, DangrCommand, Dictionary, IfConstraint, Inclusion, Listing, Memory, Negate, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
 from dAngr.utils.utils import parse_binary_string
 
 
@@ -137,6 +134,8 @@ class dAngrVisitor_(dAngrVisitor):
                 package = None
                 cmd = ctx.identifier(0).getText()
                 start = 1
+            if ctx.DIV():
+                cmd = "/" + cmd
             args = []
             kwargs  = {}
             if ctx.expression_part():

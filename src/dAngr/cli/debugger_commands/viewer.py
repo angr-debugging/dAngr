@@ -17,7 +17,11 @@ class ViewerCommands(BaseCommand):
 
         Short name: less
         """
-        Less().show_less(cast(CliConnection,self.debugger.conn).output)
+        out = cast(CliConnection,self.debugger.conn).output
+        if not out and len(cast(CliConnection,self.debugger.conn).history) > 1:
+            out = cast(CliConnection,self.debugger.conn).history[-2]
+
+        Less().show_less(out)
 
     def print(self, text:object|ReferenceObject):
         """

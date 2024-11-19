@@ -1,6 +1,5 @@
 import os
 
-from dAngr.cli.models import State
 from .base import BaseCommand
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from prompt_toolkit.shortcuts import ProgressBar
@@ -88,7 +87,10 @@ class InformationCommands(BaseCommand):
         Short name: iap
         """
         paths = self.debugger.list_paths(stash)
-        return paths
+        result_list = ""
+        for i in range(len(paths)):
+            result_list +=  f"{i}: " + str(paths[i]) + "\n"
+        return result_list
 
     def list_binary_strings(self, min_length:int = 4):
         """

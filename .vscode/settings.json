@@ -52,5 +52,8 @@
     "antlr4.debug": {
         "visualParseTreeHorizontal": true,
         "visualParseTreeClustered": false
+    },
+    "files.associations": {
+        "*.jinja": "cpp"
     }
 }
