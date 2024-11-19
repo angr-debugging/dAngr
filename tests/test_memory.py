@@ -31,7 +31,7 @@ class TestMemoryCommands:
     def dbg(self,conn):
         dbg = CommandLineDebugger(conn)
         assert dbg.handle("load example")
-        assert dbg.handle("unconstrained_fill True")
+        assert dbg.handle("unconstrained_fill False")
         assert dbg.handle("add_breakpoint 0x400566")
         assert dbg.handle("set_function_prototype 'int processMessage(char*, int, char**)'")
         assert dbg.handle("set_function_call 'processMessage(\"abc\",2,b\"0000000000\")'")

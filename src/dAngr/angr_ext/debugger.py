@@ -529,10 +529,8 @@ class Debugger:
             return None
         state = self.current_state
         val = loc.get_value(state, stack_base=state.regs.sp - cc.STACKARG_SP_DIFF)
-        val = cast(claripy.ast.Base , state.solver.simplify(val))
-        if val.concrete:
-            val = val.concrete_value
-        return val
+        value = state.solver.eval(val, cast_to=int)
+        return value
  
     def get_bb_end_address(self, state):
         bb = state.block()
