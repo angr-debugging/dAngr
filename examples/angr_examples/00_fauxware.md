@@ -8,7 +8,7 @@ Binary, source, and script are found [here](https://github.com/angr/angr-example
 ## Solution with dAngr:
 
 ```
-load 'repo/examples/fauxware/fauxware'
+load '00_fauxware'
 
 add_symbol argv1 0xE
 

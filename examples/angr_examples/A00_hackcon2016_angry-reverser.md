@@ -10,7 +10,7 @@ and the script
 ## Solution with dAngr:
 
 ```
-load 'repo/examples/hackcon2016_angry-reverser/yolomolo'
+load 'A00_hackcon2016_angry_reverser'
 
 add_symbol flag 20
 

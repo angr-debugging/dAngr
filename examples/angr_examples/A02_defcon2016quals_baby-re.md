@@ -11,7 +11,7 @@ and the [script](https://github.com/angr/angr-examples/tree/master/examples/defc
 
 ```
 
-load 'repo/examples/defcon2016quals_baby-re/baby-re'
+load 'A02_defcon2016quals_baby-re'
 
 
 for i in range(13):
