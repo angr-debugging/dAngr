@@ -43,7 +43,7 @@ class CliConnection(Connection):
         data = "".join([c if c.isprintable() or c in ['\r','\n', '\t'] else f"\\x{ord(c):02x}" for c in str(data)])
         return html.escape(data ) if esscape_html else data
     
-    def send_result(self, data, newline, style=None):
+    def send_result(self, data, newline:bool=True, style=None):
         if data is None:
             return
         if newline:
