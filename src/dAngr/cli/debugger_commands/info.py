@@ -87,9 +87,9 @@ class InformationCommands(BaseCommand):
         Short name: iap
         """
         paths = self.debugger.list_paths(stash) 
-        result_list = ""
+        result_list = []
         for i in range(len(paths)):
-            result_list +=  f"{i}: " + str(paths[i]) + "\n"
+            result_list.append(f"{i}: " + str(paths[i]))
         return result_list
 
     def list_binary_strings(self, min_length:int = 4):

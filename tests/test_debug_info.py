@@ -54,11 +54,11 @@ class TestDebugInfoCommands:
     
     def test_list_active_paths(self, dbg, conn):
         assert dbg.handle("list_states 'active'")
-        assert "[<SimState @ 0x400566>]" == str(conn.send_result.call_args[0][0])    
+        assert "['0: <SimState @ 0x400566>']" == str(conn.send_result.call_args[0][0])    
     
     def test_list_active_paths2(self, dbg, conn):
         assert dbg.handle("list_states")
-        assert "[<SimState @ 0x400566>]" == str(conn.send_result.call_args[0][0])    
+        assert "['0: <SimState @ 0x400566>']" == str(conn.send_result.call_args[0][0])    
     
     def test_list_deadended_paths(self, dbg, conn):
         assert dbg.handle("list_states 'deadended'")
