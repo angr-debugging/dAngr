@@ -29,7 +29,7 @@ import re as rex
 }
 
 script : ((QMARK|HELP) (WS identifier)? NEWLINE|
-            (NEWLINE|statement| function_def)* ) EOF;
+            (NEWLINE|statement| function_def)* )WS* EOF;
 
 statement:  control_flow |
             // dangr_command NEWLINE| 

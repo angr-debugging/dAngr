@@ -86,7 +86,7 @@ class InformationCommands(BaseCommand):
         
         Short name: iap
         """
-        paths = self.debugger.list_paths(stash)
+        paths = self.debugger.list_paths(stash) 
         result_list = ""
         for i in range(len(paths)):
             result_list +=  f"{i}: " + str(paths[i]) + "\n"
