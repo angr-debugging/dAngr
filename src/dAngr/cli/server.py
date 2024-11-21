@@ -1,6 +1,5 @@
 import html
 import os
-import re
 
 from prompt_toolkit import PromptSession
 
@@ -8,7 +7,6 @@ from prompt_toolkit.completion import WordCompleter, merge_completers, PathCompl
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit import HTML
 
-from prompt_toolkit.search import start_search, stop_search
 
 
 from dAngr.cli import  CommandLineDebugger
@@ -95,11 +93,7 @@ class Server:
                         continue
                     if inp.rstrip().endswith(":"):
                         # process multiline input
-                        while True:
-                            inp = session.prompt(" "*12 + "> ", completer=self.completer)
-                            if inp.strip() == "":
-                                break
-                            lines += "\n" + inp
+                        lines = self.recusive_line_handler(session, lines, 4)
 
                     # lines = self._preprocess_input(conn, lines)
                     if not lines:
@@ -115,6 +109,19 @@ class Server:
                     raise e
                 else:
                     conn.send_error(f"An unexpected error occurred: {e}")
+    
+    def recusive_line_handler(self, session: PromptSession, lines: str, line_indents: int) -> str:
+        prompt_indents =  " "*(8 + line_indents)
+        while True:
+            line = session.prompt(prompt_indents + "", completer=self.completer)
+            
+            if line.strip() == "":
+                return lines
+            elif line.rstrip().endswith(":"):
+                lines = self.recusive_line_handler(session, lines + f"\n{" "*line_indents}" + line, line_indents + 4)
+            else:
+                lines += f"\n{" "*line_indents}" + line
+
     
     def start_server(self):
         self.loop()
