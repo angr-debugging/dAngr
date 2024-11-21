@@ -5,6 +5,7 @@
 
 # WANT
 - support cfg for range
+- syntax highlighting (grammar -> lexer see https://python-prompt-toolkit.readthedocs.io/en/stable/pages/asking_for_input.html)
 
 
 # CTF
