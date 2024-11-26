@@ -5,7 +5,8 @@ from dAngr.angr_ext.utils import convert_string
 from dAngr.cli.debugger_commands import BaseCommand
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
-from dAngr.utils.utils import parse_arguments,Endness
+from dAngr.utils.utils import parse_arguments
+
 
 class FunctionCommands(BaseCommand):
     def __init__(self, debugger_core):
@@ -174,12 +175,12 @@ class FunctionCommands(BaseCommand):
             raise DebuggerCommandError("No basic block found.")
         return f"{b}"
 
-    def get_function_info(self, function_name: str):
+    def get_function_info(self, function: str|int):
         """
         Get information about a function.
 
         Args:
-            function_name (str): The name of the function.
+            function (str|int): The name or address of the function.
 
         Returns:
             str: Information about the function.
@@ -189,8 +190,10 @@ class FunctionCommands(BaseCommand):
         
         Short name: fi
         """
-        func = self.debugger.get_function_info(function_name)
-        if func is None:
+        func = self.debugger.get_function_info(function)
+
+        if not func:
             raise DebuggerCommandError("No function found with this name.")
+        
         return f"{func}"
     

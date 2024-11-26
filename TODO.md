@@ -10,7 +10,8 @@
 - Vi style edit on functions
 - Less with command from history arg
 - Enter repeats the previous command (handy for step)
-
+- Autocomplete on files for load
+- list_binary_symbols filter on functions
 
 # CTF
 add more ctf examples of [angr examples](https://docs.angr.io/en/latest/examples.html) and [angr ctf examples](https://docs.angr.io/en/latest/appendix/more-examples.html)
@@ -25,6 +26,7 @@ cleanup markdown files / copy info from original
 
 # Doucmentation
 - improve documentation
+- Angr examples
 
 # Parsing
 - cleaner feedback on invalid tokens/parsing?

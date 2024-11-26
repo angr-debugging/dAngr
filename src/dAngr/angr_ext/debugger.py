@@ -1,24 +1,22 @@
 import os
 import re
 import subprocess
-from typing import Any, Callable, Dict, List, Tuple, cast
+from typing import Any, Callable, Dict, List, Tuple
 import angr
 from angr import SimCC, SimProcedure, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
 import angr.storage
-import archinfo
 import claripy
-import cle
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import Constraint
-from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, ObjectStore, SolverType, StreamType, SymBitVector, remove_ansi_escape_codes
+from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector, remove_ansi_escape_codes
 from dAngr.utils import utils
 from .std_tracker import StdTracker
-from .utils import create_entry_state, get_function_address, get_function_by_addr, hook_simprocedures, load_module_from_file
+from .utils import create_entry_state, get_function_address, hook_simprocedures, load_module_from_file, get_function_by_name, get_function_by_addr
 from .connection import Connection
 
 from dAngr.exceptions import DebuggerCommandError
@@ -247,8 +245,12 @@ class Debugger:
             raise DebuggerCommandError("Failed to get calling convention.")
         return cc(self.project.arch)
     
-    def get_function_info(self, func_addr) -> Function|None:
-       return get_function_by_addr(self.project, func_addr)
+    def get_function_info(self, func) -> Function |None:
+       self.cfg
+       if type(func) is int:
+        return get_function_by_addr(self.project, func)
+       else:
+        return get_function_by_name(self.project, func)
     
     def get_function_prototype(self, prototype:str, arguments:List[str]):
         return angr.SimCC.guess_prototype(arguments, prototype).with_arch(self.project.arch)

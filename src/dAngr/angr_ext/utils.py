@@ -67,6 +67,13 @@ def convert_string(sim_type, value):
 def get_function_by_addr(proj,addr) -> knowledge_plugins.functions.function.Function | None:
     return proj.kb.functions.ceiling_func(addr)
 
+def get_function_by_name(proj,name) -> knowledge_plugins.functions.function.Function | None:
+    function_list = list(proj.kb.functions.get_by_name(name=name))
+    if not function_list:
+        return None
+    
+    return function_list[0]
+
 def get_bb_end_address(state)->int:
     bb = state.project.factory.block(state.addr)
     if not bb.instruction_addrs:
