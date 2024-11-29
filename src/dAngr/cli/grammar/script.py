@@ -37,7 +37,9 @@ class Body:
             if self.is_static(s):
                 self._prepare_static(context, func_name, s)
             result = s(context)
-
+            if result == BREAK:
+                break
+        
         self._repair_static(context, func_name)
         return result
     
