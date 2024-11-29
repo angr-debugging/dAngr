@@ -37,7 +37,7 @@ class InformationCommands(BaseCommand):
         b = self.debugger.get_current_basic_block()
         if b is None:
             raise DebuggerCommandError("No basic block found.")
-        return f"Current basic block: {b}"
+        return b
 
 
     
@@ -90,7 +90,9 @@ class InformationCommands(BaseCommand):
         result_list = []
         for i in range(len(paths)):
             result_list.append(f"{i}: " + str(paths[i]))
-        return result_list
+        return paths
+
+
 
     def list_binary_strings(self, min_length:int = 4):
         """

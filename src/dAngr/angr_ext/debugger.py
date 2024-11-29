@@ -132,7 +132,7 @@ class Debugger:
         if stateID >= len(self.simgr.stashes[from_stash]):
             raise DebuggerCommandError(f"State with ID {stateID} not found in stash {from_stash}.")
         state = self.simgr.stashes[from_stash][stateID]
-        self.simgr.move(from_stash, to_stash, state)
+        self.simgr.move(from_stash, to_stash,lambda  s: s == state )
         return state
             
     def throw_if_not_initialized(self):
@@ -299,10 +299,12 @@ class Debugger:
         self.to_src_path = os.path.abspath(os.path.expanduser(os.path.normpath(to_src_path))) if to_src_path else ''
         if not os.path.exists(binary_path):
             raise InvalidArgumentError(f"File '{binary_path}' does not exist")
+        
+        main_opts = kwargs
+
         if base_addr:
-            main_opts = {'base_addr': base_addr}
-        else:
-            main_opts = {}
+            main_opts['base_addr'] = base_addr
+
         self._project = angr.Project(binary_path, load_options={'load_debug_info': True, 'auto_load_libs': False, 'main_opts':main_opts}) 
         self.project.kb.dvars.load_from_dwarf()
     

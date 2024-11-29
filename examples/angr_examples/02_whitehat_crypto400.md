@@ -17,7 +17,7 @@ setup of addresses used in program
 addresses assume base address of
 ```    
 
-load 'repo/examples/whitehat_crypto400/whitehat_crypto400' 
+load 'repo/angr_examples/examples/whitehat_crypto400/whitehat_crypto400' 
 
 ```
 this is a statically-linked binary, and it's easer for angr if we use Python summaries for the libc functions
@@ -107,7 +107,7 @@ Test the solutions:
 result = ""
 for s in solutions:
     s = to_str s
-    v = $(./repo/examples/whitehat_crypto400/whitehat_crypto400 &vars.s)
+    v = $(./repo/angr_examples/examples/whitehat_crypto400/whitehat_crypto400 &vars.s)
     if "FLAG IS:" in v:
         result = "input: " + s + " -> FLAG: " + v[18:]
         break

@@ -13,38 +13,33 @@ and the [script](https://github.com/angr/angr-examples/tree/master/examples/defc
 
 load 'A02_defcon2016quals_baby-re'
 
-
+flag_chars = []
 for i in range(13):
-    sn = !('flag_%d' % &vars.i)
-    add_symbol sn 4
+    symbol = add_symbol ('flag_' + (to_str i)) 4
+    append flag_chars symbol
 
-def scanf(fmt,ptr):
-    cnt = get_from_state scanf_cnt
-    sn = !('flag_%d' % &vars.cnt)
+def scanf(fmt, ptr):
+    count = get_from_state scanf_count
+    sn = !('flag_%d' % &vars.count)
     s = get_symbol sn
     set_memory ptr s 4
-    cnt = cnt + 1
-    add_to_state scanf_cnt cnt
+    count = count + 1
+    add_to_state scanf_count count
 
 hook_function scanf '__isoc99_scanf'
 
 set_blank_state add_options=[options.LAZY_SOLVES]
 
-add_to_state scanf_cnt 0
+add_to_state scanf_count 0
 
 breakpoint (by_address 0x4028E9)
 exclude (by_address 0x402941)
 
 run
-
+print "Flag: "
 for i in range(13):
-    cnt = get_from_state scanf_cnt
-    sn = !('flag_%d' % &vars.i)
-    s = get_symbol sn
-    m = &(evaluate s)
-    c = !(chr(&vars.m[0]))
-    print c
-    if i==12:
-        println
+    s_i = evaluate (get_symbol ('flag_%d' % i))
+    print (to_str (rstrip s_i b'\x00'))
+println
 
 ```

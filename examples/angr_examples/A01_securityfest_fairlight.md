@@ -12,7 +12,7 @@ and the [script](https://github.com/angr/angr-examples/tree/master/examples/secu
 ## Solution with dAngr:
 
 ```
-load 'repo/examples/securityfest_fairlight/fairlight'
+load 'A01_securityfest_fairlight'
 
 add_symbol argv1 0xE
 
@@ -27,3 +27,4 @@ run
 to_bytes (evaluate &sym.argv1)
 
 ```
+flag: "4ngrman4gem3nt"

@@ -12,6 +12,8 @@
 - Enter repeats the previous command (handy for step)
 - Autocomplete on files for load
 - list_binary_symbols filter on functions
+- indicator that run is really running
+- a way to step trough execution like a while loop (for example using input in python)
 
 # CTF
 add more ctf examples of [angr examples](https://docs.angr.io/en/latest/examples.html) and [angr ctf examples](https://docs.angr.io/en/latest/appendix/more-examples.html)

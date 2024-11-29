@@ -84,10 +84,14 @@ class Server:
                 return
         self.stop = False
         self.script_path = None
+        inp = ""
         while not self.stop:
             try:
                 with patch_stdout() as po:
+                    last_command = inp
                     inp = session.prompt(prmpt, completer=self.completer)
+                    if inp.strip() == "":
+                        inp = last_command
                     lines = inp
                     if inp.strip() == "":
                         continue

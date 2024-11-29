@@ -33,6 +33,9 @@ class CliConnection(Connection):
         if len(self._history[-1])!=0:
             self._history.append([])
         self._first = True
+    @property
+    def last_command(self)->str:
+        return self._history[-1][0][0] if self._history[-1] else ""
 
     def _indent(self, data):
          return " "*self.indent + str(data).replace("\n", "\n" + " "*self.indent).replace("\t", " "*self.indent)

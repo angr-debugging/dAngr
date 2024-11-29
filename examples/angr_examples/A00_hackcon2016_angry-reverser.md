@@ -36,3 +36,5 @@ run
 to_bytes (evaluate &sym.flag)
 
 ```
+
+flag: HACKCON{VVhYS04ngrY}

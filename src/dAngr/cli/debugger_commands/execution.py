@@ -1,17 +1,15 @@
 import inspect
 import os
-import types
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.angr_ext.step_handler import StopReason
 from dAngr.cli.debugger_commands import BaseCommand
 from dAngr.cli.grammar.definitions import FunctionDefinition
 from dAngr.cli.script_processor import ScriptProcessor
-from dAngr.exceptions import DebuggerCommandError, ExecutionError
+from dAngr.exceptions import DebuggerCommandError
 from dAngr.utils import AngrType
 import angr
 
 from dAngr.utils.loggers import AsyncLogger
-from dAngr.utils.utils import Variable
 
 log = AsyncLogger("execution")
 
@@ -76,6 +74,7 @@ class ExecutionCommands(BaseCommand):
         Short name: s
         """
         super().run_angr(lambda _: StopReason.STEP) # return immediately
+        return self.debugger.get_current_basic_block()
 
     def exit(self):
         """
@@ -392,5 +391,5 @@ class ExecutionCommands(BaseCommand):
         """
         self.debugger.move_state_to_stash(index, from_stash, to_stash)
         self.send_info(f"State moved from {from_stash} to {to_stash}.")
-
+    
     

@@ -30,7 +30,7 @@ It's reasonably easy to tell from looking at the program in IDA that the key wil
 ```
 flag_chars = []
 for i in range(28):
-    s = add_symbol ('flag_' + (to_str i)) 1
+    s = add_symbol ('flag_' + (to_str i)) 
     append flag_chars s
 
 to_symbol flag (append flag_chars '\n')

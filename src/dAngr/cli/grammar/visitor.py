@@ -134,8 +134,6 @@ class dAngrVisitor_(dAngrVisitor):
                 package = None
                 cmd = ctx.identifier(0).getText()
                 start = 1
-            if ctx.DIV():
-                cmd = "/" + cmd
             args = []
             kwargs  = {}
             if ctx.expression_part():

@@ -29,7 +29,7 @@ import re as rex
 }
 
 script : ((QMARK|HELP) (WS identifier)? NEWLINE|
-            (NEWLINE|statement| function_def)* )WS* EOF;
+            (NEWLINE|statement| function_def)* WS*) EOF;
 
 statement:  control_flow |
             // dangr_command NEWLINE| 
@@ -39,7 +39,7 @@ statement:  control_flow |
             ext_command NEWLINE ;
 
 expression :
-    (identifier DOT)? (DIV)? identifier (WS (identifier ASSIGN)?expression_part)*
+    (identifier DOT)? identifier (WS (identifier ASSIGN)?expression_part)*
     | expression_part
     ;
 
@@ -143,7 +143,7 @@ object : identifier BANG?  # IDObject
     | BINARY_STRING #BinaryStringObject
     ; 
 
-anything: (LETTERS | NUMBERS | symbol | STRING | BINARY_STRING | WS | LPAREN anything RPAREN | special_words);
+anything: (LETTERS | NUMBERS | symbol | STRING | BINARY_STRING | WS | LPAREN anything RPAREN | special_words | NEWLINE);
 
 special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN | BREAK | CONTINUE | RANGE;
 
