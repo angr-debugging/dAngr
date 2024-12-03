@@ -2,6 +2,7 @@
 - improved logging 
     - remove send_info, send_error, send_warning and use logging for that
     - improve logging control
+- Exploration techniques
 
 # WANT
 - support cfg for range

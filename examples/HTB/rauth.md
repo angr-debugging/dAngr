@@ -1,21 +1,22 @@
 ````
 load '../HTB/rauth' auto_load_libs=True
 
-input_len = 33
+input_len = 32
 
 flag_chars = []
 for i in range(input_len):
     s = add_symbol ('flag_' + (to_str i)) 1
     append flag_chars s
 
-to_symbol flag (flag_chars)
+to_symbol flag (append flag_chars '\n')
 
-for c in flag_chars:
-    add_constraint c < 0x7f && c > 0x20
 
-add_constraint flag_chars[32] == 0x0a
 
 set_entry_state 0x406460 args=["./rauth"] stdin=&sym.flag base_addr=0
+
+for c in flag_chars:
+    if c != '\n':
+        add_constraint c < 0x7f && c > 0x20
  
 def rust_print():
     pntr = (to_int (evaluate (get_memory &reg.rdi 4 endness=LE)))
@@ -33,10 +34,14 @@ def rust_print():
     println ""
 
 hook_function rust_print 0x408530
- 
-run
-breakpoint (by_address 0x4064c4)
-exclude (by_address 0x406992)
-run
 
+exclude (by_address 0x4069c6)
+exclude (by_address 0x406a9e)
+exclude (by_address 0x40632e)
+exclude (by_address 0x40630f)
+exclude (by_address 0x406326)
+
+
+breakpoint (by_address 0x406846)
+run
 ```

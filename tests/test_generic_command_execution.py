@@ -5,13 +5,8 @@ from unittest.mock import Mock
 
 from dAngr.cli.cli_connection import CliConnection
 from dAngr.cli.command_line_debugger import CommandLineDebugger, dAngrExecutionContext
-from dAngr.cli.grammar.control_flow import ForLoop, IfThenElse
-from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.parser import lex_input, parse_input
-from dAngr.cli.grammar.expressions import BashCommand, Comparison, Dictionary, Expression, Listing, Literal, DangrCommand, PythonCommand, Range, VariableRef
-from dAngr.cli.grammar.script import Body, Script
-from dAngr.cli.grammar.statements import Assignment
-from dAngr.exceptions import ParseError
+from dAngr.cli.grammar.parser import parse_input
+from dAngr.cli.grammar.script import Script
 
 
 class TestGenericCommandExecution:
@@ -49,6 +44,7 @@ class TestGenericCommandExecution:
     def test_test_claripy(self,capsys,dbg):
         r = dbg.handle("load 'example'")
         assert r == True
+        r = dbg.handle("set_blank_state")
         r = dbg.handle("add_symbol a 1")
         r = dbg.handle("add_symbol b 1")
         r = dbg.handle("add_constraint &sym.a + &sym.b == b'ab'")

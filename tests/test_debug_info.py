@@ -49,16 +49,16 @@ class TestDebugInfoCommands:
     
     def test_get_current_block(self, dbg, conn):
         assert dbg.handle("get_current_block")
-        assert "Current basic block:" in str(conn.send_result.call_args[0][0])
+        assert "Address: 0x400566:" in str(conn.send_result.call_args[0][0])
     
     
     def test_list_active_paths(self, dbg, conn):
         assert dbg.handle("list_states 'active'")
-        assert "['0: <SimState @ 0x400566>']" == str(conn.send_result.call_args[0][0])    
+        assert "[<SimState @ 0x400566>]" == str(conn.send_result.call_args[0][0])    
     
     def test_list_active_paths2(self, dbg, conn):
         assert dbg.handle("list_states")
-        assert "['0: <SimState @ 0x400566>']" == str(conn.send_result.call_args[0][0])    
+        assert "[<SimState @ 0x400566>]" == str(conn.send_result.call_args[0][0])    
     
     def test_list_deadended_paths(self, dbg, conn):
         assert dbg.handle("list_states 'deadended'")

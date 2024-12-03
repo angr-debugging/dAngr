@@ -19,7 +19,7 @@ setup of addresses used in program
 addresses assume base address of
 ```    
 #set_log_level angr
-load '01_little_engine' base_addr=0x100000 auto_load_libs=True
+load '01_little_engine' auto_load_libs=True
 
 def stdin(addr):
     set_memory addr (dump_stdstream stdin)
@@ -44,7 +44,9 @@ for i in range(input_len):
     s = add_symbol ('flag_' + (to_str i)) 1
     append flag_chars s
 
-to_symbol flag (flag_chars)
+to_symbol flag (append flag_chars '\n')
+
+
 set_entry_state args=["./engine"] stdin=&sym.flag
 
 for c in flag_chars:

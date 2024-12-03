@@ -1,0 +1,36 @@
+Return functions don't really work in dAngr script, only at the end of a function it does what it is supposed to do.
+Exploration techniques aren't supported yet in dAngr.
+
+
+load 'repo/angr_examples/examples/grub/crypto.mod'
+
+hook_function "libc.memset" grub_memset
+hook_function "libc.getchar" grub_getkey
+hook_function "stubs.ReturnUnconstrained" grub_xputs
+
+set_entry_state 0x4008a1
+
+def check_exists(value, list):
+    exists = False
+    for lvalue in list:
+        if lvalue == value:
+            exists = True
+            break
+    return exists
+
+
+unique_states = []
+def CheckUniqueness():
+    values = []
+    for reg in ['eax', 'ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp', 'esp', 'eip']:
+        value = get_register reg
+        if is_symbolic value:
+            append values 'symbolic'
+        else:
+            append values value
+        
+        if check_exists values unique_states:
+            return 'not_unique'
+
+        print 'Test'
+        return True

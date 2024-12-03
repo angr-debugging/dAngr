@@ -139,7 +139,7 @@ class Debugger:
         if self._project is None:
             raise DebuggerCommandError("project not initialized.")
     def throw_if_not_active(self):
-        if not self.active:
+        if not self._current_state:
             raise DebuggerCommandError("no active states.")
     def get_source_info(self, addr):
         try:
@@ -305,8 +305,9 @@ class Debugger:
         if base_addr:
             main_opts['base_addr'] = base_addr
 
-        self._project = angr.Project(binary_path, load_options={'load_debug_info': True, 'auto_load_libs': False, 'main_opts':main_opts}) 
-        self.project.kb.dvars.load_from_dwarf()
+        self._project = angr.Project(binary_path, load_options={'load_debug_info': True, 'auto_load_libs': False, 'main_opts':main_opts})
+        if self.has_dwarf():
+            self.project.kb.dvars.load_from_dwarf()
     
     def get_binary_info(self):
         # get general info such as path, name, arch, entry point, etc
@@ -394,6 +395,7 @@ class Debugger:
             raise DebuggerCommandError(f"Invalid symbol type {type(sym)}.")
 
     def satisfiable(self, constraint=None):
+        self.throw_if_not_active()
         return self.current_state.satisfiable(extra_constraints=[constraint])
 
 
@@ -401,9 +403,11 @@ class Debugger:
     def set_symbol(self, name, value):
         self._symbols[name] = value
     def is_symbolic(self, value):
+        self.throw_if_not_active()
         return self.current_state.solver.symbolic(value)
 
     def add_constraint(self, cs):
+        self.throw_if_not_active()
         self.current_state.add_constraints(cs)
     def make_value(self, value:AngrObjectType)->AngrValueType:
         if isinstance(value, Variable):
@@ -413,6 +417,7 @@ class Debugger:
         return value
     
     def add_to_stack(self, value:AngrObjectType):
+        self.throw_if_not_active()
         v = self.make_value(value)
         self.current_state.stack_push(v)
         

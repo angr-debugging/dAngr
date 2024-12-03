@@ -74,7 +74,8 @@ class ExecutionCommands(BaseCommand):
         Short name: s
         """
         super().run_angr(lambda _: StopReason.STEP) # return immediately
-        return self.debugger.get_current_basic_block()
+        # Throws errors in example 14 of malware analysis
+        #return self.debugger.get_current_basic_block() 
 
     def exit(self):
         """
