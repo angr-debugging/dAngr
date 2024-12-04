@@ -1,8 +1,8 @@
 ```
 load 'repo/angr_examples/examples/insomnihack_aeg/demo_bin'
 keep_unconstrained
-
-set_entry_state add_options=['REVERSE_MEMORY_NAME_MAP', 'TRACK_ACTION_HISTORY']
+add_symbol input 0x80
+set_entry_state add_options=['REVERSE_MEMORY_NAME_MAP', 'TRACK_ACTION_HISTORY'] stdin=&sym.input
 
 
 def fully_symbolic(state):

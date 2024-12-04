@@ -11,6 +11,8 @@ import claripy
 from prompt_toolkit.styles import Style
 
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
+from dAngr.angr_ext.debugger import Debugger
+
 from dAngr.cli.debugger_commands import *
 from dAngr.cli.debugger_commands.base import BuiltinFunctionDefinition
 from dAngr.cli.filters import Filter, FilterList
@@ -18,11 +20,9 @@ from dAngr.cli.grammar.parser import parse_input
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.cli.grammar.expressions import Object
 
-
 from dAngr.exceptions import CommandError
-
-from dAngr.angr_ext.debugger import Debugger
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
+
 from dAngr.utils.utils import DataType, get_union_members
 from .cli_connection import CliConnection
 from .debugger_commands import *
@@ -139,7 +139,7 @@ class CommandLineDebugger(Debugger,StepHandler):
             # raise e
         
     def launch_file_server(self):
-        base_path = "/tmp/web"
+        base_path = "/tmp/web" 
         # set file_index to 1 + nr of files in path
         if self.http_server is None:
             if not os.path.exists(base_path):
@@ -160,8 +160,10 @@ class CommandLineDebugger(Debugger,StepHandler):
             self.http_thread = threading.Thread(target=self.http_server.serve_forever).start()
         return base_path
 
+
     def get_command_spec(self, command:str)->BuiltinFunctionDefinition|None:
         return DEBUGGER_COMMANDS.get(command, None)
+
 
     def list_commands_data(self, withArgs:bool = False):
         table_data = [[],["<title>Available commands:</title>"]]
@@ -199,6 +201,8 @@ class CommandLineDebugger(Debugger,StepHandler):
             'info': 'darkgray',
         })
         return table_data, style
+    
+
     def list_args_table(self, spec :BuiltinFunctionDefinition,indent = []) -> Tuple[List[List[str]],Style]:
         style = Style.from_dict({
             'title': '',
@@ -208,9 +212,11 @@ class CommandLineDebugger(Debugger,StepHandler):
             'arg_info': 'darkgray italic',
             'extra_info': 'gray italic',
         })
+
         table_data = []
         for l in spec.description.split("\n"):
-            table_data.append([EMPTY, f"<info>{l}</info>"])         
+            table_data.append([EMPTY, f"<info>{l}</info>"])
+                
         # command structure
         # print command name, followed by required args separated by comma, then optional args in square brackets
         required = spec.required_arguments
@@ -279,8 +285,8 @@ class CommandLineDebugger(Debugger,StepHandler):
         return val
     
     def list_commands(self, withArgs:bool = False):
-
         table_data, style = self.list_commands_data(withArgs)
+
         # Create HTML table
         html_table = ""
         for row in table_data:
@@ -289,10 +295,10 @@ class CommandLineDebugger(Debugger,StepHandler):
                 html_table += f"{cell}"
             html_table += "\n"
         
-
         # Create formatted HTML text with style
         formatted_html = f"{html_table}"
         self.conn.send_result(formatted_html,style=style)
+
 
     def list_args(self, spec :BuiltinFunctionDefinition):
         table_data, style = self.list_args_table(spec)
@@ -306,6 +312,7 @@ class CommandLineDebugger(Debugger,StepHandler):
         
         self.conn.send_result(html_table, style=style)
     
+
     def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False):
         u = check_until
         exclusions = self.exclusions

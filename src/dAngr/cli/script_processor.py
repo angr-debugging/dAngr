@@ -1,6 +1,5 @@
 import os
 import re
-import dAngr.exceptions.FileNotFoundError
 
 class ScriptProcessor:
     def __init__(self, script_path):
@@ -58,8 +57,8 @@ class ScriptProcessor:
                     yield line.strip()
                     line = None
 
-    def process_markdown(self, file_obj):
 
+    def process_markdown(self, file_obj):
         for line in file_obj:
             line = line.rstrip()
             if line.strip() == "":

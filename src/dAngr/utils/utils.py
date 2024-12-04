@@ -292,6 +292,8 @@ class ObjectStore(Enum):
     reg = auto()
     io = auto()
 
+
+
 Constraint = claripy.ast.Bool
 SymBitVector = claripy.ast.BV
 class Variable:
@@ -536,3 +538,5 @@ def get_classes_from_file(file_path):
 def remove_ansi_escape_codes(text):
     ansi_escape = re.compile(r'(?:\x1B[@-_]|[\\x1B\x9B])[0-?]*[ -/]*[@-~]')
     return ansi_escape.sub('', text)
+
+

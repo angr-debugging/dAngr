@@ -7,8 +7,6 @@ from prompt_toolkit.completion import WordCompleter, merge_completers, PathCompl
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit import HTML
 
-
-
 from dAngr.cli import  CommandLineDebugger
 from dAngr.cli.cli_connection import CliConnection
 from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS
@@ -18,6 +16,8 @@ from dAngr.cli.script_processor import ScriptProcessor
 # add logger
 from dAngr.utils.loggers import get_logger
 logger = get_logger(__name__)
+
+
 
 DEBUG_COMMANDS = False
 class Server:
@@ -31,7 +31,8 @@ class Server:
         self.debug_file_path = debug_file_path
         self.script_path = script_path
         self.stop = False
-    
+
+
     def loop(self):
         conn = CliConnection()
         dbg = CommandLineDebugger(conn)
@@ -105,7 +106,7 @@ class Server:
                     if not dbg.handle(lines, False):
                         self.stop = True
             except KeyboardInterrupt:
-                return # Ctrl-C to exit
+                continue
             except EOFError:
                 return # Ctrl-D to exit
             except Exception as e:
