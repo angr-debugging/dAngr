@@ -2,8 +2,7 @@ import claripy
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import ReferenceObject
 from dAngr.cli.models import Register
-from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
-from dAngr.utils import  DataType, SymBitVector, AngrType, Endness
+from dAngr.utils import  SymBitVector, AngrType, Endness
 from .base import BaseCommand
 
 
@@ -80,8 +79,32 @@ class MemoryCommands(BaseCommand):
         """
         return self.debugger.get_memory(address, size, endness=endness)
     
-    
+    def get_addr_for_name(self, name: str):
+        """
+        Get the address for a symbol name.
 
+        Args:
+            name (str): Symbol name
+        
+        Short name: gan
+        
+        """
+        addresses = []
+        for addr in self.debugger.get_addr_for_symbol(name):
+            addresses.append(addr)
+        return addresses
+
+    def get_stdin_variables(self):
+        """
+        Get the stdin variable.
+
+        Short name: gsv
+        
+        """
+        stdin_vars = []
+        for _, symbol in self.debugger.get_stdin_variables():
+            stdin_vars.append(symbol)
+        return stdin_vars
     
     def set_memory(self, address:int|SymBitVector, value:AngrType, size:int|None=None, endness:Endness=Endness.DEFAULT):
         """

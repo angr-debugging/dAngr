@@ -1,10 +1,8 @@
 from array import array
-import logging
 
 from dAngr.cli.debugger_commands.base import BaseCommand
-from dAngr.cli.grammar.expressions import ReferenceObject
 from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils.utils import DataType, AngrType, AngrValueType, AngrExtendedType, Endness
+from dAngr.utils.utils import DataType, AngrType, AngrValueType, Endness
 
 from dAngr.utils.loggers import get_logger
 log = get_logger(__name__)
@@ -134,12 +132,12 @@ class ToolCommands(BaseCommand):
         
         """
         return self.cast_to(value, DataType.bool)
-    def len(self, value:str|list|array):
+    def len(self, value:str|list|array|bytes):
         """
         Get the length of the value object
 
         Args:
-            value (str|list|array): Value object to get the length of.
+            value (str|list|array|bytes): Value object to get the length of.
 
         """
         return len(value) # type: ignore

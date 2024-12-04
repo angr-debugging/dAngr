@@ -18,6 +18,7 @@ from dAngr.utils import utils
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, hook_simprocedures, load_module_from_file, get_function_by_name, get_function_by_addr
 from .connection import Connection
+from angr.storage.memory_mixins.convenient_mappings_mixin import *
 
 from dAngr.exceptions import DebuggerCommandError
 from dAngr.utils.loggers import get_logger
@@ -275,7 +276,8 @@ class Debugger:
             if v:
                 vars.append(v)
         return vars
-    
+
+
     def has_dwarf(self):
         return self.project.loader.main_object.has_dwarf_info  # type: ignore
 
@@ -323,6 +325,9 @@ class Debugger:
             "base_addr": hex(self.project.loader.main_object.mapped_base)
         }
     
+    def get_stdin_variables(self):
+        return self.current_state.solver.get_variables('file', self.current_state.posix.stdin.ident)
+
     def get_binary_security_features(self):
         # get security features such as canary, nx, pie, etc
         self.throw_if_not_initialized()
@@ -597,6 +602,9 @@ class Debugger:
                 size = self.project.arch.bits // 8
         byte_value = state.memory.load(address, size, endness=Endness.to_arch_endness(endness, self.project))
         return byte_value
+    
+    def get_addr_for_symbol(self, symbol:str):
+        return self.current_state.memory.addrs_for_name(symbol)
     
     def get_stream(self, stream:StreamType) -> str:
         state = self.current_state
