@@ -213,7 +213,21 @@ class ToolCommands(BaseCommand):
              return value
         else:
             raise DebuggerCommandError("Invalid format")
-        
+    
+    def sort(self, value:list, reverse=False):
+        """
+        Sort the value
+
+        Args:
+            value (list): List to sort.
+
+        """
+        if isinstance(value, list):
+             sorted(value, reverse=reverse)
+             return value
+        else:
+            raise DebuggerCommandError("Invalid format")
+
     def extend(self, value:list, iterable):
         """
         Extend the tail of the value

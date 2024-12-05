@@ -3,7 +3,7 @@ load 'repo/angr_examples/examples/CADET_00001/CADET_00001' auto_load_libs=False
 keep_unconstrained
 
 exclude (by_address 0x80482f1)
-wz
+
 def stop_condition():
     unc = len (list_states unconstrained)
     return unc == 0

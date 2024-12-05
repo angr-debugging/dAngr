@@ -7,6 +7,9 @@
 - improve memory get_stdin_variables (state.solver.get_variable(*keys))
 - Python negation (not) in if statements
 
+# Breaking bugs
+- break_addr --> result = BREAK
+
 # WANT
 - support cfg for range
 - syntax highlighting (grammar -> lexer see https://python-prompt-toolkit.readthedocs.io/en/stable/pages/asking_for_input.html)

@@ -195,5 +195,5 @@ class FunctionCommands(BaseCommand):
         if not func:
             raise DebuggerCommandError("No function found with this name.")
         
-        return f"{func}"
+        return func
     

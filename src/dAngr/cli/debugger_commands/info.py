@@ -38,8 +38,6 @@ class InformationCommands(BaseCommand):
         if b is None:
             raise DebuggerCommandError("No basic block found.")
         return b
-
-
     
     def get_cfg(self):
         """
@@ -60,6 +58,7 @@ class InformationCommands(BaseCommand):
         file_index = 1 + len([name for name in os.listdir(base_path) if os.path.isfile(os.path.join(base_path, name))])
         filename = "cfg_" + str(file_index)
         svg_path = f"{base_path}/{filename}"
+        
         angrutils.plot_cfg(cfg, svg_path, asminst=True, vexinst=False, remove_imports=True, remove_path_terminator=True, format="svg")
 
         return f"http://localhost:8000/{filename}.svg"
