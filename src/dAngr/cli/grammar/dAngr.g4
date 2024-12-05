@@ -112,7 +112,7 @@ operation : ADD |
 
 
 py_basic_content: identifier WS? LPAREN WS? (py_content)* RPAREN  ;
-py_content: (reference |range | anything | LPAREN py_content RPAREN)+ ;
+py_content: (reference |range | anything | LPAREN py_content* RPAREN)+ ;
 bash_content: (reference | range | anything | LPAREN bash_content RPAREN)*;
 
 

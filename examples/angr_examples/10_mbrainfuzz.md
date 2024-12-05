@@ -10,7 +10,7 @@ The first step is also loading the binary. Since this challenge is somewhat diff
 The address of the first function is going to be different for each binary, but the structure of the binary is the same. 
 
 
-
+We create a function get_target_addr to find the address of the basic block with 
 
 ```
 load '/workspaces/dAngr/examples/angr_examples/repo/angr_examples/examples/secuinside2016mbrainfuzz/sample_1'
