@@ -101,6 +101,7 @@ operation : ADD |
         LE | 
         GE | 
         AND | 
+        XOR |
         OR 
         FLOORDIV |
         LSHIFT |

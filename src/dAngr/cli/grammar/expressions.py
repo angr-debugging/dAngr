@@ -1,15 +1,15 @@
-from enum import Enum, auto
+from enum import Enum
 import io
 from types import UnionType
-from typing import Dict, List, Any, Union, cast, get_args, get_origin
+from typing import Dict, List, Any, cast, get_args, get_origin
 from abc import abstractmethod
 import subprocess
 import claripy
 
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.exceptions import CommandError, DebuggerCommandError, InvalidArgumentError, ValueError, KeyError
-from dAngr.utils import AngrValueType, AngrExtendedType, StreamType, str_to_address
-from dAngr.utils.utils import DataType, Endness, Operator, check_signature_matches, is_indexable
+from dAngr.utils import AngrValueType
+from dAngr.utils.utils import DataType, Operator, check_signature_matches, is_indexable
 from contextlib import redirect_stdout, redirect_stderr
 
 from dAngr.utils.loggers import get_logger

@@ -21,7 +21,7 @@ class StdTracker(SimStatePlugin):
         return new_output
     
     def get_new_string(self)->str:
-        return self.get_new_data().decode('utf-8')
+        return self.get_new_data().decode()
     
     def get_prev_string(self)->str:
         if self.prev_std_mark == self.std_mark:

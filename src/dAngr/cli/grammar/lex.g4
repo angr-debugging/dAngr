@@ -43,7 +43,7 @@ BRA: '[';
 KET: ']';
 BRACE: '{';
 KETCE: '}';
-HAT: '^';
+XOR: '^';
 HASH: '#';
 PERC: '%';
 MUL: '*';

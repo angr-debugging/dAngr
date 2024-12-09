@@ -279,7 +279,11 @@ class Debugger:
 
 
     def has_dwarf(self):
-        return self.project.loader.main_object.has_dwarf_info  # type: ignore
+        try:
+            return self.project.loader.main_object.has_dwarf_info
+        except Exception as e:
+            return False
+
 
     def substitute_path(self,path:str):
         path = os.path.abspath(os.path.normpath(path))

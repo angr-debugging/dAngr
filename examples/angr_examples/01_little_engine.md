@@ -17,19 +17,18 @@ and the binary is [here](https://github.com/angr/angr-examples/tree/master/examp
 
 setup of addresses used in program
 addresses assume base address of
-```    
+```
 #set_log_level angr
 load '01_little_engine' auto_load_libs=True
 
 def stdin(addr):
-    set_memory addr (dump_stdstream stdin)
-    print "saved stdin to "
-    println addr
+    set_memory addr (dump_stdstream stdin) endness=LE
 
-hook_function stdin 0x101830
 
-breakpoint (by_address 0x101510)
-breakpoint (by_address 0x101332)
+hook_function stdin 0x401220
+
+breakpoint (by_address 0x401510)
+breakpoint (by_address 0x4018f4)
 ```
 
 length of desired input is 75 as found from reversing the binary in ghidra

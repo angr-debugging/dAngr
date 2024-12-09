@@ -170,7 +170,7 @@ class rangesLexer(Lexer):
     KET = 32
     BRACE = 33
     KETCE = 34
-    HAT = 35
+    XOR = 35
     HASH = 36
     PERC = 37
     MUL = 38
@@ -215,7 +215,7 @@ class rangesLexer(Lexer):
             "ESCAPED_QUOTE", "ESCAPED_SINGLE_QUOTE", "SESC_SEQ", "ESC_SEQ", 
             "ARROW", "LPAREN", "RPAREN", "BANG", "AMP", "DOLLAR", "COLON", 
             "SCOLON", "COMMA", "QUOTE", "SQUOTE", "AT", "DOT", "BAR", "BRA", 
-            "KET", "BRACE", "KETCE", "HAT", "HASH", "PERC", "MUL", "ADD", 
+            "KET", "BRACE", "KETCE", "XOR", "HASH", "PERC", "MUL", "ADD", 
             "DIV", "FLOORDIV", "LSHIFT", "RSHIFT", "POW", "ASSIGN", "EQ", 
             "NEQ", "LT", "GT", "LE", "GE", "AND", "OR", "QMARK", "TILDE", 
             "TICK", "UNDERSCORE", "DASH", "NEWLINE", "WS" ]
@@ -226,7 +226,7 @@ class rangesLexer(Lexer):
                   "SESC_SEQ", "ESC_SEQ", "ARROW", "LPAREN", "RPAREN", "BANG", 
                   "AMP", "DOLLAR", "COLON", "SCOLON", "COMMA", "QUOTE", 
                   "SQUOTE", "AT", "DOT", "BAR", "BRA", "KET", "BRACE", "KETCE", 
-                  "HAT", "HASH", "PERC", "MUL", "ADD", "DIV", "FLOORDIV", 
+                  "XOR", "HASH", "PERC", "MUL", "ADD", "DIV", "FLOORDIV", 
                   "LSHIFT", "RSHIFT", "POW", "ASSIGN", "EQ", "NEQ", "LT", 
                   "GT", "LE", "GE", "AND", "OR", "QMARK", "TILDE", "TICK", 
                   "UNDERSCORE", "DASH", "NEWLINE", "WS" ]

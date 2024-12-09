@@ -13,7 +13,7 @@ The address of the first function is going to be different for each binary, but 
 We create a function get_target_addr to find the address of the basic block with 
 
 ```
-load '/workspaces/dAngr/examples/angr_examples/repo/angr_examples/examples/secuinside2016mbrainfuzz/sample_1'
+load '/workspaces/dAngr/examples/angr_examples/repo/angr_examples/examples/secuinside2016mbrainfuzz/sample_2'
 
 
 def dict_to_list(dict):

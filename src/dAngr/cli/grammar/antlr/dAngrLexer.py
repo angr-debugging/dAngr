@@ -236,7 +236,7 @@ class dAngrLexer(Lexer):
     KET = 50
     BRACE = 51
     KETCE = 52
-    HAT = 53
+    XOR = 53
     HASH = 54
     PERC = 55
     MUL = 56
@@ -284,7 +284,7 @@ class dAngrLexer(Lexer):
             "STRING", "BINARY_STRING", "ESCAPED_QUOTE", "ESCAPED_SINGLE_QUOTE", 
             "SESC_SEQ", "ESC_SEQ", "ARROW", "LPAREN", "RPAREN", "BANG", 
             "AMP", "DOLLAR", "COLON", "SCOLON", "COMMA", "QUOTE", "SQUOTE", 
-            "AT", "DOT", "BAR", "BRA", "KET", "BRACE", "KETCE", "HAT", "HASH", 
+            "AT", "DOT", "BAR", "BRA", "KET", "BRACE", "KETCE", "XOR", "HASH", 
             "PERC", "MUL", "ADD", "DIV", "FLOORDIV", "LSHIFT", "RSHIFT", 
             "POW", "ASSIGN", "EQ", "NEQ", "LT", "GT", "LE", "GE", "AND", 
             "OR", "QMARK", "TILDE", "TICK", "UNDERSCORE", "DASH" ]
@@ -297,7 +297,7 @@ class dAngrLexer(Lexer):
                   "ESCAPED_SINGLE_QUOTE", "SESC_SEQ", "ESC_SEQ", "ARROW", 
                   "LPAREN", "RPAREN", "BANG", "AMP", "DOLLAR", "COLON", 
                   "SCOLON", "COMMA", "QUOTE", "SQUOTE", "AT", "DOT", "BAR", 
-                  "BRA", "KET", "BRACE", "KETCE", "HAT", "HASH", "PERC", 
+                  "BRA", "KET", "BRACE", "KETCE", "XOR", "HASH", "PERC", 
                   "MUL", "ADD", "DIV", "FLOORDIV", "LSHIFT", "RSHIFT", "POW", 
                   "ASSIGN", "EQ", "NEQ", "LT", "GT", "LE", "GE", "AND", 
                   "OR", "QMARK", "TILDE", "TICK", "UNDERSCORE", "DASH" ]
