@@ -6,7 +6,8 @@ from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.cli.grammar.expressions import BREAK, CONTINUE, BASECommand, VariableRef
 from dAngr.cli.grammar.statements import Assignment, Statement
 
-
+class StatementException(Exception):
+    pass
 
 class Body:
     def __init__(self, statements):
@@ -30,21 +31,28 @@ class Body:
             func_name = "main"
         context = ExecutionContext(parent=ctx)
         try:
+            statement_cnt = 0
             for s in self.statements:
-                if isinstance(s,BASECommand):
-                    if s == BREAK:
-                        return s
-                    elif s == CONTINUE:
-                        return
-                    elif s.base == "return":
-                        return s(context)
-                if self.is_static(s):
-                    self._prepare_static(context, func_name, s)
-                result = s(context)
-                if result == BREAK:
-                    return result
-                if isinstance(result, BASECommand) and result.base == "return":
-                    return result(context)
+                try:
+                    if isinstance(s,BASECommand):
+                        if s == BREAK:
+                            return s
+                        elif s == CONTINUE:
+                            return
+                        elif s.base == "return":
+                            return s(context)
+                    if self.is_static(s):
+                        self._prepare_static(context, func_name, s)
+                    result = s(context)
+                    if result == BREAK:
+                        return result
+                    if isinstance(result, BASECommand) and result.base == "return":
+                        return result(context)
+                    statement_cnt += 1
+                except StatementException as e:
+                    raise e
+                except Exception as e:
+                    raise StatementException(f"Error executing statement {statement_cnt}: {s}\n\t{e}")
         finally:
             self._repair_static(context, func_name)
         return result
