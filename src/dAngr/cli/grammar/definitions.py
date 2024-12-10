@@ -3,7 +3,7 @@ from textwrap import indent
 from typing import Any
 from claripy import List
 from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import VariableRef
+from dAngr.cli.grammar.expressions import BASECommand, VariableRef
 from dAngr.exceptions import InvalidArgumentError
 from dAngr.utils import undefined
 
@@ -116,6 +116,8 @@ class CustomFunctionDefinition(FunctionDefinition):
             context[k] = v
             
         result = self.body(context)
+        if isinstance(result, BASECommand) and result.base == "return":
+            result = result.return_value
         # remove args
         for arg in self.args:
             if isinstance(arg, VariableRef):

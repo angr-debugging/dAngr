@@ -3,7 +3,7 @@ from textwrap import indent
 from typing import List
 
 from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import BREAK, Expression, Range, VariableRef
+from dAngr.cli.grammar.expressions import BREAK, BASECommand, Expression, Range, VariableRef
 from dAngr.utils.utils import is_iterable
 from .statements import Statement
 from .script import Body
@@ -42,6 +42,8 @@ class WhileLoop(ControlFlow):
             r = self.body(ExecutionContext(context))
             if r == BREAK:
                 break
+            if isinstance(r, BASECommand) and r.base == "return":
+                return r(context)
 
     def __repr__(self):
         return f"while {self.condition}:\n{indent(str(self.body), '   ')}"
@@ -72,6 +74,8 @@ class ForLoop(ControlFlow):
                 r = self.body(ctx)
                 if r == BREAK:
                     break
+                if isinstance(r, BASECommand) and r.base == "return":
+                    return r(context)
         else:
             for item in iterable: # type: ignore
                 ctx = ExecutionContext(context)
@@ -79,6 +83,8 @@ class ForLoop(ControlFlow):
                 r = self.body(ctx)
                 if r == BREAK:
                     break
+                if isinstance(r, BASECommand) and r.base == "return":
+                    return r(context)
 
     def __repr__(self):
         if self.index:

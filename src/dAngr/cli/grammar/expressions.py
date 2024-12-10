@@ -509,11 +509,15 @@ class Command(Expression):
         raise NotImplementedError
     
 class BASECommand(Command):
-    def __init__(self, base:str):
+    def __init__(self, base:str, args= None):
         self.base = base
+        self.args = args
+        self.return_value = None
 
     def __call__(self, context:ExecutionContext):
-        raise NotImplementedError
+        if self.args:
+            self.return_value = to_val(self.args, context)
+        return self
     
     def __str__(self):
         return f"{self.base}"
@@ -655,7 +659,13 @@ class DangrCommand(Command):
             if self.package:
                 raise CommandError(f"Unknown command: {self.package}.{self.cmd}")
             if context.find_variable(self.cmd):
-                return context[self.cmd].value
+                # make an expression with the var and args
+                #TODO: what if not comparison?
+                if self.args:
+                    c = Comparison(VariableRef(Literal(self.cmd)), Operator.ADD, self.args[0])
+                    return c(context)
+                else:
+                    return context[self.cmd].value
             elif e:= context.find_enum(self.cmd):
                 return e
             else:

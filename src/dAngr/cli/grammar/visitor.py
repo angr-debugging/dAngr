@@ -8,7 +8,7 @@ from dAngr.cli.grammar.statements import Assignment,  Statement
 from dAngr.cli.grammar.control_flow import IfThenElse, WhileLoop, ForLoop
 from dAngr.cli.grammar.script import Script, Body
 from dAngr.cli.grammar.definitions import ArgumentSpec, CustomFunctionDefinition
-from dAngr.cli.grammar.expressions import BREAK, CONTINUE, DangrCommand, Dictionary, IfConstraint, Inclusion, Listing, Memory, Negate, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
+from dAngr.cli.grammar.expressions import BREAK, CONTINUE, BASECommand, Constraint, DangrCommand, Dictionary, Expression, IfConstraint, Inclusion, Listing, Memory, Negate, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
 from dAngr.utils.utils import parse_binary_string
 
 
@@ -247,6 +247,8 @@ class dAngrVisitor_(dAngrVisitor):
             return BREAK
         elif ctx.CONTINUE():
             return CONTINUE
+        elif ctx.RETURN():
+            return BASECommand("return", self.visit(ctx.expression()) if ctx.expression() else None)
         elif ctx.expression():
             return self.visit(ctx.expression()) # TODO: deal with return
         elif ctx.statement():

@@ -3,7 +3,7 @@ from claripy import List
 
 from dAngr.cli.grammar.definitions import Definition, FunctionContext
 from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import BREAK, CONTINUE, VariableRef
+from dAngr.cli.grammar.expressions import BREAK, CONTINUE, BASECommand, VariableRef
 from dAngr.cli.grammar.statements import Assignment, Statement
 
 
@@ -29,18 +29,24 @@ class Body:
         else:
             func_name = "main"
         context = ExecutionContext(parent=ctx)
-        for s in self.statements:
-            if s == BREAK:
-                return s
-            elif s == CONTINUE:
-                return
-            if self.is_static(s):
-                self._prepare_static(context, func_name, s)
-            result = s(context)
-            if result == BREAK:
-                break
-        
-        self._repair_static(context, func_name)
+        try:
+            for s in self.statements:
+                if isinstance(s,BASECommand):
+                    if s == BREAK:
+                        return s
+                    elif s == CONTINUE:
+                        return
+                    elif s.base == "return":
+                        return s(context)
+                if self.is_static(s):
+                    self._prepare_static(context, func_name, s)
+                result = s(context)
+                if result == BREAK:
+                    return result
+                if isinstance(result, BASECommand) and result.base == "return":
+                    return result(context)
+        finally:
+            self._repair_static(context, func_name)
         return result
     
     def _prepare_static(self, context:ExecutionContext, func_name:str, s:Statement):
