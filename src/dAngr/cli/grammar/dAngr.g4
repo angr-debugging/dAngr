@@ -28,15 +28,15 @@ def nextToken(self):
 import re as rex
 }
 
-script : ((QMARK|HELP) (WS identifier)? NEWLINE|
-            (NEWLINE|statement| function_def)* WS*) EOF;
+script : ((QMARK|HELP) (WS identifier)? NEWLINE| 
+            (NEWLINE|statement| function_def | HASH anything_no*)* WS*) EOF;
 
 statement:  control_flow |
             // dangr_command NEWLINE| 
-            assignment NEWLINE | 
-            expression NEWLINE | 
-            static_var NEWLINE |
-            ext_command NEWLINE ;
+            assignment WS* NEWLINE | 
+            expression WS* NEWLINE | 
+            static_var WS* NEWLINE |
+            ext_command WS* NEWLINE ;
 
 expression :
     (identifier DOT)? identifier (WS (identifier ASSIGN)?expression_part)*
@@ -144,7 +144,8 @@ object : identifier BANG?  # IDObject
     | BINARY_STRING #BinaryStringObject
     ; 
 
-anything: (LETTERS | NUMBERS | symbol | STRING | BINARY_STRING | WS | LPAREN anything RPAREN | special_words | NEWLINE);
+anything: (anything_no | NEWLINE);
+anything_no: (LETTERS | NUMBERS | symbol | STRING | BINARY_STRING | WS | LPAREN anything RPAREN | special_words );
 
 special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN | BREAK | CONTINUE | RANGE;
 

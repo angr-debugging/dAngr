@@ -1,5 +1,3 @@
-## Nog niet af
-
 load 'repo/angr_examples/examples/ekopartyctf2016_rev250/FUck_binary'
 
 start = 0x400B30

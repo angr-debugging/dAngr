@@ -1,3 +1,5 @@
+# Ekoparty ctf 2015 rev_100
+
 load 'repo/angr_examples/examples/ekopartyctf2015_rev100/counter'
 
 add_symbol flag 32

@@ -229,6 +229,11 @@ class dAngrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by dAngrParser#anything_no.
+    def visitAnything_no(self, ctx:dAngrParser.Anything_noContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by dAngrParser#special_words.
     def visitSpecial_words(self, ctx:dAngrParser.Special_wordsContext):
         return self.visitChildren(ctx)

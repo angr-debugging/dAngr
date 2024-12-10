@@ -58,8 +58,8 @@ class ExecutionContext:
         assert not isinstance(value, Variable)
         if name in self._variables:
             self._variables[name]._value = value
-        elif self._parent and name in self._parent.variables:
-            self._parent[name].value = value
+        # elif self._parent and name in self._parent.variables:
+        #     self._parent[name].value = value
         else:
             self._variables[name] = Variable(name,value)
     def add_variable(self, name:str, value:Any):

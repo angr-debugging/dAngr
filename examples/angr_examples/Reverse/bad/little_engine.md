@@ -46,7 +46,7 @@ for i in range(input_len):
 to_symbol flag (append flag_chars '\n')
 
 
-set_entry_state args=["./engine"] stdin=&sym.flag
+set_full_state args=["./engine"] add_options=options.unicorn stdin=&sym.flag
 
 for c in flag_chars:
     add_constraint c < 0x7f && c > 0x20

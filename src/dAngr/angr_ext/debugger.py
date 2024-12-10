@@ -549,6 +549,9 @@ class Debugger:
         val = loc.get_value(state, stack_base=state.regs.sp - cc.STACKARG_SP_DIFF)
         value = state.solver.eval(val, cast_to=int)
         return value
+    
+    def get_callable_function(self, addr:int):
+        return self.project.factory.callable(addr)
  
     def get_bb_end_address(self, state):
         bb = state.block()

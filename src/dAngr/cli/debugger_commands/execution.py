@@ -77,6 +77,19 @@ class ExecutionCommands(BaseCommand):
         # Throws errors in example 14 of malware analysis
         #return self.debugger.get_current_basic_block() 
 
+    def get_callable_function(self, addr: int, *args):
+        """
+        Get a callable function.
+
+        Args:
+            addr (int): The address of the function to get.
+            args (tuple): The arguments to pass to the function.
+
+        Short name: gcf
+        """
+        function = self.debugger.get_callable_function(addr)
+        return function(*args) 
+    
     def exit(self):
         """
         Exit the debugger.

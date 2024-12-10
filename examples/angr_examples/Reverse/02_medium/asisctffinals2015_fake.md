@@ -1,11 +1,16 @@
+
+# ASIS ctf finals 2015 - fake
+
+```
 load 'repo/angr_examples/examples/asisctffinals2015_fake/fake'
  
 add_symbol input 8
-set_blank_state 0x4004ac
+set_blank_state addr=0x4004ac
 &reg.rax = &sym.input
 breakpoint (by_address 0x400684)
 run
-run
+
+
 
 flag = get_memory &reg.rsp 40
 
@@ -20,14 +25,13 @@ add_constraint flag_arr[4] == "{"
 add_constraint flag_arr[37] == "}"
 
 
+println (evaluate flag)
 
+winning_nr = to_int (evaluate &sym.input)
 
-for i in range(5,5+32, 1):
-    cond_a = flag_arr[i] >= '0' && flag_arr[i] <= '9'
-    cond_b = flag_arr[i] >= 'a' && flag_arr[i] <= 'f'
-    add_constraint cond_a | cond_b
+clear_breakpoints
+set_blank_state addr=0x4004ac
+&reg.rax = winning_nr
 
-
-evaluate flag
-
-
+run
+```

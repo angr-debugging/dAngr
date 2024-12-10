@@ -404,6 +404,15 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by dAngrParser#anything_no.
+    def enterAnything_no(self, ctx:dAngrParser.Anything_noContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#anything_no.
+    def exitAnything_no(self, ctx:dAngrParser.Anything_noContext):
+        pass
+
+
     # Enter a parse tree produced by dAngrParser#special_words.
     def enterSpecial_words(self, ctx:dAngrParser.Special_wordsContext):
         pass
