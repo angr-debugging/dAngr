@@ -6,6 +6,8 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter, merge_completers, PathCompleter
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit import HTML
+from prompt_toolkit.document import Document
+from prompt_toolkit.validation import Validator, ValidationError
 from prompt_toolkit.history import FileHistory
 
 from dAngr.cli import  CommandLineDebugger
@@ -20,8 +22,15 @@ from dAngr.utils.loggers import get_logger
 logger = get_logger(__name__)
 
 
+class MyValidator(Validator):
+    def __init__(self, dbg):
+        self.dbg = dbg
+    def validate(self, document: Document):
+        if e := self.dbg.validate_input(document.text):
+            raise ValidationError(message=e)
 
-DEBUG_COMMANDS = False
+
+DEBUG_COMMANDS = True
 class Server:
     def __init__(self, debug_file_path = None, script_path=None):
         logger.info("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
@@ -107,11 +116,12 @@ class Server:
         self.stop = False
         self.script_path = None
         inp = ""
+
         while not self.stop:
             try:
                 with patch_stdout() as po:
                     last_command = inp
-                    inp = session.prompt(prmpt, completer=self.completer)
+                    inp = session.prompt(prmpt, completer=self.completer)#, validator=MyValidator(dbg))
                     if inp.strip() == "":
                         inp = last_command
                     lines = inp

@@ -16,7 +16,7 @@ from dAngr.angr_ext.debugger import Debugger
 from dAngr.cli.debugger_commands import *
 from dAngr.cli.debugger_commands.base import BuiltinFunctionDefinition
 from dAngr.cli.filters import Filter, FilterList
-from dAngr.cli.grammar.parser import parse_input
+from dAngr.cli.grammar.parser import parse_input, validate_input
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.cli.grammar.expressions import Object
 
@@ -113,6 +113,10 @@ class CommandLineDebugger(Debugger,StepHandler):
         else:
             self.conn.send_warning(f"Stopped with unknown reason at: {hex(start)}.") # type: ignore
 
+
+    def validate_input(self, command):
+        return validate_input(command,self)
+        
     # command methods
     def handle(self, command:str, raise_error:bool = True):
         try:

@@ -33,7 +33,7 @@ class TestGenericCommandExecution:
 
     def test_python_command(self,capsys,dbg):
         input = "!print('x')"
-        result = parse_input(input)
+        result = parse_input(input, dbg)
         
         assert isinstance(result, Script)
         ctx = dAngrExecutionContext(dbg,{})

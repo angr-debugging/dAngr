@@ -58,8 +58,8 @@ class TestMemoryCommands:
         assert "abc" == str(conn.send_result.call_args[0][0])
     
     def test_get_register(self, dbg, conn):
-        assert dbg.handle("r = get_register ip")
-        assert dbg.handle("cast_to (evaluate r) address")
+        assert dbg.handle("reg = get_register ip")
+        assert dbg.handle("cast_to (evaluate reg) address")
         assert "0x40054d" == str(conn.send_result.call_args[0][0])
 
     

@@ -92,17 +92,16 @@ if a != "Hello from Bash":
 
     parse_tests = {
         "" : [],
-        'cmd_0_1_': [DangrCommand('cmd_0_1_',None)],
-        '_cmd_0_2': [DangrCommand('_cmd_0_2' ,None)],
-        'cmd3 0 1 2': [DangrCommand('cmd3', None, Literal(0), Literal(1), Literal(2))],
+        'run': [DangrCommand('run',None)],
+        'run 0 1 2': [DangrCommand('run', None, Literal(0), Literal(1), Literal(2))],
         "!print(&vars.x)" : [PythonCommand(Literal("print("), VariableRef(Literal('x')), Literal(")"))],
         "!print('x')" : [PythonCommand(Literal("print('x')"))],
         '$ls' : [BashCommand(Literal('ls'))],
-        '&cmd_0_3_' : [DangrCommand('cmd_0_3_', None)],
-        'cmd "4" "3" "4"': [DangrCommand('cmd', None, Literal('4'), Literal('3'), Literal('4'))],
-        'cmd "5" !(print(1)) "4"': [DangrCommand('cmd', None, Literal('5'), PythonCommand(Literal("print(1)")), Literal('4'))],
-        'cmd "6" $(ls -la) "4"': [DangrCommand('cmd', None, Literal('6'), BashCommand(Literal("ls -la")), Literal('4'))],
-        'cmd "7" !(print($(ls -la))) "4"': [DangrCommand('cmd', None, Literal('7'), PythonCommand(Literal("print("),BashCommand(Literal("ls -la")), Literal(")")), Literal('4'))],
+        '&run' : [DangrCommand('run', None)],
+        'run "4" "3" "4"': [DangrCommand('run', None, Literal('4'), Literal('3'), Literal('4'))],
+        'run "5" !(print(1)) "4"': [DangrCommand('run', None, Literal('5'), PythonCommand(Literal("print(1)")), Literal('4'))],
+        'run "6" $(ls -la) "4"': [DangrCommand('run', None, Literal('6'), BashCommand(Literal("ls -la")), Literal('4'))],
+        'run "7" !(print($(ls -la))) "4"': [DangrCommand('run', None, Literal('7'), PythonCommand(Literal("print("),BashCommand(Literal("ls -la")), Literal(")")), Literal('4'))],
 """
 for i in range(10):
     !print(&vars.i)
@@ -125,8 +124,8 @@ if a != "Hello from Bash":
 '!print("Printing from Python: ", &vars.a)': [PythonCommand('print("Printing from Python: ", ', VariableRef(Literal("a")),')')],
 "static i = 0": [Assignment(VariableRef(Literal('i'),True), Literal(0))],
 '!("{:08x} {:08x} {:08x}".format(int(&vars.password0,16), int(&vars.password1,16), int(&vars.password2,16)))':[PythonCommand('"{:08x} {:08x} {:08x}"','.format(int(', VariableRef(Literal('password0')),',16), int(', VariableRef(Literal('password1')),',16), int(', VariableRef(Literal('password2')),',16))')],
-'a2 = (get_symbolic_value &vars.password2 "int")': [Assignment(VariableRef(Literal('a2')), DangrCommand('get_symbolic_value', None, VariableRef(Literal('password2')), Literal('int')))],
-'a2 = &(get_symbolic_value password2 "int")': [Assignment(VariableRef(Literal('a2')), DangrCommand('get_symbolic_value', None, VariableRef(Literal('password2')), Literal('int')))],
+'a2 = (get_symbol &vars.password2 "int")': [Assignment(VariableRef(Literal('a2')), DangrCommand('get_symbol', None, VariableRef(Literal('password2')), Literal('int')))],
+'a2 = &(get_symbol password2 "int")': [Assignment(VariableRef(Literal('a2')), DangrCommand('get_symbol', None, VariableRef(Literal('password2')), Literal('int')))],
 'set_entry_state add_options=[options.LAZY_SOLVES]': [DangrCommand('set_entry_state', None, add_options= Listing([Property(VariableRef(Literal('options')), 'LAZY_SOLVES')]))],
     }
 
@@ -134,13 +133,13 @@ if a != "Hello from Bash":
         for a in self.parse_neg_tests:
             #must raise exception
             with pytest.raises(ParseError) as exc_info:
-                r = parse_input(a)
+                r = parse_input(a, None)
             assert exc_info is not None, f"Expected exception when parsing {a}, got {r}"
             
 
     def test_parse_true(self):
         for a in reversed(self.parse_tests):
-            r = parse_input(a)
+            r = parse_input(a, None)
             assert Script(self.parse_tests[a],[]) == r, f"Expected {Script(self.parse_tests[a],[])}, got {r}"
 
     def test_parse_def(self):
@@ -168,7 +167,7 @@ my_function max x
 !print(x)
 !print(6*5)
 """
-        r = parse_input(input)
+        r = parse_input(input, None)
         assert r is not None
 
 

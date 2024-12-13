@@ -105,5 +105,7 @@ class CliConnection(Connection):
 
     def send_error(self, data, style=None):
         #replace newlines with newlines and 4 spaces
+        if isinstance(data, Exception):
+            data = str(data)
         data = self._escape(data)
         print_formatted_text(HTML(f"<red>    {data}</red>"),style=style)

@@ -641,7 +641,10 @@ class DangrCommand(Command):
         if isinstance(spec.dtype, type) and issubclass(spec.dtype, ReferenceObject):
             return arg
         elif isinstance(spec.dtype, type) and issubclass(spec.dtype, Enum):
-            return spec.dtype[arg.name(context)]
+            if not isinstance(arg.name, Literal):
+                return spec.dtype[arg.value]
+            else:
+                return spec.dtype[arg.name(context)]
         else:
             if isinstance(arg, VariableRef):
                 if arg.var_exists(context):

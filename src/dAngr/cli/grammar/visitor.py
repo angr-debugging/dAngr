@@ -160,7 +160,14 @@ class dAngrVisitor_(dAngrVisitor):
                     else:
                         assert kwargs == {}
                         args.append(self.visit(c))
-            return DangrCommand(cmd, package, *args, **kwargs)
+            from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS
+            if not(self.debugger and self.debugger.context):
+                if cmd in DEBUGGER_COMMANDS:
+                    return DangrCommand(cmd, None, *args, **kwargs)
+            if self.debugger and self.debugger.context and self.debugger.context.find_function(package, cmd):
+                return DangrCommand(cmd, package, *args, **kwargs)
+            else:
+                return VariableRef(Literal(cmd))
         else:
             return self.visit(ctx.expression_part(0))
     def visitExpressionIf(self, ctx: dAngrParser.ExpressionIfContext):
@@ -201,13 +208,19 @@ class dAngrVisitor_(dAngrVisitor):
         else:
             var = self.visit(ctx.object_())
         # check if variable name does not match a short name of a command
-        from dAngr.cli.command_line_debugger import CommandLineDebugger
-        dbg = cast(CommandLineDebugger, self.debugger)
-        name = var.name
-        if isinstance(name, Literal):
-            v = name.get_value(None)
-            if f:=dbg.context.find_function(None, v):
-                raise ParseError(f"Variable name {v} is a command name for {f.name}")
+        if isinstance(var, VariableRef):
+            name = var.name
+            if isinstance(name, Literal):
+                v = name.get_value(None)
+                if not (self.debugger and self.debugger.context):
+                    from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS
+                    if v in DEBUGGER_COMMANDS:
+                        raise ParseError(f"Variable name {v} is a command name") 
+                else:
+                    from dAngr.cli.command_line_debugger import CommandLineDebugger
+                    dbg = cast(CommandLineDebugger, self.debugger)
+                    if f:=dbg.context.find_function(None, v):
+                        raise ParseError(f"Variable name {v} is a command name for {f.name}")
         val = self.visit(ctx.expression())
         return Assignment(var, val)
     
