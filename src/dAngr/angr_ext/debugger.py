@@ -13,7 +13,7 @@ from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import Constraint
-from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector, remove_ansi_escape_codes
+from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector, get_local_arch, remove_ansi_escape_codes
 from dAngr.utils import utils
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, hook_simprocedures, load_module_from_file, get_function_by_name, get_function_by_addr
@@ -620,7 +620,7 @@ class Debugger:
         return std.get_prev_string()
 
     def cast_to(self, value:AngrValueType, dtype:DataType, **kwargs):
-        return dtype.convert(value,  self.project.arch, **kwargs)    
+        return dtype.convert(value,  self.project.arch if self.initialized else get_local_arch(), **kwargs)    
 
     def load_hooks(self, filename):
         mod = load_module_from_file(filename)

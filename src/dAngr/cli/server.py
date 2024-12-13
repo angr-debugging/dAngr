@@ -6,11 +6,13 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter, merge_completers, PathCompleter
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit import HTML
+from prompt_toolkit.history import FileHistory
 
 from dAngr.cli import  CommandLineDebugger
 from dAngr.cli.cli_connection import CliConnection
-from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS
+from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS, dAngrExecutionContext
 
+from dAngr.cli.debugger_commands.base import BuiltinFunctionDefinition
 from dAngr.cli.script_processor import ScriptProcessor
 
 # add logger
@@ -23,14 +25,32 @@ DEBUG_COMMANDS = False
 class Server:
     def __init__(self, debug_file_path = None, script_path=None):
         logger.info("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
-
         self.commands = DEBUGGER_COMMANDS
-        dd = {c: f"{c} ({self.commands[c].short_name})" for c in self.commands.keys()}
-        dd.update({self.commands[c].package + '.' + c: f"{c}" for c in self.commands.keys()})
-        self.completer = merge_completers([WordCompleter(sorted(dd.keys()),display_dict=dd),PathCompleter(get_paths=lambda: [os.getcwd()])])
+        self.completer = None
+        self.reset_completer()
         self.debug_file_path = debug_file_path
         self.script_path = script_path
         self.stop = False
+
+    def reset_completer(self, context:dAngrExecutionContext|None=None):
+        if context:
+            #fetch variables, symbols, and functions with both name and shortname from the context
+            dd = {v: f"&vars.{v}" for v in context.variables.keys()}
+            dd.update({f"&vars.{v}": f"&vars.{v}" for v in context.variables.keys()})
+            dd.update({f"&sym.{s}": f"&sym.{s}" for s in context.debugger._symbols.keys()})
+            dd.update({s: f"&sym.{s}" for s in context.debugger._symbols.keys()})
+            if context.debugger.initialized:
+                dd.update({f"&reg.{s}": f"&reg.{s}" for s in context.debugger.list_registers().keys()})
+            dd.update({f"{f.name}": f"{f.name}" for f in context.functions.values()})
+            for f in context.functions.values():
+                if isinstance(f, BuiltinFunctionDefinition):
+                    dd.update({f"{f.short_name}": f"{f.short_name}"})
+        else:
+            dd = {c: f"{c} ({self.commands[c].short_name})" for c in self.commands.keys()}
+            dd.update({self.commands[c].package + '.' + c: f"{c}" for c in self.commands.keys()})
+
+        word_completer = WordCompleter(sorted(dd.keys()), display_dict=dd)
+        self.completer = merge_completers([word_completer,PathCompleter(get_paths=lambda: [os.getcwd()])])
 
 
     def loop(self):
@@ -38,7 +58,8 @@ class Server:
         dbg = CommandLineDebugger(conn)
         conn.send_info("Welcome to dAngr, the symbolic debugger. Type help or ? to list commands.")
         prmpt = HTML('<darkcyan>(dAngr)> </darkcyan>')
-        session = PromptSession(enable_history_search=True)
+        cmd_history = FileHistory(os.path.expanduser("~/.dAngr_history"))
+        session = PromptSession(enable_history_search=True, history=cmd_history)
         if self.debug_file_path:
             dbg.handle(f"load {self.debug_file_path}", False)
         if self.script_path:
@@ -105,6 +126,7 @@ class Server:
                         continue
                     if not dbg.handle(lines, False):
                         self.stop = True
+                    self.reset_completer(dbg.context)
             except KeyboardInterrupt:
                 continue
             except EOFError:

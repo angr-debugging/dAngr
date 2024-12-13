@@ -61,10 +61,12 @@ class ExecutionContext:
         elif self._parent and name in self._parent.variables:
             self._parent[name].value = value
         else:
-            self._variables[name] = Variable(name,value)
+            self.add_variable(name, value)
+
     def add_variable(self, name:str, value:Any):
         assert not isinstance(value, Variable)
         self._variables[name] = Variable(name, value)
+
     def remove_variable(self, name:str):
         if name in self._variables:
             del self._variables[name]

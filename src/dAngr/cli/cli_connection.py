@@ -5,6 +5,8 @@ import html
 from dAngr.angr_ext.connection import Connection
 from prompt_toolkit.styles import Style
 
+from dAngr.cli import pretty_print
+
 class CliConnection(Connection):
 
     def __init__(self):
@@ -32,6 +34,9 @@ class CliConnection(Connection):
     def clear_output(self):
         if len(self._history[-1])!=0:
             self._history.append([])
+        if len(self._history)>5:
+            #drop the first element
+            self._history.pop(0)
         self._first = True
     @property
     def last_command(self)->str:
@@ -40,11 +45,17 @@ class CliConnection(Connection):
     def _indent(self, data):
          return " "*self.indent + str(data).replace("\n", "\n" + " "*self.indent).replace("\t", " "*self.indent)
 
-    def _escape(self, data, esscape_html=True):
+
+
+
+
+        
+
+    def _escape(self, str_data, esscape_html=True):
         # indent data
         # replace non-printable characters with their hex representation
-        data = "".join([c if c.isprintable() or c in ['\r','\n', '\t'] else f"\\x{ord(c):02x}" for c in str(data)])
-        return html.escape(data ) if esscape_html else data
+        data = "".join([c if c.isprintable() or c in ['\r','\n', '\t'] else f"\\x{ord(c):02x}" for c in str_data])
+        return html.escape(data ) if esscape_html else str_data
     
     def send_result(self, data, newline:bool=True, style=None):
         if data is None:
@@ -52,6 +63,7 @@ class CliConnection(Connection):
         if newline:
             conc = "\n"
         else: conc = ""
+        data = pretty_print.pretty_print(data)
         # if data is a list, print each element per line
         data = conc.join([str(x) for x in data]) if isinstance(data, list) else data
         #if data is a dictionary, print each key value pair per line

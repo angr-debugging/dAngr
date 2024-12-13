@@ -50,7 +50,7 @@ def lex_input(input, Lexer:type[Any]=dAngrLexer, Parser:type[Any]=dAngrParser):
         raise ParseError("\n".join([e for e in error_listener.errors]))
     return logTokens(stream, Parser, lexer)
 
-def parse_input(input:str, Lexer:type[Any]=dAngrLexer, Parser:type[Any] = dAngrParser, Visitor:type[Any]|None = dAngrVisitor_)-> Script:
+def parse_input(input:str, debugger, Lexer:type[Any]=dAngrLexer, Parser:type[Any] = dAngrParser, Visitor:type[Any]|None = dAngrVisitor_)-> Script:
     input_stream = InputStream(input)
     lexer = Lexer(input_stream)
     stream = CommonTokenStream(lexer)
@@ -69,5 +69,5 @@ def parse_input(input:str, Lexer:type[Any]=dAngrLexer, Parser:type[Any] = dAngrP
     
     if not Visitor:
         raise ParseError("No visitor provided")
-    visitor = Visitor()
+    visitor = Visitor(debugger)
     return visitor.visit(tree)

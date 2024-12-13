@@ -55,7 +55,7 @@ class ViewerCommands(BaseCommand):
         Short name: h
         """
         # print last n commands
-        history = cast(CliConnection,self.debugger.conn).history
+        return cast(CliConnection,self.debugger.conn).history
         for i in range(1, n+1):
             try:
                 index = len(history) - i

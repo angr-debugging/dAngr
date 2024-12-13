@@ -11,6 +11,7 @@ from claripy import List
 import re
 
 import claripy
+import platform
 
 from dAngr.exceptions import DebuggerCommandError, InvalidArgumentError, ValueError
 
@@ -190,6 +191,7 @@ class DataType(Enum):
             DataType.address: DataType._to_address
         }
         return switch.get(self, None)(value, arch, **kwargs)
+
     @staticmethod
     def _to_int(value, arch:archinfo.Arch, endness:Endness=Endness.DEFAULT):
         if not type(value) in [int, str, bytes, bool]:
@@ -369,6 +371,22 @@ def str_to_type(dtype:str):
         except:
             raise ValueError(f"Invalid data type {dtype}")
     return tp
+
+def get_local_arch():
+    # Detect platform architecture
+    machine = platform.machine()
+    arch_map = {
+        'x86_64': archinfo.ArchAMD64,
+        'i386': archinfo.ArchX86,
+        'arm': archinfo.ArchARM,
+        'aarch64': archinfo.ArchAArch64,
+        'mips': archinfo.ArchMIPS32,
+        'mips64': archinfo.ArchMIPS64,
+    }
+    if machine in arch_map:
+        return arch_map[machine]()
+    else:
+        raise ValueError(f"Unsupported architecture: {machine}")
 
 def check_signature_matches(func, o, args, kwargs):
     # Get the function's signature

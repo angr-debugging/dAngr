@@ -663,16 +663,16 @@ class DangrCommand(Command):
         if not spec:
             if self.package:
                 raise CommandError(f"Unknown command: {self.package}.{self.cmd}")
-            if context.find_variable(self.cmd):
-                # make an expression with the var and args
-                #TODO: what if not comparison?
-                if self.args:
-                    c = Comparison(VariableRef(Literal(self.cmd)), Operator.ADD, self.args[0])
-                    return c(context)
-                else:
-                    return context[self.cmd].value
-            elif e:= context.find_enum(self.cmd):
-                return e
+            # if context.find_variable(self.cmd):
+            #     # make an expression with the var and args
+            #     #TODO: what if not comparison?
+            #     if self.args:
+            #         c = Comparison(VariableRef(Literal(self.cmd)), Operator.ADD, self.args[0])
+            #         return c(context)
+            #     else:
+            #         return context[self.cmd].value
+            # elif e:= context.find_enum(self.cmd):
+            #     return e
             else:
                 raise CommandError(f"Unknown command: {self.cmd}")
         # spec = cast(BuiltinFunctionDefinition, spec)

@@ -201,7 +201,7 @@ class MemoryCommands(BaseCommand):
             value = self.debugger.get_register_value(reg)
             regs.append(Register(reg,size,offset,value))
         
-        return  f"{"\n".join([str(r) for r in regs])}"
+        return regs
 
     def unconstrained_fill(self, symbolic:bool=False):
         """

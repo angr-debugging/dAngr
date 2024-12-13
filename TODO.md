@@ -11,6 +11,7 @@
 - prity print of constraints/(BV)
 - history output length (limited -> slows down)
 - command history to file (fish-like shell)
+- check completion
 
 # Breaking bugs
 - break_addr --> result = BREAK
