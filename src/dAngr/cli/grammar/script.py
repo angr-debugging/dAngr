@@ -52,7 +52,7 @@ class Body:
                 except StatementException as e:
                     raise e
                 except Exception as e:
-                    raise StatementException(f"Error executing statement {statement_cnt}: {s}\n\t{e}")
+                    raise StatementException(f"Error executing statement {s} in function {func_name} line:{statement_cnt}\n\t{e}")
         finally:
             self._repair_static(context, func_name)
         return result

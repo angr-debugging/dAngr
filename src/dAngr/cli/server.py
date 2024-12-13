@@ -27,6 +27,8 @@ class MyValidator(Validator):
         self.dbg = dbg
     def validate(self, document: Document):
         if e := self.dbg.validate_input(document.text):
+            if "INDENT" in e or "&newline" in e:
+                return
             raise ValidationError(message=e)
 
 
@@ -51,6 +53,8 @@ class Server:
             if context.debugger.initialized:
                 dd.update({f"&reg.{s}": f"&reg.{s}" for s in context.debugger.list_registers().keys()})
             dd.update({f"{f.name}": f"{f.name}" for f in context.functions.values()})
+            if context.debugger.initialized:
+                dd.update({f"&state": f"&state"})
             for f in context.functions.values():
                 if isinstance(f, BuiltinFunctionDefinition):
                     dd.update({f"{f.short_name}": f"{f.short_name}"})
@@ -58,7 +62,7 @@ class Server:
             dd = {c: f"{c} ({self.commands[c].short_name})" for c in self.commands.keys()}
             dd.update({self.commands[c].package + '.' + c: f"{c}" for c in self.commands.keys()})
 
-        word_completer = WordCompleter(sorted(dd.keys()), display_dict=dd)
+        word_completer = WordCompleter(sorted(dd.keys()), display_dict=dd, WORD=True)
         self.completer = merge_completers([word_completer,PathCompleter(get_paths=lambda: [os.getcwd()])])
 
 
@@ -121,7 +125,7 @@ class Server:
             try:
                 with patch_stdout() as po:
                     last_command = inp
-                    inp = session.prompt(prmpt, completer=self.completer)#, validator=MyValidator(dbg))
+                    inp = session.prompt(prmpt, completer=self.completer, validator=MyValidator(dbg))
                     if inp.strip() == "":
                         inp = last_command
                     lines = inp

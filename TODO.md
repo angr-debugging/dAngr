@@ -5,8 +5,6 @@
 - Exploration techniques
 - Python negation (not) in if statements
 - stack visualisation
-- new stashes (if not exist by move)
-    - move current to a stash (simplify)
 - evaluate multiple solutions
 - prity print of constraints/(BV)
 - history output length (limited -> slows down)

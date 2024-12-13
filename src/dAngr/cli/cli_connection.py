@@ -90,16 +90,19 @@ class CliConnection(Connection):
 
     def send_output(self, data, style=None):
         #replace newlines with newlines and 4 spaces
+        data = pretty_print.pretty_print(data)
         data = self._escape(data)
         print_formatted_text(HTML(f"<skyblue>    > {data}</skyblue>"),style=style)
 
     def send_info(self, data, style=None):
         #replace newlines with newlines and 4 spaces
+        data = pretty_print.pretty_print(data)
         data = self._escape(data)
         print_formatted_text(HTML(f"<green>    Info: {data}</green>"),style=style)
 
     def send_warning(self, data, style=None):
         #replace newlines with newlines and 4 spaces
+        data = pretty_print.pretty_print(data)
         data = self._escape(data)
         print_formatted_text(HTML(f"<yellow>    Warning: {data}</yellow>"),style=style)
 
@@ -107,5 +110,6 @@ class CliConnection(Connection):
         #replace newlines with newlines and 4 spaces
         if isinstance(data, Exception):
             data = str(data)
+        data = pretty_print.pretty_print(data)
         data = self._escape(data)
         print_formatted_text(HTML(f"<red>    {data}</red>"),style=style)

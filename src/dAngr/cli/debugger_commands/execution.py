@@ -406,4 +406,14 @@ class ExecutionCommands(BaseCommand):
         self.debugger.move_state_to_stash(index, from_stash, to_stash)
         self.send_info(f"State moved from {from_stash} to {to_stash}.")
     
-    
+    def move_to_stash(self, stash:str):
+        """
+        Move a state to a stash.
+
+        Args:
+            stash (str): The stash to move the state to.
+
+        Short name: mts
+        """
+        self.debugger.to_stash(stash)
+        self.send_info(f"Current active state moved to {stash}.")

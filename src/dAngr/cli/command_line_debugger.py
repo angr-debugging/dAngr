@@ -115,7 +115,7 @@ class CommandLineDebugger(Debugger,StepHandler):
 
 
     def validate_input(self, command):
-        return validate_input(command,self)
+        return validate_input(command)
         
     # command methods
     def handle(self, command:str, raise_error:bool = True):

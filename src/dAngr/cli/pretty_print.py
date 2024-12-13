@@ -13,7 +13,7 @@ class StatePrinter(PrettyPrint):
 
     def print(self, obj, indent):
         state:angr.SimState = obj
-        return " "*indent + f"State: {state.addr}"
+        return " "*indent + f"State: {hex(state.addr)}"
     
 class ListPrinter(PrettyPrint):
     def print(self, obj, indent):

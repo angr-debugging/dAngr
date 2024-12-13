@@ -129,13 +129,19 @@ class Debugger:
         if from_stash not in self.simgr.stashes:
             raise DebuggerCommandError(f"Stash {from_stash} not found.")
         if to_stash not in self.simgr.stashes:
-            raise DebuggerCommandError(f"Stash {to_stash} not found.")
+            #create the stash
+            self.simgr.stashes[to_stash] = []
         if stateID >= len(self.simgr.stashes[from_stash]):
             raise DebuggerCommandError(f"State with ID {stateID} not found in stash {from_stash}.")
         state = self.simgr.stashes[from_stash][stateID]
         self.simgr.move(from_stash, to_stash,lambda  s: s == state )
         return state
-            
+    
+    def to_stash(self, stash:str):
+        if not self.simgr.active:
+            raise DebuggerCommandError("No active state to move.")
+        self.simgr.move("active", stash, lambda s: s == self.current_state)
+
     def throw_if_not_initialized(self):
         if self._project is None:
             raise DebuggerCommandError("project not initialized.")
