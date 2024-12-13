@@ -12,19 +12,18 @@ and the [script](https://github.com/angr/angr-examples/tree/master/examples/secu
 ## Solution with dAngr:
 
 ```
-load 'A01_securityfest_fairlight'
 
-add_symbol argv1 0xE
+load 'securityfest_fairlight'
+
+add_symbol argv1 0xe
 
 set_entry_state args=["./fairlight", &sym.argv1]
 
 
 breakpoint (by_address 0x4018f7)
-exclude (by_address 0x4018f9)
+#exclude (by_address 0x4018f9)
 
 run
-
-to_bytes (evaluate &sym.argv1)
-
+evaluate &sym.argv1
 ```
 flag: "4ngrman4gem3nt"

@@ -1,6 +1,6 @@
 # Ekoparty ctf 2015 rev_100
 
-load 'repo/angr_examples/examples/ekopartyctf2015_rev100/counter'
+load 'ekopartyctf2015_rev100'
 
 add_symbol flag 32
 set_entry_state args=["file", &sym.flag] argc=2 add_options=options.unicorn 

@@ -8,7 +8,7 @@ from dAngr.cli.grammar.statements import Assignment,  Statement
 from dAngr.cli.grammar.control_flow import IfThenElse, WhileLoop, ForLoop
 from dAngr.cli.grammar.script import Script, Body
 from dAngr.cli.grammar.definitions import ArgumentSpec, CustomFunctionDefinition
-from dAngr.cli.grammar.expressions import BREAK, CONTINUE, BASECommand, Constraint, DangrCommand, Dictionary, Expression, IfConstraint, Inclusion, Listing, Memory, Negate, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
+from dAngr.cli.grammar.expressions import BREAK, CONTINUE, BASECommand, DangrCommand, Dictionary, IfConstraint, Inclusion, Listing, Memory, Negate, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
 from dAngr.utils.utils import parse_binary_string
 
 
@@ -167,7 +167,7 @@ class dAngrVisitor_(dAngrVisitor):
         celse = self.visit(ctx.expression_part(1))
         return IfConstraint(iif, cthen, celse)      
     def visitExpressionIn(self, ctx: dAngrParser.ExpressionInContext):
-        return Inclusion(self.visit(ctx.expression_part(0)), self.visit(ctx.expression_part(1)))
+        return Inclusion(self.visit(ctx.expression_part(0)), self.visit(ctx.expression_part(1)), ctx.NOT_IN() is not None)
     def visitExpressionAlt(self, ctx: dAngrParser.ExpressionAltContext):
         return self.visit(ctx.range_())
     def visitExpressionParenthesis(self, ctx: dAngrParser.ExpressionParenthesisContext):

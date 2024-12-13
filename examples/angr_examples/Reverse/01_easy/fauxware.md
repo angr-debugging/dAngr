@@ -7,10 +7,12 @@ Binary, source, and script are found [here](https://github.com/angr/angr-example
 
 ## Solution with dAngr:
 
-```
-load '00_fauxware'
 
-add_symbol argv1 14
+An other way to check if dAngr has found the password is to check where we get multiple branches. 
+We do that by adding a breakpoint with a filter check_states.
+
+```
+load 'fauxware'
 
 def check_states():
     l = len &(list_states)

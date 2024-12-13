@@ -3,9 +3,14 @@
     - remove send_info, send_error, send_warning and use logging for that
     - improve logging control
 - Exploration techniques
-- return handeling in functions
-- improve memory get_stdin_variables (state.solver.get_variable(*keys))
 - Python negation (not) in if statements
+- stack visualisation
+- new stashes (if not exist by move)
+    - move current to a stash (simplify)
+- evaluate multiple solutions
+- prity print of constraints/(BV)
+- history output length (limited -> slows down)
+- command history to file (fish-like shell)
 
 # Breaking bugs
 - break_addr --> result = BREAK

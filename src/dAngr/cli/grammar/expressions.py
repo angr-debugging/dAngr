@@ -393,20 +393,25 @@ class Slice(Property):
         return isinstance(other, Slice) and self.start == other.start and self.end == other.end
     
 class Inclusion(Expression):
-    def __init__(self, obj:Object, item:Object):
+    def __init__(self, obj:Object, item:Object, exclude:bool=False):
         self.obj = obj
         self.item = item
+        self.exclude = exclude
     
     def __call__(self, context: ExecutionContext):
         o = self.obj.get_value(context)
         i = self.item.get_value(context)
+        if self.exclude:
+            return o not in i
         return o in i
     
     def __str__(self):
+        if self.exclude:
+            return f"{self.obj} not in {self.item}"
         return f"{self.item} in {self.obj}"
     
     def __eq__(self, other):
-        return isinstance(other, Inclusion) and self.obj == other.obj and self.item == other.item
+        return isinstance(other, Inclusion) and self.obj == other.obj and self.item == other.item and self.exclude == other.exclude
     
 class Comparison(Expression):
     def __init__(self, left:Expression, operator:Operator, right:Expression):

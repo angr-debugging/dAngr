@@ -1,14 +1,11 @@
-load '/workspaces/dAngr/examples/HTB/main2'
+load '/workspaces/dAngr/examples/HTB/main'
 
-add_symbol flag 44
-
-def pass():
-    nop = 0
-
-hook_region pass 0x40128b 5
-
-breakpoint (by_address 0x401290)
+breakpoint (by_address 0x400dc0)
 run
-(set_memory (&reg.rbp -0x8) &sym.flag)
-breakpoint (by_stream "authorised")
-run
+
+inp = get_stdin_variables
+inp_0 = inp[0]
+chars = chop_symbol inp_0 8
+add_constraint chars[3] == '{'
+
+dump_stdstream stdin

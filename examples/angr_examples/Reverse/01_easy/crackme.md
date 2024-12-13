@@ -7,8 +7,8 @@ The binary prompts for a secret key, it checks if the key is valid. A valid key 
 Lets start by loading in the binary and inspecting the main function.
 
 ```
-load 'repo/angr_examples/examples/ais3_crackme/ais3_crackme'
-decompile_function main
+load 'crackme'
+decompiled_function main
 ```
 
 The main function has to parameters, a0 and a1. This is probably argc and argv.

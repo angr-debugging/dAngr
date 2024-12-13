@@ -47,7 +47,7 @@ expression_part :
     CIF WS? condition WS? CTHEN WS? expression_part WS? CELSE WS? expression_part # ExpressionIf
     | LPAREN WS? expression WS? RPAREN # ExpressionParenthesis
     | RANGE LPAREN WS? expression_part WS? (COMMA WS?expression_part WS?(COMMA WS?expression_part WS?)?)?  RPAREN # ExpressionRange
-    | expression_part WS IN WS expression_part # ExpressionIn
+    | expression_part WS (IN | NOT_IN) WS expression_part # ExpressionIn 
     | range # ExpressionAlt // python, bash, dangr
     | reference # ExpressionReference
     | BOOL # ExpressionBool
@@ -147,7 +147,7 @@ object : identifier BANG?  # IDObject
 anything: (anything_no | NEWLINE);
 anything_no: (LETTERS | NUMBERS | symbol | STRING | BINARY_STRING | WS | LPAREN anything RPAREN | special_words );
 
-special_words : STATIC | DEF | IF | ELSE | FOR | IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN | BREAK | CONTINUE | RANGE;
+special_words : STATIC | DEF | IF | ELSE | FOR | IN | NOT_IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN | BREAK | CONTINUE | RANGE;
 
 STATIC : 'static';
 
@@ -161,6 +161,7 @@ IF : 'if';
 ELSE : 'else';
 FOR : 'for';
 IN : 'in';
+NOT_IN : 'not in';
 WHILE : 'while';
 BOOL: 'True' | 'False';
 HELP : 'help';
