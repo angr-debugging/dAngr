@@ -15,8 +15,8 @@ We do that by adding a breakpoint with a filter check_states.
 load 'fauxware'
 
 def check_states():
-    l = len &(list_states)
-    l > 1
+    state_len = len &(list_states)
+    state_len > 1
 
 breakpoint (make_filter check_states)
 

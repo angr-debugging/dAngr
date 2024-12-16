@@ -597,7 +597,7 @@ class BashCommand(Command):
     def __call__(self, context):
         c = context.clone()
         args = "".join([str(a(c)) for a in self.cmds]).split(" ")
-        context.return_value = subprocess.run(args, capture_output=True, text=True).stdout.strip()
+        context.return_value = subprocess.run(args, capture_output=True, text=True, shell=True).stdout.strip()
         return context.return_value
     
     def __str__(self):

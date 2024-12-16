@@ -136,7 +136,6 @@ class TestExamples:
         dbg.handle("run_script 'examples/malware.oregonctf.org/14_angr_shared_library.md'")
         assert conn.send_result.call_args[0][0] == 'TSDLQKWZ'
 
-    
     def test_15_angr_arbitrary_read(self, conn):
         dbg = CommandLineDebugger(conn)
         dbg.handle("run_script 'examples/malware.oregonctf.org/15_angr_arbitrary_read.md'")
@@ -171,11 +170,11 @@ class TestExamples:
     def test_fauxware(self, conn):
         dbg = CommandLineDebugger(conn)
         dbg.handle("run_script 'examples/angr_examples/Reverse/01_easy/fauxware.md'")
-        assert conn.send_result.call_args[0][0] == "b'????'"
+        assert conn.send_result.call_args[0][0] == "b'SOSNEAKY'"
 
-    def test_flareon2015_10(self, conn):
+    def test_flareon2015_2(self, conn):
         dbg = CommandLineDebugger(conn)
-        dbg.handle("run_script 'examples/angr_examples/Reverse/01_easy/flareon2015_10.md'")
+        dbg.handle("run_script 'examples/angr_examples/Reverse/01_easy/flareon2015_2.md'")
         assert conn.send_result.call_args[0][0] == "b'a_Little_b1t_harder_plez@flare-on.com'"
 
     def test_mma_howtouse(self, conn):
@@ -186,4 +185,14 @@ class TestExamples:
     def test_securityfest_fairlight(self, conn):
         dbg = CommandLineDebugger(conn)
         dbg.handle("run_script 'examples/angr_examples/Reverse/01_easy/securityfest_fairlight.md'")
-        assert conn.send_result.call_args[0][0] == "b'4ngrman4gem3nt'"
+        assert conn.send_result.call_args[0][0] == b'4ngrman4gem3nt'
+    
+    def test_asisctffinal2015_fake(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/02_medium/asisctffinal2015_fake.md'")
+        assert conn.send_result.call_args[0][0] == b'ASIS{F4K3_F14G}'
+    
+    def test_defcon2016quals_baby_re(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/02_medium/defcon2016quals_baby-re.md'")
+        assert conn.send_result.call_args[0][0] == b'OOO{I_Love_You_Baby}'
