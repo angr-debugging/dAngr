@@ -1,13 +1,9 @@
 
-import os
-from unittest.mock import Mock, MagicMock, Mock, patch
-from prompt_toolkit import PromptSession
+from unittest.mock import Mock, Mock
 import pytest
 
-from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS, CommandLineDebugger
+from dAngr.cli.command_line_debugger import CommandLineDebugger
 from dAngr.cli.cli_connection import CliConnection
-from dAngr.cli.server import Server
-from tests.LoggingMock import LoggingMock
 
 
 
@@ -160,4 +156,34 @@ class TestExamples:
         dbg = CommandLineDebugger(conn)
         dbg.handle("run_script 'examples/malware.oregonctf.org/17_angr_arbitrary_jump.md'")
         assert conn.send_result.call_args[0][0] == 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCPRCMCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
+    
+    def test_crackme(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/01_easy/crackme.md'")
+        assert conn.send_result.call_args[0][0] == "b'ais3{I_tak3_g00d_n0t3s}'"
+    
 
+    def test_defcamp_re100(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/01_easy/defcamp_re100.md'")
+        assert conn.send_result.call_args[0][0] == "b'Code_Talkers'"
+    
+    def test_fauxware(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/01_easy/fauxware.md'")
+        assert conn.send_result.call_args[0][0] == "b'????'"
+
+    def test_flareon2015_10(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/01_easy/flareon2015_10.md'")
+        assert conn.send_result.call_args[0][0] == "b'a_Little_b1t_harder_plez@flare-on.com'"
+
+    def test_mma_howtouse(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/01_easy/mma_howtouse.md'")
+        assert conn.send_result.call_args[0][0] == "MMA{fc7d90ca001fc8712497d88d9ee7efa9e9b32ed8}"
+    
+    def test_securityfest_fairlight(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/01_easy/securityfest_fairlight.md'")
+        assert conn.send_result.call_args[0][0] == "b'4ngrman4gem3nt'"

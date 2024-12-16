@@ -1,7 +1,7 @@
 # Crackme
 
-This is an easy example from ais3 where we get the binary 'crackme'. 
-The binary prompts for a secret key, it checks if the key is valid. A valid key results into a string that prints "Correct! that is the secret key!"
+This is an easy example from ais3 where we get the binary crackme. 
+The binary prompts for a secret key, it checks if the key is valid. A valid key results into a string that prints: Correct! that is the secret key!
 
 
 Lets start by loading in the binary and inspecting the main function.

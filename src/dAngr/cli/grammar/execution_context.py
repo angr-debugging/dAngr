@@ -58,6 +58,7 @@ class ExecutionContext:
         assert not isinstance(value, Variable)
         if name in self._variables:
             self._variables[name]._value = value
+        # Check if itself function context is
         elif self._parent and name in self._parent.variables:
             self._parent[name].value = value
         else:

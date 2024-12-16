@@ -27,7 +27,7 @@ add_constraint flag_arr[37] == "}"
 
 println (evaluate flag)
 
-winning_nr = to_int (evaluate &sym.input)
+winning_nr = to_int &(evaluate &sym.input)
 
 clear_breakpoints
 set_blank_state addr=0x4004ac
@@ -35,3 +35,5 @@ set_blank_state addr=0x4004ac
 
 run
 ```
+
+# ASIS{f5f7af556bd6973bd6f2687280a243d9}
