@@ -1,14 +1,10 @@
 
 from typing import Any, Dict
-
 import angr
-
 from dAngr.utils import Variable
-
 from dAngr.exceptions import KeyError
 
-        
-    
+
 class ExecutionContext:
     def __init__(self, parent=None):
         from .definitions import Definition

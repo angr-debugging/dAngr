@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from prompt_toolkit import HTML, print_formatted_text
+from prompt_toolkit import HTML, ANSI, print_formatted_text
 import html
 
 from dAngr.angr_ext.connection import Connection
@@ -47,10 +47,6 @@ class CliConnection(Connection):
 
 
 
-
-
-        
-
     def _escape(self, str_data, esscape_html=True):
         # indent data
         # replace non-printable characters with their hex representation
@@ -59,6 +55,12 @@ class CliConnection(Connection):
     
     def send_result(self, data, newline:bool=True, style=None):
         if data is None:
+            return
+        elif isinstance(data, HTML):
+            print_formatted_text(data, style=style)
+            return
+        elif isinstance(data, ANSI):
+            print_formatted_text(data, style=style)
             return
         if newline:
             conc = "\n"

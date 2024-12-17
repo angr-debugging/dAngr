@@ -9,11 +9,12 @@ class PrettyPrint():
     def print(self, obj, indent):
         return " "* indent + str(obj)
 
-class StatePrinter(PrettyPrint):
 
+class StatePrinter(PrettyPrint):
     def print(self, obj, indent):
         state:angr.SimState = obj
         return " "*indent + f"State: {hex(state.addr)}"
+    
     
 class ListPrinter(PrettyPrint):
     def print(self, obj, indent):

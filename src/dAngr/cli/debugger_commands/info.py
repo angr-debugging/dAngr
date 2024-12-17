@@ -1,8 +1,13 @@
 import os
 
+from dAngr.cli.state_visualizer import StateVisualizer
+
+
 from .base import BaseCommand
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from prompt_toolkit.shortcuts import ProgressBar
+from prompt_toolkit import ANSI
+
 import angrutils
 
 class InformationCommands(BaseCommand):
@@ -173,3 +178,23 @@ class InformationCommands(BaseCommand):
         """
         info = self.debugger.get_binary_security_features()
         return "\n".join([f"{i}: {info[i]}" for i in info])
+    
+
+    def inspect_state(self):
+        """
+        Inspect the current state.
+
+        Returns:
+            str: Information about the current state.
+
+        Short name: is
+        """
+        # Registers --> refactor list registers to format 'eax': 0x0...
+        state = self.debugger.current_state
+        state_printer = StateVisualizer(state)
+        
+        pstr_reg = state_printer.pprint()
+        self.send_result(ANSI(pstr_reg))
+    
+# Add current basic block, current function + code
+# Add fix for stack problem

@@ -323,8 +323,8 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
     def send_warning(self, data):
         return self.debugger.conn.send_warning(data)
     
-    def send_result(self, data, newline = True):
-        return self.debugger.conn.send_result(data, newline)
+    def send_result(self, data, newline = True, style = None):
+        return self.debugger.conn.send_result(data, newline, style=style)
     
 
     
