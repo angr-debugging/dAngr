@@ -35,12 +35,12 @@ class StateVisualizer():
             self.bits = state.arch.bits
             # Not really where the stack begins,... 
             self.stack_end = state.registers.load('sp').concrete_value
-            self.stack_begin = state.callstack[len(state.callstack) - 1].current_stack_pointer
+            self.stack_begin = state.arch.initial_sp
             
             
             self.heap_start = state.heap.heap_base
             self.heap_end = state.heap.heap_base + state.heap.heap_size
-
+            # state.project.loader.all_objects --> start & end
             self.code_start = state.project.loader.main_object.min_addr
             self.code_end = state.project.loader.main_object.max_addr
 
@@ -67,7 +67,8 @@ class StateVisualizer():
         if value.uninitialized:
             return to_color(str(value), Color.GRAY)
         elif value.symbolic:
-            return to_color(str(value), Color.LIGHT_GREEN)
+            variable_name = [var for var in value.variables][0]
+            return to_color(str(variable_name), Color.LIGHT_GREEN)
         
         value = hex(value.concrete_value)
         if mem_location == MemLocation.STACK:
@@ -85,15 +86,16 @@ class StateVisualizer():
         for reg in self.REGISTERS[self.bits]:
             value = self.state.registers.load(reg)
             regs[reg] = self.format_value(value)
+        
         pstr_regs = self.pprint_registers(regs)
-
         stack_objs = {}
         for i in range(8):
             offset = int(self.bits/8 * i)
             addr = self.stack_end + offset
             stack_objs[offset] = (addr , self.format_value(self.state.stack_read(offset, int(self.bits/8))))
         pstr_stack = self.pprint_stack(stack_objs)
-        return pstr_regs + "\n" + pstr_stack
+        pstr_inst = self.pprint_instructions()
+        return pstr_regs + "\n" + pstr_stack + "\n" + pstr_inst
 
     def deref(self, value, mem_location):
         assert self.state is not None
@@ -137,10 +139,7 @@ class StateVisualizer():
             register_str += to_color(f"{register}: ", Color.BLUE)
             register_str += self.value_to_str(value) + "\n"
 
-                
-        
         return register_str
-    
 
 
     # Check if value is 
@@ -155,3 +154,24 @@ class StateVisualizer():
             stack_str += "\n"
         
         return stack_str
+    
+
+    def pprint_instructions(self):
+        assert self.state is not None
+        instuction_str = "[%s]\n" % to_color(" Basic Block ", Color.CYAN).center(78, '-')
+        try:
+            block = self.state.block()
+            basic_block_ins = block.disassembly.insns
+        except Exception as e:
+            return f"Error getting instructions: {e}"
+        
+        if block.size > 5:
+            basic_block_ins = basic_block_ins[:5]
+        
+        for ins in basic_block_ins:
+            instuction_str += to_color(f"{hex(ins.address)}: ", Color.RED) + to_color(f"{ins.mnemonic}", Color.GREEN) + "\t" + f"{ins.op_str}"
+            if ins.address == self.state.addr:
+                instuction_str += "  <-- IP"
+            instuction_str += "\n" 
+        
+        return instuction_str

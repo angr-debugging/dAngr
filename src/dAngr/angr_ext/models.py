@@ -8,7 +8,7 @@ class BasicBlock:
     def __str__(self) -> str:
         #add function name if function is not None
         f = f"  Function: {self.function}\n" if self.function else ""
-        return f"Address: {hex(self.address)}:\n{f}  Size: {self.size} bytes\n  Number of Instructions: {self.instructions}\n  Disassembly:\n    {str(self.assembly).replace('\n','\n    ').strip()}"
+        return f"Address: {hex(self.address)}:\n{f}  Size: {self.size} bytes\n  Number of Instructions: {self.instructions}\n  Disassembly:\n    {str(self.assembly).replace('\n','\n    ')}"
 
 
 class DebugSymbol:
