@@ -35,6 +35,12 @@ class StateVisualizer():
             self.bits = state.arch.bits
             # Not really where the stack begins,... 
             self.stack_end = state.registers.load('sp').concrete_value
+            bp = state.registers.load('bp')
+            if not bp.concrete:
+                self.bp = self.stack_end
+            else:
+                self.bp = bp.concrete_value
+
             self.stack_begin = state.arch.initial_sp
             
             
@@ -52,22 +58,25 @@ class StateVisualizer():
     def format_value(self, value):
         mem_location = self.check_ref(value)
         if not mem_location:
-            return (self.color_value(value, mem_location), None)
+            return (self.value_to_pstr(value, mem_location), None)
         
         deref_value = self.deref(value, mem_location)
-        value = self.color_value(value, mem_location)
+        value = self.value_to_pstr(value, mem_location)
         if deref_value != None:
             deref_value = self.format_value(deref_value)
 
         return (value, deref_value)
+    
+    def sybmolic_var_representation(self, svalue):
+        return hex(self.state.solver.eval(svalue))
 
-    def color_value(self, value, mem_location):
+    def value_to_pstr(self, value, mem_location):
         if value == None:
             return value
         if value.uninitialized:
             return to_color(str(value), Color.GRAY)
         elif value.symbolic:
-            variable_name = [var for var in value.variables][0]
+            variable_name = self.sybmolic_var_representation(value)
             return to_color(str(variable_name), Color.LIGHT_GREEN)
         
         value = hex(value.concrete_value)
@@ -151,6 +160,10 @@ class StateVisualizer():
             stack_str += to_color(f"{offset:04}| ", Color.BLUE)
             addr, value = stack_objs[offset]
             stack_str += f"{to_color(hex(addr), Color.PURPLE)} --> {self.value_to_str(value)}"
+            if addr == self.bp:
+                stack_str += '  <- bp'
+            elif addr == self.stack_end:
+                stack_str += '  <- sp'
             stack_str += "\n"
         
         return stack_str
@@ -165,13 +178,14 @@ class StateVisualizer():
         except Exception as e:
             return f"Error getting instructions: {e}"
         
-        if block.size > 5:
-            basic_block_ins = basic_block_ins[:5]
+        if block.size > 10:
+            basic_block_ins = basic_block_ins[:10]
         
         for ins in basic_block_ins:
             instuction_str += to_color(f"{hex(ins.address)}: ", Color.RED) + to_color(f"{ins.mnemonic}", Color.GREEN) + "\t" + f"{ins.op_str}"
-            if ins.address == self.state.addr:
-                instuction_str += "  <-- IP"
             instuction_str += "\n" 
+
+        if block.size > 10:
+            instuction_str += to_color(f"...\n", Color.GRAY)
         
         return instuction_str

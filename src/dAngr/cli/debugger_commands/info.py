@@ -197,7 +197,6 @@ class InformationCommands(BaseCommand):
         self.send_result(ANSI(pstr_reg))
     
 # Add current basic block, current function + code
-# Add fix for stack problem
 # Name of the symbolic var instead of the to str
-# save the sp when loading with the debugger
+# Parcially symbolic...
 # Legende
