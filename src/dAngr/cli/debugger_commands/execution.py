@@ -1,5 +1,7 @@
 import inspect
 import os
+
+from prompt_toolkit import ANSI
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.angr_ext.step_handler import StopReason
 from dAngr.cli.debugger_commands import BaseCommand
@@ -74,6 +76,9 @@ class ExecutionCommands(BaseCommand):
         Short name: s
         """
         super().run_angr(lambda _: StopReason.STEP) # return immediately
+        if self.debugger.verbose_step:
+            pstr_state = self.debugger.visulize_state()
+            self.send_result(ANSI(pstr_state))
         # Throws errors in example 14 of malware analysis
         #return self.debugger.get_current_basic_block() 
 

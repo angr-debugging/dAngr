@@ -13,6 +13,7 @@ from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import Constraint
+from dAngr.cli.state_visualizer import StateVisualizer
 from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector, get_local_arch, remove_ansi_escape_codes
 from dAngr.utils import utils
 from .std_tracker import StdTracker
@@ -41,6 +42,7 @@ class Debugger:
         self._pause:bool = False
 
         self._base_addr:int = 0x400000
+        self.verbose_step:bool = False
         self._function_prototypes = {}
         self._current_function:str = ''
         self._cfg:CFGFast|None = None
@@ -462,7 +464,7 @@ class Debugger:
     # @param check_until: callable return reason to stop, else None
     # @param exclude: callable returns True to exclude state from active stash
     
-    def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False):
+    def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single:bool = False):
         self.throw_if_not_initialized()
         self.stop_reason:StopReason = StopReason.NONE
         #make sure current state is an active state and move it to the front if it is not
@@ -503,7 +505,6 @@ class Debugger:
                 return True
             self.stop_reason = check_until(simgr)
             return self.stop_reason != StopReason.NONE
-        
         self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func,step_func=step_func)
         self._set_current_state( self.simgr.one_active if self.simgr.active else None)
         handler.handle_step(self.stop_reason, self._current_state)
@@ -743,3 +744,7 @@ class Debugger:
 
     def set_register(self, register, value:int|claripy.ast.BV):
         self.current_state.registers.store(register, value)
+
+    def visulize_state(self):
+        state_printer = StateVisualizer(self.current_state)
+        return state_printer.pprint()

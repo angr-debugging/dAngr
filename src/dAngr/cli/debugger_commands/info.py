@@ -1,6 +1,5 @@
 import os
 
-from dAngr.cli.state_visualizer import StateVisualizer
 
 
 from .base import BaseCommand
@@ -67,6 +66,18 @@ class InformationCommands(BaseCommand):
         angrutils.plot_cfg(cfg, svg_path, asminst=True, vexinst=False, remove_imports=True, remove_path_terminator=True, format="svg")
 
         return f"http://localhost:8000/{filename}.svg"
+
+    def verbose_step(self, enable:bool = True):
+        """
+        Enable or disable verbose stepping.
+
+        Args:
+            enable (bool): Enable or disable verbose stepping. Default True.
+
+        Short name: vs
+        """
+        self.debugger.verbose_step = enable
+        return f"Verbose stepping {'enabled' if enable else 'disabled'}."
     
     def get_stashes(self):
         """
@@ -190,11 +201,8 @@ class InformationCommands(BaseCommand):
         Short name: is
         """
         # Registers --> refactor list registers to format 'eax': 0x0...
-        state = self.debugger.current_state
-        state_printer = StateVisualizer(state)
-        
-        pstr_reg = state_printer.pprint()
-        self.send_result(ANSI(pstr_reg))
+        pstr_state = self.debugger.visualise_state()
+        self.send_result(ANSI(pstr_state))
     
 # Add current basic block, current function + code
 # Name of the symbolic var instead of the to str
