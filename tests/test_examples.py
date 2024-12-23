@@ -189,10 +189,35 @@ class TestExamples:
     
     def test_asisctffinal2015_fake(self, conn):
         dbg = CommandLineDebugger(conn)
-        dbg.handle("run_script 'examples/angr_examples/Reverse/02_medium/asisctffinal2015_fake.md'")
-        assert conn.send_result.call_args[0][0] == b'ASIS{F4K3_F14G}'
+        dbg.handle("run_script 'examples/angr_examples/Reverse/02_medium/asisctffinals2015_fake.md'")
+        assert conn.send_result.call_args[0][0] == "b'ASIS{f5f7af556bd6973bd6f2687280a243d9}'"
     
     def test_defcon2016quals_baby_re(self, conn):
         dbg = CommandLineDebugger(conn)
         dbg.handle("run_script 'examples/angr_examples/Reverse/02_medium/defcon2016quals_baby-re.md'")
-        assert conn.send_result.call_args[0][0] == b'OOO{I_Love_You_Baby}'
+        assert conn.send_result.call_args[0][0] == 'Math is hard!'
+
+    def test_flareon2015_5(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/02_medium/flareon2015_5.md'")
+        assert conn.send_result.call_args[0][0] == "b'Sp1cy_7_layer_OSI_dip@flare-on.com'"
+
+    def test_google2016_unbreakable_1(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/02_medium/google2016_unbreakable.md'")
+        assert conn.send_result.call_args[0][0] == 'CTF{0The1Quick2Brown3Fox4Jumped5Over6The7Lazy8Fox9}'
+
+    def test_hackcon2016_angry_reverser(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/02_medium/hackcon2016_angry-reverser.md'")
+        assert conn.send_result.call_args[0][0] == b'HACKCON{VVhYS04ngrY}'
+
+    def test_0ctf_trace(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/03_hard/0cft_trace.md'")
+        assert conn.send_result.call_args[0][0] == "b'0ctf{I_l0v3_4ngr!}'"
+    
+    def test_whitehat_crypto400(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/Reverse/03_hard/whitehat_crypto400.md'")
+        assert conn.send_result.call_args[0][0] == "b'WhiteHat{I_Love_Angr_And_Z3_Solver}'"

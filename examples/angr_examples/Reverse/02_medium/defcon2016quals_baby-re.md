@@ -11,7 +11,7 @@ and the [script](https://github.com/angr/angr-examples/tree/master/examples/defc
 
 ```
 
-load 'A02_defcon2016quals_baby-re'
+load 'defcon2016quals_baby-re'
 
 flag_chars = []
 for i in range(13):
@@ -21,8 +21,8 @@ for i in range(13):
 def scanf(fmt, ptr):
     count = get_from_state scanf_count
     sn = !('flag_%d' % &vars.count)
-    s = get_symbol sn
-    set_memory ptr s 4
+    sim = get_symbol sn
+    set_memory ptr sim 4
     count = count + 1
     add_to_state scanf_count count
 
@@ -36,10 +36,11 @@ breakpoint (by_address 0x4028E9)
 exclude (by_address 0x402941)
 
 run
-print "Flag: "
+flag = ""
 for i in range(13):
     s_i = evaluate (get_symbol ('flag_%d' % i))
-    print (to_str (rstrip s_i b'\x00'))
-println
+    flag = flag + (to_str (rstrip s_i b'\x00'))
+
+println flag
 
 ```

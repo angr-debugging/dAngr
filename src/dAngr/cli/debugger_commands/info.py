@@ -201,7 +201,7 @@ class InformationCommands(BaseCommand):
         Short name: is
         """
         # Registers --> refactor list registers to format 'eax': 0x0...
-        pstr_state = self.debugger.visualise_state()
+        pstr_state = self.debugger.visulize_state()
         self.send_result(ANSI(pstr_state))
     
 # Add current basic block, current function + code

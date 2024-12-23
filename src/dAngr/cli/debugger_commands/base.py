@@ -325,6 +325,7 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
     
     def send_result(self, data, newline = True, style = None):
         return self.debugger.conn.send_result(data, newline, style=style)
+
     
 
     

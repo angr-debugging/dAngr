@@ -1,6 +1,6 @@
 # Google 2016 unbreakable
-
-load 'repo/angr_examples/examples/google2016_unbreakable_0/unbreakable-enterprise-product-activation'
+```
+load 'google2016_unbreakable'
 
 add_symbol arg1 0x43
 
@@ -16,4 +16,8 @@ add_constraint chopped_arg[3] == "{"
 breakpoint (by_stream "Thank you")
 run
 
-to_str (evaluate &sym.arg1)
+
+flag = (to_str (evaluate &sym.arg1))
+println flag
+println !(&vars.flag[:51])
+```

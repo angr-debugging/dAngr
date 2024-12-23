@@ -17,7 +17,7 @@ setup of addresses used in program
 addresses assume base address of
 ```    
 
-load 'repo/angr_examples/examples/whitehat_crypto400/whitehat_crypto400' 
+load 'whitehat_crypto400' 
 
 ```
 this is a statically-linked binary, and it's easer for angr if we use Python summaries for the libc functions

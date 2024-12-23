@@ -25,3 +25,4 @@ class Connection:
     @abstractmethod
     def send_warning(self, data, style=None)->None:
         raise NotImplementedError
+

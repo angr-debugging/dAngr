@@ -49,7 +49,7 @@ def hook_heap_alloc():
 ```
 Load and setup the binary
 ```
-load '05_flareon2015_5' auto_load_libs=False
+load 'flareon2015_5' auto_load_libs=False
 ```
 Start with a blank state at the EIP after "key.txt" is read
 ```
@@ -68,8 +68,8 @@ Setup stack to simulate the state after which the "key.txt" is read
 ```
 &reg.esi = LEN_PW
 for i in range(LEN_PW):
-    s = add_symbol 'pw' 1
-    &mem[ADDR_PW_ORI+i->1] = s 
+    sim = add_symbol 'pw' 1
+    &mem[ADDR_PW_ORI+i->1] = sim
 ```
 Hook instructions to use a separate buffer for the XOR-ing function
 ```
@@ -88,8 +88,8 @@ run
 Add constraints to make final hash equal to the one we want
 Also restrict the hash to only printable bytes
 ```
-l = len GOAL_HASH
-for i in range(l):
+len_hash = len GOAL_HASH
+for i in range(len_hash):
     char = &mem[ADDR_HASH + i->1]
     oo = GOAL_HASH[i]
     o = !(ord(&vars.oo))

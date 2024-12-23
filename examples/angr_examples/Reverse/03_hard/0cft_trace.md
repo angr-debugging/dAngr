@@ -2,8 +2,8 @@
 
 In this challenge you get a state 
 ```
-load 'repo/angr_examples/examples/0ctf_trace/data.bin' backend='blob' base_addr=0x400770 arch='mipsel'
-
+load '0ctf_trace.bin' backend='blob' base_addr=0x400770 arch='mipsel'
+verbose_step False
 set_blank_state addr=0x4009d4
 add_symbol flag 32
 
@@ -12,7 +12,7 @@ set_memory 0x410EA0 0x400D80 endness=LE
 
 res = []
 delays = []
-file = !(open("repo/angr_examples/examples/0ctf_trace/trace_8339a701aae26588966ad9efa0815a0a.log"))
+file = !(open("0ctf_trace.log"))
 for line in file:
     if !(&vars.line.startswith("[INFO]")):
         addr = "0x" + line[6:6+8]
@@ -23,14 +23,11 @@ total = len res
 
 ```
 def step_to_next_block():
-    basic_block = bb
-
-    bb_size = &vars.basic_block.instructions
+    block = bb
+    bb_size = &vars.block.instructions
     target_step = to_int (res[bb_size])
-
     res = res[bb_size:]
     states = list_states
-
     state_found = 0
     state_count = len states
     selected_state_index = -1
