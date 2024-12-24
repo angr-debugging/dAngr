@@ -23,12 +23,13 @@ class MemLocation(Enum):
     DATA = 3
 
 class Color(Enum):
-    RED = 31
-    GREEN = 32
-    LIGHT_GREEN = 92
+    CODE = 31
+    HEAP = 33
+    SYMBOLIC = 92
+    STACK = 35
     YELLOW = 33
+    GREEN = 32
     BLUE = 34
-    PURPLE = 35
     CYAN = 36
     WHITE = 37
     GRAY = 90
@@ -68,6 +69,16 @@ class StateVisualizer():
     def arch_registers(self, arch_bits):
         return self.REGISTERS[arch_bits]
     
+    def create_legend(self):
+        template = "Legend: | {stack} | {heap} | {code} | {instruction} | {symbol} |"
+        stack = to_color("Stack", Color.STACK)
+        heap = to_color("Heap", Color.HEAP)
+        code = to_color("Code", Color.CODE)
+        instruction = to_color("Instruction", Color.GREEN)
+        symbol = to_color("Symbolic", Color.SYMBOLIC)
+        template = template.format(stack=stack, heap=heap, code=code, instruction=instruction, symbol=symbol)
+        return template 
+
     # (value, (value, ..))
     # TODO stack endness, fix
     def format_value(self, value):
@@ -91,12 +102,15 @@ class StateVisualizer():
     def get_symbol_str(self, svalue):
         try:
             with time_limit(1):
-                return str(svalue)[:40]
+                sym_string = str(svalue)
+                if len(sym_string) > 40:
+                    return sym_string[:40] + "..."
+                return sym_string
         except Exception:
             return "To long to display"
     
     def sybmolic_var_representation(self, svalue):
-        template = "<{value}> ({symbol_name}...)"
+        template = "<{value}> ({symbol_name})"
         value = self.get_eval_sval(svalue)
         symbol_name = self.get_symbol_str(svalue)
     
@@ -109,15 +123,15 @@ class StateVisualizer():
             return to_color(str(value), Color.GRAY)
         elif value.symbolic:
             variable_name = self.sybmolic_var_representation(value)
-            return to_color(str(variable_name), Color.LIGHT_GREEN)
+            return to_color(str(variable_name), Color.SYMBOLIC)
         
         value = hex(value.concrete_value)
         if mem_location == MemLocation.STACK:
-            return to_color(str(value), Color.PURPLE)
+            return to_color(str(value), Color.STACK)
         elif mem_location == MemLocation.HEAP:
-            return to_color(str(value), Color.GREEN)
+            return to_color(str(value), Color.HEAP)
         elif mem_location == MemLocation.CODE:
-            return to_color(str(value), Color.RED)
+            return to_color(str(value), Color.CODE)
         else:
             return value
 
@@ -136,7 +150,8 @@ class StateVisualizer():
             stack_objs[offset] = (addr , self.format_value(self.state.stack_read(offset, int(self.bits/8))))
         pstr_stack = self.pprint_stack(stack_objs)
         pstr_inst = self.pprint_instructions()
-        return pstr_regs + "\n" + pstr_stack + "\n" + pstr_inst
+        legend = self.create_legend()
+        return "\n" + legend + "\n" + pstr_regs + "\n" + pstr_stack + "\n" + pstr_inst
 
     def deref(self, value, mem_location):
         assert self.state is not None
@@ -191,7 +206,7 @@ class StateVisualizer():
         for offset in stack_objs:
             stack_str += to_color(f"{offset:04}| ", Color.BLUE)
             addr, value = stack_objs[offset]
-            stack_str += f"{to_color(hex(addr), Color.PURPLE)} --> {self.value_to_str(value)}"
+            stack_str += f"{to_color(hex(addr), Color.STACK)} --> {self.value_to_str(value)}"
             if addr == self.bp:
                 stack_str += '  <- bp'
             elif addr == self.stack_end:
@@ -214,7 +229,7 @@ class StateVisualizer():
             basic_block_ins = basic_block_ins[:10]
         
         for ins in basic_block_ins:
-            instuction_str += to_color(f"{hex(ins.address)}: ", Color.RED) + to_color(f"{ins.mnemonic}", Color.GREEN) + "\t" + f"{ins.op_str}"
+            instuction_str += to_color(f"{hex(ins.address)}: ", Color.CODE) + to_color(f"{ins.mnemonic}", Color.GREEN) + "\t" + f"{ins.op_str}"
             instuction_str += "\n" 
 
         if block.size > 10:
