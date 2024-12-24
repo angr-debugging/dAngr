@@ -71,7 +71,7 @@ class ExecutionCommands(BaseCommand):
 
     def step(self): # type: ignore
         """
-        Take a next debugging step.
+        Take a next debugging step (per basic block).
 
         Short name: s
         """
@@ -81,6 +81,17 @@ class ExecutionCommands(BaseCommand):
             self.send_result(ANSI(pstr_state))
         # Throws errors in example 14 of malware analysis
         #return self.debugger.get_current_basic_block() 
+    
+    def single_step(self):
+        """
+        Take a next debugging step (per instruction).
+
+        Short name: ss
+        """
+        super().run_angr(lambda _: StopReason.STEP, single_step=True)
+        if self.debugger.verbose_step:
+            pstr_state = self.debugger.visulize_state()
+            self.send_result(ANSI(pstr_state))
 
     def get_callable_function(self, addr: int, *args):
         """

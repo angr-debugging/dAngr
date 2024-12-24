@@ -317,7 +317,7 @@ class CommandLineDebugger(Debugger,StepHandler):
         self.conn.send_result(html_table, style=style)
     
 
-    def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False):
+    def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single_step:bool = False):
         u = check_until
         exclusions = self.exclusions
         def check(simgr:angr.SimulationManager):
@@ -335,4 +335,4 @@ class CommandLineDebugger(Debugger,StepHandler):
                 return True
             return any([f.filter(state) for f in exclusions])
         
-        self._run(self, check,_exclude)
+        self._run(self, check,_exclude, single=single_step)

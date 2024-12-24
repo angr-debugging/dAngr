@@ -294,9 +294,9 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
         else:
             return ref
 
-    def run_angr(self, until:Callable[[SimulationManager],StopReason] = lambda _: StopReason.NONE):
+    def run_angr(self, until:Callable[[SimulationManager],StopReason] = lambda _: StopReason.NONE, single_step = False):
         u = until
-        self.debugger.run(u)
+        self.debugger.run(u, single_step=single_step)
 
     # def get_example(self):
     #     args_lst = [f"<{a[0].replace(' ','_')}>"  for a in self.arg_specs]

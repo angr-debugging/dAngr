@@ -505,7 +505,7 @@ class Debugger:
                 return True
             self.stop_reason = check_until(simgr)
             return self.stop_reason != StopReason.NONE
-        self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func,step_func=step_func)
+        self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func,step_func=step_func, num_inst=1 if single else None)
         self._set_current_state( self.simgr.one_active if self.simgr.active else None)
         handler.handle_step(self.stop_reason, self._current_state)
 

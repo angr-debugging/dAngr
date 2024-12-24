@@ -24,6 +24,7 @@ total = len res
 ```
 def step_to_next_block():
     block = bb
+    
     bb_size = &vars.block.instructions
     target_step = to_int (res[bb_size])
     res = res[bb_size:]

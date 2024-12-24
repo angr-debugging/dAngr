@@ -1,4 +1,20 @@
 from enum import Enum
+import signal
+from contextlib import contextmanager
+
+class TimeoutException(Exception): pass
+
+@contextmanager
+def time_limit(seconds):
+    def signal_handler(signum, frame):
+        raise TimeoutException("Timed out!")
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+
 
 class MemLocation(Enum):
     STACK = 0
@@ -33,7 +49,6 @@ class StateVisualizer():
         self.state = state
         if state:
             self.bits = state.arch.bits
-            # Not really where the stack begins,... 
             self.stack_end = state.registers.load('sp').concrete_value
             bp = state.registers.load('bp')
             if not bp.concrete:
@@ -67,8 +82,25 @@ class StateVisualizer():
 
         return (value, deref_value)
     
+    def get_eval_sval(self, svalue):
+        try:
+            with time_limit(3):
+                return hex(self.state.solver.eval(svalue))
+        except Exception:
+            return "eval timeout"
+    def get_symbol_str(self, svalue):
+        try:
+            with time_limit(1):
+                return str(svalue)[:40]
+        except Exception:
+            return "To long to display"
+    
     def sybmolic_var_representation(self, svalue):
-        return hex(self.state.solver.eval(svalue))
+        template = "<{value}> ({symbol_name}...)"
+        value = self.get_eval_sval(svalue)
+        symbol_name = self.get_symbol_str(svalue)
+    
+        return template.format(value=value, symbol_name=symbol_name)
 
     def value_to_pstr(self, value, mem_location):
         if value == None:
