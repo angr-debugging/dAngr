@@ -21,7 +21,7 @@ set_entry_state args=["./fairlight", &sym.argv1]
 
 
 breakpoint (by_address 0x4018f7)
-#exclude (by_address 0x4018f9)
+exclude (by_address 0x4018f9)
 
 run
 evaluate &sym.argv1
