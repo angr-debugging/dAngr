@@ -618,6 +618,12 @@ class Debugger:
         return byte_value
     
     def get_addr_for_symbol(self, symbol:str):
+        # Letting the user know that certain options have to be set to allow this function.
+        required_options = ["REVERSE_MEMORY_NAME_MAP", "TRACK_ACTION_HISTORY"]
+        for option in required_options:
+            if option not in self.current_state.options:
+                raise DebuggerCommandError(f"Make sure you enable '{option}' when setting the entry state")
+
         return self.current_state.memory.addrs_for_name(symbol)
     
     def get_stream(self, stream:StreamType) -> str:

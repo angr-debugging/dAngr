@@ -82,6 +82,7 @@ class MemoryCommands(BaseCommand):
     def get_addr_for_name(self, name: str):
         """
         Get the address for a symbol name.
+        Requires the options REVERSE_MEMORY_NAME_MAP and TRACK_ACTION_HISTORY in the entry state. 
 
         Args:
             name (str): Symbol name
