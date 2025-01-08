@@ -12,7 +12,6 @@ and the [script](https://github.com/angr/angr-examples/tree/master/examples/secu
 ## Solution with dAngr:
 
 ```
-
 load 'securityfest_fairlight'
 
 add_symbol argv1 0xe
@@ -26,4 +25,5 @@ exclude (by_address 0x4018f9)
 run
 evaluate &sym.argv1
 ```
+
 flag: "4ngrman4gem3nt"

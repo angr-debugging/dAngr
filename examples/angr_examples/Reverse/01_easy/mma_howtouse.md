@@ -1,6 +1,6 @@
 # MMA howtouse
 
-In this example we get a dll binary thas has the function 'fnhowtouse'. This function doesnt make any calls so exists in one basic block.
+In this example we get a dll binary thas has the function 'fnhowtouse'. This function doesn't make any calls so exists in one basic block.
 When we use a step in dAngr the state terminates. 
 
 
