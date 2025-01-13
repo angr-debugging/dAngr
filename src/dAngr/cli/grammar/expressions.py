@@ -270,6 +270,19 @@ class Negate(Expression):
     def __eq__(self, other):
         return isinstance(other, Negate) and self.expr == other.expr
     
+class Invert(Expression):
+    def __init__(self, expr:Expression):
+        self.expr = expr
+
+    def __call__(self, context:ExecutionContext):
+        return not(self.expr(context))
+    
+    def __str__(self):
+        return f"not {self.expr}"
+    
+    def __eq__(self, other):
+        return isinstance(other, Invert) and self.expr == other.expr
+    
 class VariableRef(ReferenceObject):
     def __init__(self, name:Expression, is_static=False):
         self.name:Expression = name

@@ -53,6 +53,15 @@ class dAngrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by dAngrParser#ExpressionNot.
+    def enterExpressionNot(self, ctx:dAngrParser.ExpressionNotContext):
+        pass
+
+    # Exit a parse tree produced by dAngrParser#ExpressionNot.
+    def exitExpressionNot(self, ctx:dAngrParser.ExpressionNotContext):
+        pass
+
+
     # Enter a parse tree produced by dAngrParser#ExpressionObject.
     def enterExpressionObject(self, ctx:dAngrParser.ExpressionObjectContext):
         pass

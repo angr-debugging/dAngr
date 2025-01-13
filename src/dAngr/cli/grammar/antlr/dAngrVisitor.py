@@ -34,6 +34,11 @@ class dAngrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by dAngrParser#ExpressionNot.
+    def visitExpressionNot(self, ctx:dAngrParser.ExpressionNotContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by dAngrParser#ExpressionObject.
     def visitExpressionObject(self, ctx:dAngrParser.ExpressionObjectContext):
         return self.visitChildren(ctx)

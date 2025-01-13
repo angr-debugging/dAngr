@@ -51,6 +51,7 @@ expression_part :
     | range # ExpressionAlt // python, bash, dangr
     | reference # ExpressionReference
     | BOOL # ExpressionBool
+    | NOT WS expression_part # ExpressionNot
     | object (WS? operation WS? expression_part) # ExpressionOperation
     | object # ExpressionObject
     ;
@@ -147,7 +148,7 @@ object : identifier BANG?  # IDObject
 anything: (anything_no | NEWLINE);
 anything_no: (LETTERS | NUMBERS | symbol | STRING | BINARY_STRING | WS | LPAREN anything RPAREN | special_words );
 
-special_words : STATIC | DEF | IF | ELSE | FOR | IN | NOT_IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN | BREAK | CONTINUE | RANGE;
+special_words : STATIC | DEF | IF | ELSE | FOR | IN | NOT | NOT_IN | WHILE | BOOL | HELP | CIF | CTHEN | CELSE | RETURN | BREAK | CONTINUE | RANGE;
 
 STATIC : 'static';
 
@@ -162,6 +163,7 @@ ELSE : 'else';
 FOR : 'for';
 IN : 'in';
 NOT_IN : 'not in';
+NOT : 'not';
 WHILE : 'while';
 BOOL: 'True' | 'False';
 HELP : 'help';

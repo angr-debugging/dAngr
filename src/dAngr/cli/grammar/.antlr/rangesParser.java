@@ -21,10 +21,10 @@ public class rangesParser extends Parser {
 		ESCAPED_SINGLE_QUOTE=14, SESC_SEQ=15, ESC_SEQ=16, ARROW=17, LPAREN=18, 
 		RPAREN=19, BANG=20, AMP=21, DOLLAR=22, COLON=23, SCOLON=24, COMMA=25, 
 		QUOTE=26, SQUOTE=27, AT=28, DOT=29, BAR=30, BRA=31, KET=32, BRACE=33, 
-		KETCE=34, HAT=35, HASH=36, PERC=37, MUL=38, ADD=39, DIV=40, FLOORDIV=41, 
+		KETCE=34, XOR=35, HASH=36, PERC=37, MUL=38, ADD=39, DIV=40, FLOORDIV=41, 
 		LSHIFT=42, RSHIFT=43, POW=44, ASSIGN=45, EQ=46, NEQ=47, LT=48, GT=49, 
 		LE=50, GE=51, AND=52, OR=53, QMARK=54, TILDE=55, TICK=56, UNDERSCORE=57, 
-		DASH=58, NEWLINE=59, WS=60;
+		DASH=58, NEWLINE=59, WS=60, HAT=61;
 	public static final int
 		RULE_expression = 0, RULE_range = 1, RULE_dangr_range = 2, RULE_bash_range = 3, 
 		RULE_python_range = 4, RULE_bash_content = 5, RULE_py_content = 6, RULE_anything = 7, 
@@ -54,10 +54,10 @@ public class rangesParser extends Parser {
 			"REG_DB", "VARS_DB", "MEM_DB", "STATE", "STRING", "BINARY_STRING", "ESCAPED_QUOTE", 
 			"ESCAPED_SINGLE_QUOTE", "SESC_SEQ", "ESC_SEQ", "ARROW", "LPAREN", "RPAREN", 
 			"BANG", "AMP", "DOLLAR", "COLON", "SCOLON", "COMMA", "QUOTE", "SQUOTE", 
-			"AT", "DOT", "BAR", "BRA", "KET", "BRACE", "KETCE", "HAT", "HASH", "PERC", 
+			"AT", "DOT", "BAR", "BRA", "KET", "BRACE", "KETCE", "XOR", "HASH", "PERC", 
 			"MUL", "ADD", "DIV", "FLOORDIV", "LSHIFT", "RSHIFT", "POW", "ASSIGN", 
 			"EQ", "NEQ", "LT", "GT", "LE", "GE", "AND", "OR", "QMARK", "TILDE", "TICK", 
-			"UNDERSCORE", "DASH", "NEWLINE", "WS"
+			"UNDERSCORE", "DASH", "NEWLINE", "WS", "HAT"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -609,7 +609,7 @@ public class rangesParser extends Parser {
 			{
 			setState(56);
 			_la = _input.LA(1);
-			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 1729382256909221888L) != 0)) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 4035225231763177472L) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -631,7 +631,7 @@ public class rangesParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001<;\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002\u0002"+
+		"\u0004\u0001=;\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002\u0002"+
 		"\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002\u0005"+
 		"\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002\b\u0007"+
 		"\b\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0003\u0001"+
@@ -641,7 +641,7 @@ public class rangesParser extends Parser {
 		"\u0001\u0006\u0001\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007"+
 		"\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007"+
 		"\u0003\u00077\b\u0007\u0001\b\u0001\b\u0001\b\u0000\u0000\t\u0000\u0002"+
-		"\u0004\u0006\b\n\f\u000e\u0010\u0000\u0001\u0002\u0000\u0014:<<9\u0000"+
+		"\u0004\u0006\b\n\f\u000e\u0010\u0000\u0001\u0003\u0000\u0014\"$:<=9\u0000"+
 		"\u0012\u0001\u0000\u0000\u0000\u0002\u0017\u0001\u0000\u0000\u0000\u0004"+
 		"\u0019\u0001\u0000\u0000\u0000\u0006\u001e\u0001\u0000\u0000\u0000\b#"+
 		"\u0001\u0000\u0000\u0000\n(\u0001\u0000\u0000\u0000\f*\u0001\u0000\u0000"+

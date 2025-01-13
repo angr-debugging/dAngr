@@ -9,7 +9,7 @@ from dAngr.cli.grammar.statements import Assignment,  Statement
 from dAngr.cli.grammar.control_flow import IfThenElse, WhileLoop, ForLoop
 from dAngr.cli.grammar.script import Script, Body
 from dAngr.cli.grammar.definitions import ArgumentSpec, CustomFunctionDefinition
-from dAngr.cli.grammar.expressions import BREAK, CONTINUE, BASECommand, DangrCommand, Dictionary, IfConstraint, Inclusion, Listing, Memory, Negate, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
+from dAngr.cli.grammar.expressions import BREAK, CONTINUE, BASECommand, DangrCommand, Dictionary, IfConstraint, Inclusion, Invert, Listing, Memory, Negate, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
 from dAngr.utils.utils import parse_binary_string
 
 
@@ -199,6 +199,9 @@ class dAngrVisitor_(dAngrVisitor):
         op = self.getOperator(ctx.operation().getText())
         rhs = self.visit(ctx.expression_part())
         return Comparison(lhs, op, rhs)
+    def visitExpressionNot(self, ctx: dAngrParser.ExpressionNotContext):
+        return Invert(self.visit(ctx.expression_part()))
+    
     def visitExpressionReference(self, ctx: dAngrParser.ExpressionReferenceContext):
         return self.visit(ctx.reference())
     
