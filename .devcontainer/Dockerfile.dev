@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM --platform=linux/x86_64 ubuntu:latest
 LABEL maintainer='DistriNet'
 #TO RUN AND CONNECT TO THE IMAGE RUN THE FOLLOWING COMMANDS:
 #docker build -t <"name">

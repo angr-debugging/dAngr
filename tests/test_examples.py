@@ -4,6 +4,7 @@ import pytest
 
 from dAngr.cli.command_line_debugger import CommandLineDebugger
 from dAngr.cli.cli_connection import CliConnection
+import subprocess
 
 
 
@@ -221,3 +222,25 @@ class TestExamples:
         dbg = CommandLineDebugger(conn)
         dbg.handle("run_script 'examples/angr_examples/Reverse/03_hard/whitehat_crypto400.md'")
         assert conn.send_result.call_args[0][0] == "b'WhiteHat{I_Love_Angr_And_Z3_Solver}'"
+    
+    def test_cgc_identification(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/vuln_exploit/01_easy/cgc_identification.md'")
+        exploit_str = eval(conn.send_result.call_args[0][0])
+        assert len(exploit_str) >= 92
+        assert chr(exploit_str[0]) == '^'
+    
+    def test_insomnihack_aeg(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/vuln_exploit/02_medium/insomnihack_aeg.md'")
+        exploit_str = eval(conn.send_result.call_args[0][0])
+        # (cat file; echo echo BUMU) | ./examples/angr_examples/repo/angr_examples/examples/insomnihack_aeg/demo_bi
+        print_exploit_str = f"python -c 'import sys; sys.stdout.buffer.write({str(exploit_str).replace('\'', '"')})'"
+        test = subprocess.check_output(f'({print_exploit_str}; echo echo pwned) | ./examples/angr_examples/vuln_exploit/02_medium/demo_bin', shell=True)
+        assert test == b'pwned\n'
+    
+    def test_mbrainfuzz(self, conn):
+        dbg = CommandLineDebugger(conn)
+        dbg.handle("run_script 'examples/angr_examples/vuln_exploit/03_hard/mbrainfuzz.md'")
+        
+
