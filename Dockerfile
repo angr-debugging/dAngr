@@ -1,5 +1,4 @@
 FROM ubuntu:latest
-LABEL maintainer='DistriNet'
 #TO RUN AND CONNECT TO THE IMAGE RUN THE FOLLOWING COMMANDS:
 #docker build -t <"name">
 #map the port being exposed at the bottom of this scripts to any ports of your choosing
@@ -18,7 +17,7 @@ RUN python3 -m venv "$VIRTUAL_ENV"
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # Clone Repo..
 ARG CASH=1
-RUN git clone --branch ctf_support https://github.com/angr-debugging/dAngr.git /home/ubuntu/dAngr
+ADD . /home/ubuntu/dAngr
 # Install dAngr
 ENV BUILD_TYPE=Release
 RUN  cd /home/ubuntu/dAngr/ && pip install .
