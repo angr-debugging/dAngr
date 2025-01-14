@@ -1,5 +1,4 @@
 import argparse
-import os
 from dAngr.cli.server import Server
 
 def run():

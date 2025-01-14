@@ -1,7 +1,7 @@
 #generate documentation for the project:
 
 from ..cli.cli_connection import CliConnection
-from ..cli.command_line_debugger import DEBUGGER_COMMANDS, CommandLineDebugger
+from ..cli.command_line_debugger import CommandLineDebugger
 from ..utils import utils
 
 # requires installation of dAngr before running
@@ -20,7 +20,7 @@ def document_gen():
     * Arguments are space separated.
 ### Variables and objects:
     * there are 4 types in dAngr:
-        * &var: variables that are stored in the debugger.
+        * &vars: variables that are stored in the debugger.
         * &sym: symbolic objects.
         * &mem: memory objects.
         * &reg: register objects.

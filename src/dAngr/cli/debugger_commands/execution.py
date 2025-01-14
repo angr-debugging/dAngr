@@ -377,6 +377,8 @@ class ExecutionCommands(BaseCommand):
         try:
             log.debug(lambda: f"running script {script_path} in folder" + os.getcwd())
             for line in ScriptProcessor(script_path).process_file():
+                if not line:
+                    continue
                 if not line.strip().startswith("#"):
                     log.debug(lambda: f"running following line: {line}")
                     if line == "less":
