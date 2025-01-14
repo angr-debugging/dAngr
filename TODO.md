@@ -10,6 +10,7 @@
 - history output length (limited -> slows down)
 - command history to file (fish-like shell)
 - check completion
+- Probleem met empty lines in script (+ fix line per line in script, is een beetje tedious)
 
 # Breaking bugs
 - break_addr --> result = BREAK

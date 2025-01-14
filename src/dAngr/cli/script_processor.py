@@ -39,10 +39,10 @@ class ScriptProcessor:
                 if l:
                     yield l
                 break
-            if line == "":
+            if line.strip() == "":
                 line = None
                 continue
-            if line.strip('\r\n').endswith(":"):
+            if not stack and line.strip().endswith(":"):
                 stack = True
             elif line.find(line.lstrip()) == 0:
                 stack = False
@@ -74,6 +74,7 @@ class ScriptProcessor:
                 postfix = '```' if prefix == '```' else ']]]'
                 # Yield the collected code block lines
                 for l in self.process_text(file_obj, lambda line:line.startswith(postfix)):
-                    yield l.strip()
+                    if l.strip():
+                        yield l.strip()
 
 
