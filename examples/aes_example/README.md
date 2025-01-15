@@ -1,34 +1,38 @@
 # dAngr Example: AES_example
-in aes_example.c is the source code of the binary aes_example. This files creates an AES key and encrypt a message.
+An AES encrypted message is created. The AES key is ininitialized using an obfuscated key.\nThis obfuscated key is created based on a secret and randomVal\n
 
+The goal of reverse engineering would be to find the obfuscated key used to genenerate an AES Key\n\n
+Manually reversing the obfuscate function, could take a lot of time in the case of a more complex obfuscation algorithm\n
+This is where dAngr comes in, instead of spending time on reversing the obfuscation algorithm to recreate the obfuscated key,\nwe can simply step though this code using dAngr and get the obfuscated key\n
+dAngr provides a gdb like interface, and also works on non-native binaries.\n
+
+
+(In a more realistic scenario, the random value and secret would not be discoverable in the same file in cleartext ;)
 ## Commands
 1. Start dAngr and load the binary:
 ```bash
-(dAngr)> load examples/aes_example/aes_example
+load "aes_example"
+unconstrained_fill
 ```
 
-2. Set the function prototype for `obfuscate`:
+2. Set the function prototype for *obfuscate*:
 
 ```bash
-(dAngr)> set_function_prototype char* obfuscate(char*, char*)
+set_function_prototype "char* obfuscate( char* , char* )"
 ```
 
-3. Set the function call for `obfuscate` with parameters `VerifySafeSecret` and `12345678910`:
+3. Set the function call for *obfuscate* with parameters *VerifySafeSecret* and *12345678910*:
 ```bash
-(dAngr)> set_function_call obfuscate("VerifySafeSecret","12345678910")
+set_function_call "obfuscate('VerifySafeSecret','12345678910')"
 
 ```
 
 4. Continue the binary:
 ```bash
-(dAngr)> continue
+run
 ```
-4. Get the return value of the `obfuscate` function:
+4. Get the return value of the *obfuscate* function:
 
 ```bash
-(dAngr)> get_return_value
-```
-
-```bash
-(dAngr)> get_string_memory 0xc0000000 
+to_str (get_return_value)
 ```
