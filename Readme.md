@@ -81,9 +81,6 @@ Check out our other research [here](https://distrinet.cs.kuleuven.be/research/pu
 ## Contact
 Have questions or feedback? Don't hesitate to reach out to us! [open an issue](https://github.com/angr-debugging/dAngr/issues) on our repository or feel free to contact one of the authors.
 
-## Artifact
-We also published this [Artifact](https://zenodo.org/doi/10.5281/zenodo.11085514) on Zenodo.
-
 
 ## License
 
