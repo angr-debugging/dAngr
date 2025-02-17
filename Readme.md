@@ -78,21 +78,6 @@ Contributions to dAngr are welcome! If you find any bugs or have suggestions for
 Check out our other research [here](https://distrinet.cs.kuleuven.be/research/publications) 
 
 
-## Citations
-If you have used dAngr in your research, please cite at least the following paper describing it:
-````{verbatim}
-@inproceedings{dangr24, 
-    author = {Goeman, V and de Ruck, D and Cordemans, T and Lapon, J and Naessens, V}, 
-    booktitle = {Proceedings of the WOOT Conference on Offensive Technologies (WOOT '24)}, 
-    month = {Aug}, 
-    organization = {Philadelphia}, 
-    title = {Reverse Engineering the Eufy Ecosystem: A Deep Dive into Security Vulnerabilities 
-            and Proprietary Protocols},
-    year = {2024},
-    month = {Aug}, 
-    conference = {USENIX WOOT Conference on Offensive Technologies}, 
-}
-````
 ## Contact
 Have questions or feedback? Don't hesitate to reach out to us! [open an issue](https://github.com/angr-debugging/dAngr/issues) on our repository or feel free to contact one of the authors.
 
