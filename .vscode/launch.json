@@ -2,15 +2,75 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: CLI",
+            "name": "Launch Active Python File",
             "type": "debugpy",
             "request": "launch",
-            "program": "src/app.py",
+            "program": "${file}",
             "args": [
-                "home_security"
+                "dist"
             ],
             "console": "integratedTerminal",
             "justMyCode": false
+        },
+        {
+            "name": "Python Debugger: CLI",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "./src/app.py",
+            // "cwd": "${workspaceFolder}/examples/malware.oregonctf.org",
+            "args": [
+                "-s",
+                // "${workspaceFolder}/p2pcam.dangr"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/00_angr_find.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/01_angr_avoid.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/02_angr_find_condition.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/03_angr_symbolic_registers.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/04_angr_symbolic_stack.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/05_angr_symbolic_memory.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/06_angr_symbolic_dynamic_memory.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/07_angr_symbolic_file.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/08_angr_constraints.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/09_angr_hooks.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/10_angr_simprocedures.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/11_angr_sim_scanf.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/12_angr_veritesting.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/13_angr_static_binary.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/14_angr_shared_library.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/15_angr_arbitrary_read.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/16_angr_arbitrary_write.md"
+                // "${workspaceFolder}/examples/malware.oregonctf.org/17_angr_arbitrary_jump.md"
+                // "${workspaceFolder}/examples/basic_example/example.dangr"
+                //  "${workspaceFolder}/examples/angr_examples/Reverse/01_easy/fauxware.md"
+                // "${workspaceFolder}/examples/angr_examples/01_little_engine.md"
+                // "${workspaceFolder}/examples/angr_examples/02_whitehat_crypto400.md"
+                // "${workspaceFolder}/examples/angr_examples/03_csaw_wyvern.md"
+                // "${workspaceFolder}/examples/angr_examples/04_tumctf2016_zwiebel.md"
+                // "${workspaceFolder}/examples/angr_examples/Reverse/01_easy/flareon2015_2.md"
+                // "${workspaceFolder}/examples/angr_examples/Reverse/01_easy/securityfest_fairlight.md"
+                // "/workspaces/dAngr/examples/angr_examples/Reverse/01_easy/crackme.md"
+                // "${workspaceFolder}/examples/angr_examples/Reverse/02_medium/defcon2016quals_baby-re.md"
+                // "${workspaceFolder}/examples/angr_examples/Reverse/02_medium/google2016_unbreakable.md"
+                //"/workspaces/dAngr/examples/angr_examples/vuln_exploit/01_easy/cgc_identification.md"
+                "/workspaces/dAngr/examples/angr_examples/vuln_exploit/02_medium/insomnihack_aeg.md"
+                //"${workspaceFolder}/examples/angr_examples/Reverse/03_hard/0cft_trace.md"
+                // "${workspaceFolder}/examples/angr_examples/06_0cft_trace.md"
+                // "${workspaceFolder}/examples/angr_examples/A00_hackcon2016_angry-reverser.md"
+                // "${workspaceFolder}/examples/angr_examples/A01_securityfest_fairlight.md"
+                // "${workspaceFolder}/examples/angr_examples/A02_defcon2016quals_baby-re.md"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+        },
+        {
+            "name": "Python: Debug Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "purpose": ["debug-test"],
+            "justMyCode": false,
+            "args": [
+                "--pdb"  // This will invoke the Python debugger on exceptions
+            ],         
+            "console": "integratedTerminal"
         }
     ]
 }

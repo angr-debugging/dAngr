@@ -1,0 +1,6 @@
+[submodule "examples/malware.oregonctf.org/repo/angr_ctf"]
+	path = examples/malware.oregonctf.org/repo/angr_ctf
+	url = https://github.com/jakespringer/angr_ctf.git
+[submodule "examples/angr_examples/repo/angr_examples"]
+	path = examples/angr_examples/repo/angr_examples
+	url = https://github.com/angr/angr-examples.git

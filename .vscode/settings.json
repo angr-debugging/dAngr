@@ -10,11 +10,50 @@
     "typescript.tsc.autoDetect": "off",
 
     "python.languageServer": "Pylance",
+    
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportIncompatibleMethodOverride": "information", 
+        "reportRedeclaration": "information",
+        "reportCallIssue": "information"
+    },
+    "python.analysis.exclude": [ 
+         "src/dAngr/cli/grammar/antlr/*Parser.py", 
+         "src/dAngr/cli/grammar/antlr/*Lexer.py", 
+         "src/dAngr/cli/grammar/antlr/lex.py",
+         "**/OLD/**",
+         "**/build/**",
+         "examples/malware.oregonctf.org/**",
+         ".venv/**",
+         "examples/eufy_hooks.py"
+    ],
+
     "python.testing.pytestArgs": [
         "tests"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "pylint.args": ["rcfile=.pylintrc"],
+
+
     "debugpy.debugJustMyCode": false,
-    
+    "terminal.integrated.scrollback":3000,
+
+    "antlr4.generation": {
+        "additionalParameters": "-Dlanguage=Python3",
+        "outputDir": "antlr",
+        "mode": "external",
+        "listeners": true,
+        "visitors": true
+    },
+    "antlr4.debug": {
+        "visualParseTreeHorizontal": true,
+        "visualParseTreeClustered": false
+    },
+    "files.associations": {
+        "*.jinja": "cpp"
+    }
 }

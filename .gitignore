@@ -13,3 +13,6 @@ cfg.png
 src/dAngr.egg-info/
 .dAngr/
 dAngr.egg-info/
+p2pcam
+__*.*
+examples/malware.oregonctf.org/build/

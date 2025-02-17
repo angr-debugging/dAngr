@@ -39,12 +39,12 @@ For simplicity dAngr is also available using a Dockerfile.
 
 Build Dockerfile to create an clean environment for dAngr.
 ```bash
-docker build -t dAngr .
+docker build -t dangr .
 ```
 
 Run the Docker image and get the dAngr command prompt.
 ```bash
-docker run -it dAngr
+docker run -it dangr
 ```
 
 If you wish to run the dAngr Docker on your own binaries, you may need use shared volumes.
@@ -103,3 +103,8 @@ We also published this [Artifact](https://zenodo.org/doi/10.5281/zenodo.11085514
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+
+## Notes:
+When installing pygraphviz, you may need to first install graphviz with dev extensions:
+apt-get install graphviz graphviz-dev

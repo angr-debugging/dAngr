@@ -1,10 +1,12 @@
 
 import os
-from unittest.mock import AsyncMock
+from unittest.mock import Mock
 import pytest
 
 from dAngr.cli.command_line_debugger import CommandLineDebugger
-from dAngr.cli.connection import CliConnection
+from dAngr.cli.cli_connection import CliConnection
+from dAngr.exceptions import CommandError, DebuggerCommandError
+from dAngr.exceptions.InvalidArgumentError import InvalidArgumentError
 
 class TestCommands:
     old_dir = os.getcwd()
@@ -19,56 +21,68 @@ class TestCommands:
     @pytest.fixture
     def conn(self):
         c = CliConnection()
-        c.send_event = AsyncMock()
-        c.send_error = AsyncMock()
+        c.send_result = Mock()
+        c.send_info = Mock()
+        c.send_error = Mock()
         return c
     
     @pytest.fixture
     def dbg(self,conn):
         return CommandLineDebugger(conn)
 
-    @pytest.mark.asyncio
-    async def test_help(self,dbg, conn):
-        r = await dbg.handle("help")
-        assert r == True
-        conn.send_event.assert_called_once()
-        assert "Available commands:" in conn.send_event.call_args[0][0]
+    
+    def test_help(self,dbg, conn):
+        assert dbg.handle("help")
+        conn.send_result.assert_called_once()
+        assert "Available commands:" in conn.send_result.call_args[0][0]
         
-    @pytest.mark.asyncio
-    async def test_help_question_mark(self, dbg, conn):
-        r = await dbg.handle("?")
-        assert r == True
-        conn.send_event.assert_called_once()
-        assert "Available commands:" in conn.send_event.call_args[0][0]
+    
+    def test_help_question_mark(self, dbg, conn):
+        assert dbg.handle("?")
+        conn.send_result.assert_called_once()
+        assert "Available commands:" in conn.send_result.call_args[0][0]
 
-    @pytest.mark.asyncio
-    async def test_help_command(self, dbg, conn):
-        r = await dbg.handle("help continue")
-        assert r == True
-        conn.send_event.assert_called_once()
-        assert "Run until a breakpoint, a fork" in conn.send_event.call_args[0][0]
-    @pytest.mark.asyncio
-    async def test_command_not_found(self, dbg, conn):
-        r = await dbg.handle("not_a_command")
-        assert r == True
+    
+    def test_help_command(self, dbg, conn):
+        assert dbg.handle("help run")
+        conn.send_result.assert_called_once()
+        assert "Run until a breakpoint or" in conn.send_result.call_args[0][0]
+    
+    def test_command_not_found(self, dbg, conn):
+        assert dbg.handle("not_a_command", False)
         conn.send_error.assert_called_once()
-        assert "Command 'not_a_command' not found." in str(conn.send_error.call_args[0][0])
+        assert "Unknown variable:" in str(conn.send_error.call_args[0][0])
 
-    @pytest.mark.asyncio
-    async def test_exit(self, dbg, conn):
-        r = await dbg.handle("exit")
-        assert r == False
-        conn.send_event.assert_not_called()
+    
+    def test_exit(self, dbg, conn):
+        assert not dbg.handle("exit")
+        conn.send_info.assert_not_called()
 
-    @pytest.mark.asyncio
-    async def test_exit_with_args(self, dbg, conn):
-        r = await dbg.handle("exit args")
-        assert r == False
-        conn.send_event.assert_not_called()
+    
+    def test_exit_with_args(self, dbg, conn):
+        assert dbg.handle("exit args", False)
+        conn.send_info.assert_not_called()
+        conn.send_error.assert_called_once_with(InvalidArgumentError('Too many arguments. Expected 0 but got 1'))
 
 
-    @pytest.mark.asyncio
-    async def test_load(self, dbg, conn):
-        r = await dbg.handle("load example")
-        assert r == True
-        conn.send_event.assert_called_once_with("Binary 'example' loaded.")
+    
+    def test_load(self, dbg, conn):
+        assert dbg.handle("load example")
+        conn.send_info.assert_called_once_with("Binary 'example' loaded.")
+
+    
+    def test_load_invalid(self, dbg, conn):
+        assert dbg.handle("load invalid", False)
+        conn.send_error.assert_called_once_with(DebuggerCommandError("Failed to load binary: File 'invalid' not found."))
+    
+    
+    def test_load_args(self, dbg, conn):
+        assert dbg.handle("load example args", False)
+        conn.send_error.assert_called_once_with(DebuggerCommandError('Unknown variable: args'))
+    
+    
+    def test_variable(self, dbg, conn):
+        assert dbg.handle("test = 1")
+        assert dbg.handle("&vars.test")
+        conn.send_result.assert_called_once()
+        assert 1 == conn.send_result.call_args[0][0]
