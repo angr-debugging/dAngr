@@ -1,7 +1,7 @@
 
 from textwrap import indent
 from typing import Any
-from claripy import List
+from typing import List
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.cli.grammar.expressions import BASECommand, VariableRef
 from dAngr.exceptions import InvalidArgumentError
@@ -85,7 +85,7 @@ class FunctionDefinition(Definition):
         
         raise InvalidArgumentError(f"Unknown argument {name}")
     def __repr__(self):
-        return f"def {self.name}({",".join([str(a) for a in self.args])})"
+        return f"def {self.name}({(','.join([str(a) for a in self.args]))})"
     
     def __eq__(self, value: object) -> bool:
         return isinstance(value, FunctionDefinition) and self.name == value.name and self.args == value.args
@@ -126,7 +126,8 @@ class CustomFunctionDefinition(FunctionDefinition):
 
     def __repr__(self):
         f = super().__repr__()
-        return f"{f}\n{indent(str(self.body),"   ")}"
+        indented_str = indent(str(self.body),"   ")
+        return f"{f}\n{indented_str}"
     
     def __eq__(self, value: object) -> bool:
         return isinstance(value, CustomFunctionDefinition) and self.name == value.name and self.args == value.args and self.body == value.body

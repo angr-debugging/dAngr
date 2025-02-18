@@ -1,4 +1,4 @@
-FROM --platform=linux/x86_64 ubuntu:latest
+FROM ubuntu:22.04
 LABEL maintainer='DistriNet'
 #TO RUN AND CONNECT TO THE IMAGE RUN THE FOLLOWING COMMANDS:
 #docker build -t <"name">
@@ -8,7 +8,7 @@ RUN apt-get update
 RUN apt-get install --no-install-recommends --yes python3
 RUN apt-get -y install git
 RUN apt-get -y install python3-pip 
-RUN apt-get -y install python3.12-venv 
+RUN apt-get -y install python3.10-venv 
 RUN apt-get -y install graphviz
 RUN apt-get -y install graphviz-dev 
 RUN apt-get -y install default-jre

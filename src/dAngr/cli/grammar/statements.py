@@ -1,8 +1,7 @@
 
 from abc import abstractmethod
-from textwrap import indent
 
-from claripy import List
+from typing import List
 
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.cli.grammar.expressions import ReferenceObject

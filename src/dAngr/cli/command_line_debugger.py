@@ -1,7 +1,7 @@
 # Assuming all command classes are in debugger_commands.py
 import os
 import threading
-from typing import Callable, Dict, List, Tuple, cast, override
+from typing import Callable, Dict, List, Tuple, cast
 
 import angr
 
@@ -53,7 +53,6 @@ class dAngrExecutionContext(ExecutionContext):
         #add commands to context
         self._definitions.update(commands)
     
-    @override
     def clone(self):
         e = dAngrExecutionContext(self._debugger, cast(Dict[str, BuiltinFunctionDefinition], self._definitions))
         e._variables = self._variables.copy()

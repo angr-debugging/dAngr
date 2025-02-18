@@ -122,7 +122,8 @@ class InformationCommands(BaseCommand):
         Short name: ibstr
         """
         strings = self.debugger.get_binary_string_constants(min_length=min_length)
-        return f"\taddress\tvalue\n{"\n".join([f"{s[0]}\t{s[1]}" for s in strings])}"
+        binary_strings = "\n".join([f"{s[0]}\t{s[1]}" for s in strings])
+        return f"\taddress\tvalue\n{binary_strings}"
 
     def list_binary_symbols(self): # type: ignore
         """
@@ -134,7 +135,8 @@ class InformationCommands(BaseCommand):
         Short name: ibsym
         """
         symbols = self.debugger.get_binary_symbols()
-        return f"Binary Symbols: {"\n".join([str(s) for s in symbols])}"
+        binary_symbols = "\n".join([str(s) for s in symbols])
+        return f"Binary Symbols: {binary_symbols}"
 
     def list_constraints(self):
         """
@@ -146,7 +148,8 @@ class InformationCommands(BaseCommand):
         Short name: ic
         """
         ctrs = self.debugger.get_constraints()
-        return f"Constraints: {"\n".join([str(c) for c in ctrs])}"
+        constraints = "\n".join([str(c) for c in ctrs])
+        return f"Constraints: {constraints}"
 
     def list_path_history(self, index:int = 0, stash:str = "active"):
         """
@@ -164,7 +167,8 @@ class InformationCommands(BaseCommand):
         
         Short name: iph
         """
-        return f"Path History: {"\n".join([str(p) for p in self.debugger.list_path_history(index, stash)])}"
+        path_string = "\n".join([str(p) for p in self.debugger.list_path_history(index, stash)])
+        return f"Path History: {path_string}"
     
     def get_binary_info(self):
         """

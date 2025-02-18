@@ -2,7 +2,7 @@ from abc import abstractmethod
 import inspect
 from typing import Any, Callable, cast, get_args
 from angr import SimulationManager
-from claripy import List
+from typing import List
 
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.angr_ext.step_handler import StopReason

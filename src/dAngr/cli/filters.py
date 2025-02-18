@@ -1,12 +1,11 @@
 
 from abc import abstractmethod
-from typing import List, override
+from typing import List
 
 from angr import SimState
 
 from dAngr.angr_ext.std_tracker import StdTracker
 from dAngr.cli.grammar.definitions import FunctionDefinition
-from dAngr.cli.models import Breakpoint
 from dAngr.exceptions import ExecutionError
 
 
@@ -242,7 +241,6 @@ class SymbolicFilter(AddressFilter):
     def enabled(self, value:bool):
         self._enabled = value
 
-    @override
     def _filter(self, state:SimState):
         a = state.mem[self.address].int.resolved
         return state.solver.symbolic(a)

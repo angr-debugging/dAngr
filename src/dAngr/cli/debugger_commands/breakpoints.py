@@ -144,7 +144,8 @@ class BreakpointCommands(BaseCommand):
         if len(list) == 0:
             self.send_info(f'No breakpoints found.')
             return []
-        return f'Breakpoint(s): {"\n\t".join([f"[{i}] {b}" for i,b in enumerate(list)])}'
+        breakpoint_str = "\n\t".join([f"[{i}] {b}" for i,b in enumerate(list)])
+        return f'Breakpoint(s): {breakpoint_str}'
     
     def breakpoint(self, *filters:Filter):
             """

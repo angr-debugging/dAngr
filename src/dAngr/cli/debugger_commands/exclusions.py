@@ -1,9 +1,8 @@
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.cli.debugger_commands import BaseCommand
 from dAngr.cli.debugger_commands.filters import FilterCommands
-from dAngr.cli.filters import AddressFilter, AndFilterList, Filter, FilterFunction, FilterList, FunctionFilter, OrFilterList, SourceFilter, StdStreamFilter
-from dAngr.exceptions import DebuggerCommandError, ExecutionError
-from dAngr.utils.utils import StreamType
+from dAngr.cli.filters import Filter
+from dAngr.exceptions import DebuggerCommandError
 
 class ExclusionCommands(BaseCommand):
 
@@ -73,7 +72,8 @@ class ExclusionCommands(BaseCommand):
         if len(list) == 0:
             self.send_info(f'No exclusions found.')
             return []
-        return f'Exclusion(s): {"\n\t".join([f"[{i}] {b}" for i,b in enumerate(list)])}'
+        exclusions_list = "\n\t".join([f"[{i}] {b}" for i,b in enumerate(list)])
+        return f'Exclusion(s): {exclusions_list}'
     
     
     def clear_exclusions(self):

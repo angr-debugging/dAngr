@@ -159,9 +159,10 @@ class Server:
             if line.strip() == "":
                 return lines
             elif line.rstrip().endswith(":"):
-                lines = self.recusive_line_handler(session, lines + f"\n{" "*line_indents}" + line, line_indents + 4)
+                lines = self.recusive_line_handler(session, lines + f"\n{' '*line_indents}" + line, line_indents + 4)
+
             else:
-                lines += f"\n{" "*line_indents}" + line
+                lines += f"\n{' '*line_indents}" + line
 
     
     def start_server(self):

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dAngr"
+version = "0.0.13"
+authors = [
+  { name="Jorn Lapon", email="jorn.lapon@kuleuven.be" },
+  { name="Dairo de Ruck", email="dairo.deruck@kuleuven.be"},
+  { name="Jef Jacobs", email="jef.jacobs@kuleuven.be"}
+]
+description = "Debugging with Angr package"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = ['angr==9.2.94', 'pytest==8.1.1', 'prompt_toolkit==3.0.43', 'pytest-asyncio==0.23.6', 'asynctest==0.13.0', 'angr-utils==0.5.0', 'nest_asyncio==1.6.0', 'setuptools==72.1.0', 'multimethod==1.12', 'antlr4-python3-runtime==4.13.2', 'antlr4-tools==0.2.1', 'antlr-denter==1.3.1']
+
+
+[project.scripts]
+dAngr = "dAngr.run:run"
+
+
+[tool.setuptools]
+license-files = []
+
+[project.urls]
+Homepage = "https://github.com/angr-debugging/dAngr"
+Issues = "https://github.com/angr-debugging/dAngr/issues"

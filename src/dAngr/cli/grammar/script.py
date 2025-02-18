@@ -1,10 +1,9 @@
 
-from claripy import List
-
 from dAngr.cli.grammar.definitions import Definition, FunctionContext
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.cli.grammar.expressions import BREAK, CONTINUE, BASECommand, VariableRef
 from dAngr.cli.grammar.statements import Assignment, Statement
+from typing import List
 
 class StatementException(Exception):
     pass

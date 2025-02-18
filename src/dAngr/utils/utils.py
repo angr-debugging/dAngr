@@ -4,10 +4,9 @@ from enum import Enum, auto
 import importlib
 import os
 import inspect
-from typing import Literal, cast, get_args
+from typing import Literal, cast, get_args, List
 
 import archinfo
-from claripy import List
 import re
 
 import claripy

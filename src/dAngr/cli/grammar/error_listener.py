@@ -1,4 +1,3 @@
-from typing import override
 from antlr4.error.ErrorListener import ConsoleErrorListener
 
 class ErrorListener(ConsoleErrorListener):
@@ -7,7 +6,6 @@ class ErrorListener(ConsoleErrorListener):
         self.name = name
         self._errors = []
     
-    @override
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         error_message = f"{self.name} at line {line}, column {column}: {msg}"
         self._errors.append(error_message)
