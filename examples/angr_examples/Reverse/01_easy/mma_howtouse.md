@@ -12,11 +12,13 @@ def test():
 
 hook_region test 0x100011bf
 
-str = ""
+flag = b""
+fn_howToUse = 0x10001130
 for i in range(45):
-    str = str + (to_str (strip (evaluate (get_callable_function 0x10001130 i)) b'\x00'))
+    func_result = evaluate (get_callable_function fn_howToUse i)
+    flag = flag + (strip (func_result) b'\x00')
 
-println str
+println flag
 ```
 
   
