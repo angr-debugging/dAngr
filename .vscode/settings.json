@@ -26,7 +26,8 @@
          "**/build/**",
          "examples/malware.oregonctf.org/**",
          ".venv/**",
-         "examples/eufy_hooks.py"
+         "examples/eufy_hooks.py",
+         "examples/angr_examples/repo/**",
     ],
 
     "python.testing.pytestArgs": [
@@ -43,7 +44,8 @@
     "terminal.integrated.scrollback":3000,
 
     "antlr4.generation": {
-        "additionalParameters": "-Dlanguage=Python3",
+        // "additionalParameters": "-Dlanguage=Python3",
+        "language": "Python3",
         "outputDir": "antlr",
         "mode": "external",
         "listeners": true,

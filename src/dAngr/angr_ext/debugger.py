@@ -1,13 +1,14 @@
 import os
 import re
 import subprocess
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, Generator, List, Tuple
 import angr
 from angr import SimCC, SimProcedure, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
 import angr.storage
 import claripy
+from cle import ELF
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
@@ -288,6 +289,7 @@ class Debugger:
 
     def has_dwarf(self):
         try:
+            assert isinstance(self.project.loader.main_object, ELF)
             return self.project.loader.main_object.has_dwarf_info
         except Exception as e:
             return False
@@ -617,13 +619,14 @@ class Debugger:
         byte_value = state.memory.load(address, size, endness=Endness.to_arch_endness(endness, self.project))
         return byte_value
     
-    def get_addr_for_symbol(self, symbol:str):
+    def get_addr_for_symbol(self, symbol:str) -> Generator:
         # Letting the user know that certain options have to be set to allow this function.
         required_options = ["REVERSE_MEMORY_NAME_MAP", "TRACK_ACTION_HISTORY"]
         for option in required_options:
             if option not in self.current_state.options:
                 raise DebuggerCommandError(f"Make sure you enable '{option}' when setting the entry state")
 
+        assert isinstance(self.current_state.memory, ConvenientMappingsMixin)
         return self.current_state.memory.addrs_for_name(symbol)
     
     def get_stream(self, stream:StreamType) -> str:
@@ -746,7 +749,7 @@ class Debugger:
     def get_register(self, register):
         if register not in self.project.arch.registers:
             raise DebuggerCommandError(f"Register '{register}' not found.")
-        return self.current_state.registers.load(register)
+        return self.current_state.registers.load(register) # type: ignore
 
     def set_register(self, register, value:int|claripy.ast.BV):
         self.current_state.registers.store(register, value)
