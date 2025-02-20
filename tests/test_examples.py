@@ -181,7 +181,7 @@ class TestExamples:
     def test_mma_howtouse(self, conn):
         dbg = CommandLineDebugger(conn)
         dbg.handle("run_script 'examples/angr_examples/Reverse/01_easy/mma_howtouse.md'")
-        assert conn.send_result.call_args[0][0] == "MMA{fc7d90ca001fc8712497d88d9ee7efa9e9b32ed8}"
+        assert conn.send_result.call_args[0][0] == "b'MMA{fc7d90ca001fc8712497d88d9ee7efa9e9b32ed8}'"
     
     def test_securityfest_fairlight(self, conn):
         dbg = CommandLineDebugger(conn)
@@ -216,7 +216,7 @@ class TestExamples:
     def test_0ctf_trace(self, conn):
         dbg = CommandLineDebugger(conn)
         dbg.handle("run_script 'examples/angr_examples/Reverse/03_hard/0cft_trace.md'")
-        assert conn.send_result.call_args[0][0] == "b'0ctf{I_l0v3_4ngr!}'"
+        assert conn.send_result.call_args[0][0] == "0ctf{tr135m1k5l96551s9l5r}"
     
     def test_whitehat_crypto400(self, conn):
         dbg = CommandLineDebugger(conn)

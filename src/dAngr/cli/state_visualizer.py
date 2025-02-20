@@ -96,7 +96,7 @@ class StateVisualizer():
     def get_eval_sval(self, svalue):
         try:
             with time_limit(3):
-                return hex(self.state.solver.eval(svalue))
+                return hex(self.state.solver.eval(svalue)) # type: ignore
         except Exception:
             return "eval timeout"
     def get_symbol_str(self, svalue):
