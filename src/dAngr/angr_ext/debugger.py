@@ -754,6 +754,6 @@ class Debugger:
     def set_register(self, register, value:int|claripy.ast.BV):
         self.current_state.registers.store(register, value)
 
-    def visulize_state(self):
+    def visualize_state(self):
         state_printer = StateVisualizer(self.current_state)
         return state_printer.pprint()
