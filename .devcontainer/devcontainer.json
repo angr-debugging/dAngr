@@ -14,14 +14,15 @@
 				"ms-python.vscode-pylance",
 				"ms-python.debugpy",
 				"mike-lischke.vscode-antlr4",
-				"ms-vscode.cpptools-extension-pack"
+				"ms-vscode.cpptools-extension-pack",
+				"ms-vscode.extension-test-runner"
 			]
 		}
 	},
 	"build": {
 		"context": "..",
 	},
-	
+	"postCreateCommand": "pip3 install -r requirements.txt",
 
 
 	// Features to add to the dev container. More info: https://containers.dev/features.

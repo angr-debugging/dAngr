@@ -235,7 +235,8 @@ class TestExamples:
         dbg.handle("run_script 'examples/angr_examples/vuln_exploit/02_medium/insomnihack_aeg.md'")
         exploit_str = eval(conn.send_result.call_args[0][0])
         # (cat file; echo echo BUMU) | ./examples/angr_examples/repo/angr_examples/examples/insomnihack_aeg/demo_bi
-        print_exploit_str = f"python -c 'import sys; sys.stdout.buffer.write({str(exploit_str).replace('\'', '"')})'"
+        exploit_str = str(exploit_str).replace("'", '"')
+        print_exploit_str = f"python -c 'import sys; sys.stdout.buffer.write({exploit_str})'"
         test = subprocess.check_output(f'({print_exploit_str}; echo echo pwned) | ./examples/angr_examples/vuln_exploit/02_medium/demo_bin', shell=True)
         assert test == b'pwned\n'
     

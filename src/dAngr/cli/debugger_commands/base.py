@@ -15,11 +15,6 @@ from dAngr.utils.utils import str_to_type, undefined, AngrType, AngrValueType, S
 from dAngr.cli.grammar.expressions import *
 
 
-
-
-# def get_cmd_name(cls):
-#     return ''.join(['_'+i.lower() if i.isupper() else i for i in cls.__name__.replace('Command', '')]).lstrip('_')
-
 def get_short_cmd_name(name):
     # use the first letter of each word in the command name
     return ''.join([i.lower() for i in name if i.isupper()])
