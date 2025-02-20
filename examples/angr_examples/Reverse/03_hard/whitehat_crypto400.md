@@ -79,7 +79,6 @@ add_exclusion 0x401811
 for i in range(8):
     m = &mem[0x6C4B20 + i->1]
     add_constraint m >= 0x21 && m <= 0x7e
-
 ```
 
 Now get the possible values, for instance, as follows:
@@ -102,12 +101,13 @@ solutions = !([b"".join(a) for a in &vars.solutions_0])
 
 ```
 Test the solutions:
+grownytEaTBU
     
 ```
 result = ""
 for sol in solutions:
     sol = to_str sol
-    v = $(./repo/angr_examples/examples/whitehat_crypto400/whitehat_crypto400 &vars.sol)
+    v = $(./whitehat_crypto400 &vars.sol)
     if "FLAG IS:" in v:
         result = "input: " + sol + " -> FLAG: " + v[18:]
         break
