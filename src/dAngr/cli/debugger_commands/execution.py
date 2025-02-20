@@ -77,7 +77,7 @@ class ExecutionCommands(BaseCommand):
         """
         super().run_angr(lambda _: StopReason.STEP) # return immediately
         if self.debugger.verbose_step:
-            pstr_state = self.debugger.visulize_state()
+            pstr_state = self.debugger.visualize_state()
             self.send_result(ANSI(pstr_state))
         # Throws errors in example 14 of malware analysis
         #return self.debugger.get_current_basic_block() 
@@ -90,7 +90,7 @@ class ExecutionCommands(BaseCommand):
         """
         super().run_angr(lambda _: StopReason.STEP, single_step=True)
         if self.debugger.verbose_step:
-            pstr_state = self.debugger.visulize_state()
+            pstr_state = self.debugger.visualize_state()
             self.send_result(ANSI(pstr_state))
 
     def get_callable_function(self, addr: int, *args):
