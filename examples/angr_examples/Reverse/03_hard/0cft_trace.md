@@ -26,8 +26,8 @@ def step_to_next_block():
     block = bb
     
     bb_size = &vars.block.instructions
-    if bb_size > (len res):
-        break
+    if bb_size >= (len res):
+        return 0
     target_step = to_int (res[bb_size])
     res = res[bb_size:]
     states = list_states
