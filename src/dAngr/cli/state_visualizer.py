@@ -2,6 +2,8 @@ from enum import Enum
 import signal
 from contextlib import contextmanager
 
+import angr
+
 class TimeoutException(Exception): pass
 
 @contextmanager
@@ -46,12 +48,12 @@ class StateVisualizer():
     64: ["rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "rip",
         "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15"]}
 
-    def __init__(self, state=None):
-        self.state = state
+    def __init__(self, state:angr.SimState):
+        self.state:angr.SimState = state
         if state:
             self.bits = state.arch.bits
-            self.stack_end = state.registers.load('sp').concrete_value
-            bp = state.registers.load('bp')
+            self.stack_end = state.registers.load('sp').concrete_value # type: ignore
+            bp = state.registers.load('bp') # type: ignore
             if not bp.concrete:
                 self.bp = self.stack_end
             else:
@@ -63,6 +65,7 @@ class StateVisualizer():
             self.heap_start = state.heap.heap_base
             self.heap_end = state.heap.heap_base + state.heap.heap_size
             # state.project.loader.all_objects --> start & end
+            assert state.project is not None, "State project is None"
             self.code_start = state.project.loader.main_object.min_addr
             self.code_end = state.project.loader.main_object.max_addr
 
@@ -96,7 +99,7 @@ class StateVisualizer():
     def get_eval_sval(self, svalue):
         try:
             with time_limit(3):
-                return hex(self.state.solver.eval(svalue))
+                return hex(int(self.state.solver.eval(svalue)))
         except Exception:
             return "eval timeout"
     def get_symbol_str(self, svalue):
@@ -139,7 +142,7 @@ class StateVisualizer():
         assert self.state is not None
         regs = {}
         for reg in self.REGISTERS[self.bits]:
-            value = self.state.registers.load(reg)
+            value = self.state.registers.load(reg) # type: ignore
             regs[reg] = self.format_value(value)
         
         pstr_regs = self.pprint_registers(regs)

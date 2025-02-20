@@ -287,7 +287,7 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
                 if not sym is None:
                     return sym
                 else:
-                    log.debug(f"Variable or symbol {ref} not found, asuming string conversion.")
+                    # log.debug(f"Variable or symbol {ref} not found, asuming string conversion.")
                     return ref
         elif isinstance(ref, Variable):
             return ref.value # type: ignore

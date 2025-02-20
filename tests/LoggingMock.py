@@ -16,9 +16,9 @@ class LoggingMock(Mock):
     def _log_call(self, *args, **kwargs):
         # Log the function call
         if kwargs:
-            self.log.debug(f"{self.type}: {" ".join([str(a) for a in args])} -- {kwargs}")
+            self.log.debug(f"{self.type}: {' '.join([str(a) for a in args])} -- {kwargs}")
         else:
-            self.log.debug(f"{self.type}: {" ".join([str(a) for a in args])}")
+            self.log.debug(f"{self.type}: {' '.join([str(a) for a in args])}")
 
     def _mock_call(self, *args, **kwargs):
         # Log the call before calling the original Mock

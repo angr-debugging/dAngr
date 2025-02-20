@@ -105,9 +105,9 @@ Test the solutions:
     
 ```
 result = ""
-for s in solutions:
-    s = to_str s
-    v = $(./repo/angr_examples/examples/whitehat_crypto400/whitehat_crypto400 &vars.s)
+for sol in solutions:
+    sol = to_str sol
+    v = $(./repo/angr_examples/examples/whitehat_crypto400/whitehat_crypto400 &vars.sol)
     if "FLAG IS:" in v:
         result = "input: " + s + " -> FLAG: " + v[18:]
         break

@@ -6,6 +6,7 @@ import ranges;
 from antlr_denter.DenterHelper import DenterHelper
 from .dAngrParser import dAngrParser
 }
+
 @lexer::members {
 class dAngrDenter(DenterHelper):
     def __init__(self, lexer, nl_token, indent_token, dedent_token, ignore_eof):

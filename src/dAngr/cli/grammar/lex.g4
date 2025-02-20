@@ -5,6 +5,7 @@ NUMBER: [0-9];
 LETTERS: LETTER+;
 LETTER: [a-zA-Z];
 
+
 SYM_DB : '&sym';
 REG_DB : '&reg';
 VARS_DB : '&vars';

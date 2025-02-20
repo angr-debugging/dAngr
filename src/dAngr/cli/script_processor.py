@@ -44,8 +44,9 @@ class ScriptProcessor:
                 continue
             if not stack and line.strip().endswith(":"):
                 stack = True
-            elif line.find(line.lstrip()) == 0:
+            elif line.find(line.lstrip()) == 0 and not line.strip() == "else:":
                 stack = False
+            
             if stack:
                 l += "\n" + line.rstrip() if l else line.rstrip()
                 line = None
