@@ -611,7 +611,7 @@ class BashCommand(Command):
         c = context.clone()
         args = "".join([str(a(c)) for a in self.cmds]).split(" ")
         result = subprocess.run(args, capture_output=True, text=True)
-        if len(result.stderr) > 0:
+        if len(result.stderr) > 0 and result.returncode != 0:
             raise CommandError(result.stderr)
         context.return_value = result.stdout.strip()
         return context.return_value
