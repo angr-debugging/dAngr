@@ -221,7 +221,7 @@ class TestExamples:
     def test_whitehat_crypto400(self, conn):
         dbg = CommandLineDebugger(conn)
         dbg.handle("run_script 'examples/angr_examples/Reverse/03_hard/whitehat_crypto400.md'")
-        assert conn.send_result.call_args[0][0] == b'WhiteHat{I_Love_Angr_And_Z3_Solver}'
+        assert conn.send_result.call_args[0][0] == 'input: nytEaTBU -> FLAG: growfish_nytEaTBU'
     
     def test_cgc_identification(self, conn):
         dbg = CommandLineDebugger(conn)
