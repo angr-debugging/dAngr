@@ -1,20 +1,27 @@
 
-from typing import Any, Dict
+from typing import Any, Dict, cast
 import angr
-from dAngr.utils import Variable
+
+
+from dAngr.angr_ext.utils import Variable
 from dAngr.exceptions import KeyError
 
 
 class ExecutionContext:
-    def __init__(self, parent=None):
-        from .definitions import Definition
+    def __init__(self, debugger, parent=None,commands:Dict[str, Any]={}):
+        from .definitions import FunctionDefinition
+        self._debugger = debugger
         self._variables: Dict[str,Variable] = {}
-        self._definitions:Dict[str,Definition] = {}
+
+        self._definitions:Dict[str,FunctionDefinition] = commands
         self._parent:ExecutionContext|None= parent # type: ignore
         self.enums = {"options":angr.options}
         self.python_context = {}
         self.return_value = None
-        
+    @property
+    def debugger(self):
+        from dAngr.angr_ext.debugger import Debugger
+        return cast(Debugger,self._debugger)
     @property
     def root(self):
         return self._parent.root if self._parent else self
@@ -25,6 +32,7 @@ class ExecutionContext:
         e._definitions = self._definitions.copy()
         e._parent = self
         return e
+
     
     def __getitem__(self, name) -> Variable:
         if name in self._variables:
@@ -103,3 +111,4 @@ class ExecutionContext:
     def variables(self)->Dict[str,Variable]:
         # merge dict from the parent with precedence to the current context
         return {**self._parent.variables, **self._variables} if self._parent else self._variables
+

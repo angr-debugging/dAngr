@@ -3,8 +3,9 @@ import pytest
 
 from unittest.mock import Mock
 
+from dAngr.angr_ext.execution_context import ExecutionContext
 from dAngr.cli.cli_connection import CliConnection
-from dAngr.cli.command_line_debugger import CommandLineDebugger, dAngrExecutionContext
+from dAngr.cli.command_line_debugger import CommandLineDebugger
 from dAngr.cli.grammar.parser import parse_input
 from dAngr.cli.grammar.script import Script
 
@@ -36,7 +37,7 @@ class TestGenericCommandExecution:
         result = parse_input(input, dbg)
         
         assert isinstance(result, Script)
-        ctx = dAngrExecutionContext(dbg,{})
+        ctx = ExecutionContext(dbg,None, {})
         r = result(ctx)
         assert r == None
         assert str(dbg.conn.send_output.call_args[0][0])  == "x\n"

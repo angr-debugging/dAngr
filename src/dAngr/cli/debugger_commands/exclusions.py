@@ -1,7 +1,7 @@
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.cli.debugger_commands import BaseCommand
 from dAngr.cli.debugger_commands.filters import FilterCommands
-from dAngr.cli.filters import Filter
+from dAngr.angr_ext.filters import Filter
 from dAngr.exceptions import DebuggerCommandError
 
 class ExclusionCommands(BaseCommand):

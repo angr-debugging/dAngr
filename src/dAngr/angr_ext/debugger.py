@@ -10,15 +10,17 @@ import angr.storage
 import claripy
 from cle import ELF
 
+from dAngr.angr_ext.execution_context import ExecutionContext
+from dAngr.angr_ext.expressions import Constraint
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
-from dAngr.cli.grammar.execution_context import Variable
-from dAngr.cli.grammar.expressions import Constraint
-from dAngr.cli.state_visualizer import StateVisualizer
-from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector, get_local_arch, remove_ansi_escape_codes
+from dAngr.angr_ext.filters import Filter, FilterList
+from dAngr.angr_ext.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector
+from dAngr.utils import get_local_arch, remove_ansi_escape_codes
+from dAngr.dap.dap_models import Variable
 from dAngr.utils import utils
 from .std_tracker import StdTracker
-from .utils import create_entry_state, get_function_address, hook_simprocedures, load_module_from_file, get_function_by_name, get_function_by_addr
+from .utils import DebugInfo, create_entry_state, get_function_address, hook_simprocedures, load_module_from_file, get_function_by_name, get_function_by_addr
 from .connection import Connection
 from angr.storage.memory_mixins.convenient_mappings_mixin import *
 
@@ -51,6 +53,20 @@ class Debugger:
         self._save_unconstrained = False
         self._entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None = None
         self._symbols:Dict[str,SymBitVector] = {}
+        self._breakpoints:FilterList = FilterList([])
+        self._exclusions:List[Filter] = [] #TODO: check if we can use FilterList
+        self._debug_info = None
+        self.context = ExecutionContext(self)
+
+    @property
+    def breakpoints(self)->FilterList:
+        self.throw_if_not_initialized()
+        return self._breakpoints
+    
+    @property
+    def exclusions(self)->List[Filter]:
+        self.throw_if_not_initialized()
+        return self._exclusions
 
     @property
     def project(self)->angr.project.Project:
@@ -159,7 +175,8 @@ class Debugger:
         except KeyError:
             return None,0
         
-    def _find_elf_object_by_source(self, sourcefile, line_number):
+    def _find_elf_object_by_source(self, sourcefile, line_number, column=0):
+
         # Iterate through all ELF objects loaded by the project's loader
         for elf_obj in self.project.loader.all_elf_objects: 
             # Check if the ELF object has DWARF information
@@ -174,7 +191,9 @@ class Debugger:
                         return elf_obj, addr
         # Return None if no matching ELF object or address is found
         return None
+    
     def find_address(self, sourcefile, line_number)->int|None:
+        # find address corresponding to line in angr project:
         n = self._find_elf_object_by_source(self.substitute_path(sourcefile), line_number)
         if n:
             return n[1]
@@ -274,16 +293,40 @@ class Debugger:
             self.reset_state()
         self._simgr,_ = create_entry_state(self.project,self._entry_point,self._default_state_options, self._current_state, self.veritesting)
         return self.simgr.one_active
-
-    def get_variables(self, func_addr):
-        names = list(self.project.kb.dvars._dvar_containers)
-        pc = claripy.BVV(func_addr+self._base_addr,64) # self._simgr.active[0].ip
-        vars = []
-        for name in names:
-            
-            v = self.project.kb.dvars._dvar_containers[name].from_pc(pc)
-            if v:
-                vars.append(v)
+    
+    # def render_function_args(self, func:angr.knowledge_plugins.functions.function.Function):
+    #     if not self._function_args.keys():
+    #         functions = list(self.project.kb.functions)
+    #         for f in functions:
+    #             #collect names and types of function arguments
+    #             #include arg details
+    #             # func = {
+    #             #     "name": f.name,
+    #             #     "addr": f.addr,
+    #             #     "args": [
+    #             #         {
+    #             #             "name": arg.name,
+    #             #             "type": arg.type,
+    #             #             "info": 
+    #             #         } for arg in f.arguments
+    #             #     ]
+    #             # }
+    #             self._function_args[f.addr] = f.arguments    # type: ignore
+        
+    #         return self._function_args[func.addr]
+    def get_args(self, func):
+        return self.debug_info.functions.get(func.name, []).args
+    def get_variables(self, func):
+        return self.debug_info.functions.get(func.name, []).vars
+        # if not self._function_vars.keys():
+        #     names = list(self.project.kb.dvars._dvar_containers)
+        #     pc = claripy.BVV(func_addr+self._base_addr,64) # self._simgr.active[0].ip
+        #     vars = []
+        #     for name in names:
+                
+        #         v = self.project.kb.dvars._dvar_containers[name].from_pc(pc)
+        #         if v:
+        #             vars.append(v)
         return vars
 
 
@@ -296,18 +339,22 @@ class Debugger:
 
 
     def substitute_path(self,path:str):
+        if self.to_src_path == '' or self.from_src_path == '':
+            return path
         path = os.path.abspath(os.path.normpath(path))
         if path.startswith(self.from_src_path):
             return self.to_src_path + path[len(self.from_src_path):]
         return path
         
     def substitute_path_inverse(self,path:str):
+        if self.to_src_path == '' or self.from_src_path == '':
+            return path
         path = os.path.abspath(os.path.normpath(path))
         if path.startswith(self.to_src_path):
             return self.from_src_path + path[len(self.to_src_path):]
         return path
     
-    def init(self, binary_path:str, base_addr:int=0, from_src_path=None, to_src_path=None, veritesting:bool=False, **kwargs): #support passing custom angr arguments to project
+    def init(self, binary_path:str, base_addr:int=0, from_src_path=None, to_src_path=None, veritesting:bool=False, args=[], **kwargs): #support passing custom angr arguments to project
         self.reset_state()
         self.veritesting = veritesting
         self._binary_path = binary_path
@@ -320,10 +367,15 @@ class Debugger:
 
         if base_addr:
             main_opts['base_addr'] = base_addr
-
+        # TODO: add support for concrete arguments
         self._project = angr.Project(binary_path, load_options={'load_debug_info': True, 'auto_load_libs': False, 'main_opts':main_opts})
         if self.has_dwarf():
             self.project.kb.dvars.load_from_dwarf()
+        else:
+            self.project.analyses.CompleteCallingConventions()
+
+
+        self.debug_info = DebugInfo(binary_path, base_addr)
     
     def get_binary_info(self):
         # get general info such as path, name, arch, entry point, etc
@@ -386,11 +438,11 @@ class Debugger:
     def eval_symbol(self, sym:SymBitVector|Constraint, dtype:DataType, **kwargs):
         if isinstance(sym, SymBitVector):
             return self.current_state.solver.eval(sym, cast_to=dtype.to_type(), **kwargs)
-        elif isinstance(sym, utils.Constraint):
+        elif isinstance(sym, Constraint):
             #drop endness from kwargs
             if 'endness' in kwargs:
                 kwargs.pop('endness')
-            return self.current_state.solver.eval(sym, cast_to=dtype.to_type(), **kwargs)
+            return self.current_state.solver.eval(sym(self.context), cast_to=dtype.to_type(), **kwargs)
         else:
             raise DebuggerCommandError(f"Invalid symbol type {type(sym)}.")
         
@@ -405,7 +457,7 @@ class Debugger:
             raise DebuggerCommandError(f"Invalid solver type {solver_type}.")
         if isinstance(sym, SymBitVector):
             return f(sym, n, cast_to=dtype.to_type(), **kwargs)
-        elif isinstance(sym, utils.Constraint):
+        elif isinstance(sym, Constraint):
             #drop endness from kwargs
             if 'endness' in kwargs:
                 kwargs.pop('endness')
@@ -433,7 +485,7 @@ class Debugger:
             if not value.value:
                 raise DebuggerCommandError("Variable has no value.")
             return value.value
-        return value
+        return value # type: ignore
     
     def add_to_stack(self, value:AngrObjectType):
         self.throw_if_not_active()
@@ -466,7 +518,7 @@ class Debugger:
     # @param check_until: callable return reason to stop, else None
     # @param exclude: callable returns True to exclude state from active stash
     
-    def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single:bool = False):
+    def _run_base(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single:bool = False):
         self.throw_if_not_initialized()
         self.stop_reason:StopReason = StopReason.NONE
         #make sure current state is an active state and move it to the front if it is not
@@ -510,6 +562,27 @@ class Debugger:
         self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func,step_func=step_func, num_inst=1 if single else None)
         self._set_current_state( self.simgr.one_active if self.simgr.active else None)
         handler.handle_step(self.stop_reason, self._current_state)
+
+
+    def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single_step:bool = False):
+        u = check_until
+        exclusions = self.exclusions
+        def check(simgr:angr.SimulationManager):
+            r = u(simgr)
+            if r != StopReason.NONE:
+                return r
+            state = simgr.one_active
+
+            if self.breakpoints.filter(state):
+                return StopReason.BREAKPOINT
+            return StopReason.NONE
+
+        def _exclude(state:angr.SimState)->bool:
+            if exclude(state):
+                return True
+            return any([f.filter(state) for f in exclusions])
+        
+        self._run_base(handler,check,_exclude, single=single_step)
 
     def back(self):
         #get the previous state
@@ -559,6 +632,7 @@ class Debugger:
         value = state.solver.eval(val, cast_to=int)
         return value
     
+    
     def get_callable_function(self, addr:int):
         return self.project.factory.callable(addr)
  
@@ -585,6 +659,14 @@ class Debugger:
             return BasicBlock(block.addr,block.size,block.instructions,block.capstone) # type: ignore
         except Exception as e:
             raise DebuggerCommandError(f"Failed to retrieve basic block: {e}")
+        
+    def get_instruction(self, address):
+        block:angr.Block = self.project.factory.block(address)
+        try:
+            #return instr at address:
+            return block.instructions[address] if block.instructions and address in block.instructions else None
+        except Exception as e:
+            raise DebuggerCommandError(f"Failed to retrieve instruction: {e}")
         
     def get_stdstream(self, stream:StreamType):
         return self.current_state.posix.dumps(stream.value)
@@ -754,6 +836,3 @@ class Debugger:
     def set_register(self, register, value:int|claripy.ast.BV):
         self.current_state.registers.store(register, value)
 
-    def visualize_state(self):
-        state_printer = StateVisualizer(self.current_state)
-        return state_printer.pprint()

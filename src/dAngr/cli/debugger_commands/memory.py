@@ -1,8 +1,8 @@
 import claripy
-from dAngr.cli.grammar.execution_context import Variable
-from dAngr.cli.grammar.expressions import ReferenceObject
+from dAngr.angr_ext.execution_context import Variable
+from dAngr.angr_ext.expressions import ReferenceObject
 from dAngr.cli.models import Register
-from dAngr.utils import  SymBitVector, AngrType, Endness
+from dAngr.angr_ext.utils import  SymBitVector, AngrType, Endness
 from .base import BaseCommand
 
 

@@ -2,10 +2,10 @@
 from textwrap import indent
 from typing import Any
 from typing import List
-from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import BASECommand, VariableRef
+from dAngr.angr_ext.execution_context import ExecutionContext
+from dAngr.angr_ext.expressions import BASECommand, VariableRef
 from dAngr.exceptions import InvalidArgumentError
-from dAngr.utils import undefined
+from dAngr.angr_ext.utils import undefined
 
 class Definition:
     def __init__(self, name):
@@ -96,19 +96,20 @@ class Body:
         raise NotImplementedError
     
 class FunctionContext(ExecutionContext):
-    def __init__(self, function:FunctionDefinition, parent=None):
-        super().__init__(parent)
+    def __init__(self, debugger, function:FunctionDefinition, parent=None):
+        super().__init__(debugger, parent)
         self.function = function
     
 class CustomFunctionDefinition(FunctionDefinition):
-    def __init__(self, name, args:List[ArgumentSpec], body):
+    def __init__(self, debugger, name, args:List[ArgumentSpec], body):
         super().__init__(name, None, args)
         self.body:Body = body
+        self.debugger = debugger
 
 
     def __call__(self, context, *arg_values, **named_args):
         # add args
-        context = FunctionContext(self, context)
+        context = FunctionContext(self, self.debugger, context)
         # match arg_values with required and optional args
         for i, arg in enumerate(arg_values):
             context[self.args[i].name]= arg_values[i]

@@ -2,7 +2,7 @@
 from typing import cast
 from dAngr.cli.cli_connection import CliConnection
 from dAngr.cli.debugger_commands.base import BaseCommand
-from dAngr.cli.grammar.expressions import ReferenceObject
+from dAngr.angr_ext.expressions import ReferenceObject
 from dAngr.cli.less_view import Less
 
 

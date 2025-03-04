@@ -2,7 +2,7 @@ from array import array
 
 from dAngr.cli.debugger_commands.base import BaseCommand
 from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils.utils import DataType, AngrType, AngrValueType, Endness
+from dAngr.angr_ext.utils import DataType, AngrType, AngrValueType, Endness
 
 from dAngr.utils.loggers import get_logger
 log = get_logger(__name__)

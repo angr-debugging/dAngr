@@ -13,17 +13,19 @@ from prompt_toolkit.styles import Style
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.angr_ext.debugger import Debugger
 
+from dAngr.angr_ext.utils import DataType
 from dAngr.cli.debugger_commands import *
 from dAngr.cli.debugger_commands.base import BuiltinFunctionDefinition
-from dAngr.cli.filters import Filter, FilterList
+from dAngr.angr_ext.filters import Filter, FilterList
 from dAngr.cli.grammar.parser import parse_input, validate_input
-from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import Object
+from dAngr.angr_ext.execution_context import ExecutionContext
+from dAngr.angr_ext.expressions import Object
 
+from dAngr.cli.state_visualizer import StateVisualizer
 from dAngr.exceptions import CommandError
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 
-from dAngr.utils.utils import DataType, get_union_members
+from dAngr.utils import get_union_members
 from .cli_connection import CliConnection
 from .debugger_commands import *
 
@@ -46,32 +48,14 @@ DEBUGGER_COMMANDS = _auto_register_commands()
 
 EMPTY = "\t"
 
-class dAngrExecutionContext(ExecutionContext):
-    def __init__(self, debugger:Debugger, commands:Dict[str, BuiltinFunctionDefinition]):
-        super().__init__()
-        self._debugger = debugger
-        #add commands to context
-        self._definitions.update(commands)
-    
-    def clone(self):
-        e = dAngrExecutionContext(self._debugger, cast(Dict[str, BuiltinFunctionDefinition], self._definitions))
-        e._variables = self._variables.copy()
-        e._parent = self
-        return e
-
-    @property
-    def debugger(self)->Debugger:
-        return self._debugger
 
 class CommandLineDebugger(Debugger,StepHandler):
     def __init__(self, *args):
         conn = args[0]
         Debugger.__init__(self, conn)
-        self._breakpoints:FilterList = FilterList([])
-        self._exclusions:List[Filter] = [] #TODO: check if we can use FilterList
         self.http_server = None
         self.http_thread = None
-        self.context:dAngrExecutionContext = dAngrExecutionContext(self, DEBUGGER_COMMANDS)
+        self.context:ExecutionContext = ExecutionContext(self, DEBUGGER_COMMANDS)
 
     def reset_state(self):
         self.http_server = None
@@ -85,16 +69,10 @@ class CommandLineDebugger(Debugger,StepHandler):
         if self.http_thread is not None:
             self.http_thread.join()
     
-    @property
-    def breakpoints(self)->FilterList:
-        self.throw_if_not_initialized()
-        return self._breakpoints
+    def visualize_state(self):
+        state_printer = StateVisualizer(self.current_state)
+        return state_printer.pprint()
     
-    @property
-    def exclusions(self)->List[Filter]:
-        self.throw_if_not_initialized()
-        return self._exclusions
-
     # step callback methods
     def handle_output(self, output:str):
         self.conn.send_output(f"{output}")
@@ -317,21 +295,4 @@ class CommandLineDebugger(Debugger,StepHandler):
     
 
     def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single_step:bool = False):
-        u = check_until
-        exclusions = self.exclusions
-        def check(simgr:angr.SimulationManager):
-            r = u(simgr)
-            if r != StopReason.NONE:
-                return r
-            state = simgr.one_active
-
-            if self.breakpoints.filter(state):
-                return StopReason.BREAKPOINT
-            return StopReason.NONE
-
-        def _exclude(state:angr.SimState)->bool:
-            if exclude(state):
-                return True
-            return any([f.filter(state) for f in exclusions])
-        
-        self._run(self, check,_exclude, single=single_step)
+        self._run(self,check_until=check_until, exclude=exclude, single_step=single_step)

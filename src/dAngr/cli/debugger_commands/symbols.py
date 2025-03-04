@@ -1,6 +1,6 @@
 import claripy
 from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils.utils import Constraint, DataType, SolverType, SymBitVector, undefined, AngrType
+from dAngr.angr_ext.utils import Constraint, DataType, SolverType, SymBitVector, undefined, AngrType
 from .base import BaseCommand
 
 class SymbolCommands(BaseCommand):

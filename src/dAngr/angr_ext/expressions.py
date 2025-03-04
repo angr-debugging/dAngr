@@ -6,10 +6,11 @@ from abc import abstractmethod
 import subprocess
 import claripy
 
-from dAngr.cli.grammar.execution_context import ExecutionContext
+from dAngr.angr_ext.execution_context import ExecutionContext
 from dAngr.exceptions import CommandError, DebuggerCommandError, InvalidArgumentError, ValueError, KeyError
-from dAngr.utils import AngrValueType
-from dAngr.utils.utils import DataType, Operator, check_signature_matches, is_indexable
+from dAngr.angr_ext.utils import AngrValueType
+from dAngr.angr_ext.utils import DataType, Operator
+from dAngr.utils import check_signature_matches, is_indexable
 from contextlib import redirect_stdout, redirect_stderr
 
 from dAngr.utils.loggers import get_logger
@@ -551,8 +552,7 @@ def to_val(arg, context:ExecutionContext):
         if isinstance(v, str) or isinstance(v, bytes):
             return repr(v)
     if isinstance(v, claripy.ast.Base):
-        from dAngr.cli.command_line_debugger import dAngrExecutionContext
-        dbg = cast(dAngrExecutionContext, context.root).debugger
+        dbg = cast(ExecutionContext, context.root).debugger
         v = dbg.eval_symbol(v, DataType.bytes, endness =dbg.project.arch.memory_endness) # type: ignore
         return repr(dbg.cast_to(v, DataType.str))
     return v

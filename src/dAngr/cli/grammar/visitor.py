@@ -8,8 +8,8 @@ from dAngr.cli.grammar.antlr.dAngrVisitor import dAngrVisitor
 from dAngr.cli.grammar.statements import Assignment,  Statement
 from dAngr.cli.grammar.control_flow import IfThenElse, WhileLoop, ForLoop
 from dAngr.cli.grammar.script import Script, Body
-from dAngr.cli.grammar.definitions import ArgumentSpec, CustomFunctionDefinition
-from dAngr.cli.grammar.expressions import BREAK, CONTINUE, BASECommand, DangrCommand, Dictionary, IfConstraint, Inclusion, Invert, Listing, Memory, Negate, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
+from dAngr.angr_ext.definitions import ArgumentSpec, CustomFunctionDefinition
+from dAngr.angr_ext.expressions import BREAK, CONTINUE, BASECommand, DangrCommand, Dictionary, IfConstraint, Inclusion, Invert, Listing, Memory, Negate, Operator, PythonCommand, BashCommand, Comparison, Literal, Property, IndexedProperty, Range, ReferenceObject, Slice, StateObject, VariableRef
 from dAngr.utils.utils import parse_binary_string
 
 
@@ -260,7 +260,7 @@ class dAngrVisitor_(dAngrVisitor):
         if ctx.parameters():
             args = self.visit(ctx.parameters())
         body = self.visit(ctx.body())
-        return CustomFunctionDefinition(name, args, body)
+        return CustomFunctionDefinition(self.debugger, name, args, body)
     
      
     def visitBody(self, ctx: dAngrParser.BodyContext):

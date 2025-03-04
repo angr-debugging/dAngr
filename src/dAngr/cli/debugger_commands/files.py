@@ -1,7 +1,8 @@
 
 import claripy
 from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils.utils import StreamType, SymBitVector, Variable, convert_argument
+from dAngr.angr_ext.utils import StreamType, SymBitVector, Variable
+from dAngr.utils import convert_argument
 from .base import BaseCommand
 
 class FileCommands(BaseCommand):

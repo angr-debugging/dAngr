@@ -3,8 +3,8 @@ from abc import abstractmethod
 
 from typing import List
 
-from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import ReferenceObject
+from dAngr.angr_ext.execution_context import ExecutionContext
+from dAngr.angr_ext.expressions import ReferenceObject
 
 #Statements
 class Statement:

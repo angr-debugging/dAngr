@@ -2,8 +2,8 @@
 from textwrap import indent
 from typing import List
 
-from dAngr.cli.grammar.execution_context import ExecutionContext
-from dAngr.cli.grammar.expressions import BREAK, BASECommand, Expression, Range, VariableRef
+from dAngr.angr_ext.execution_context import ExecutionContext
+from dAngr.angr_ext.expressions import BREAK, BASECommand, Expression, Range, VariableRef
 from dAngr.utils.utils import is_iterable
 from .statements import Statement
 from .script import Body
@@ -21,9 +21,9 @@ class IfThenElse(ControlFlow):
 
     def __call__(self, context: ExecutionContext):
         if Expression.toBool(self.condition(context)):
-            return self.body(ExecutionContext(context))
+            return self.body(ExecutionContext(context.debugger,context))
         elif self.else_body.statements:
-            return self.else_body(ExecutionContext(context))
+            return self.else_body(ExecutionContext(context.debugger,context))
         return None
 
     def __repr__(self):
@@ -39,7 +39,7 @@ class WhileLoop(ControlFlow):
 
     def __call__(self, context: ExecutionContext):
         while self.condition(context):
-            r = self.body(ExecutionContext(context))
+            r = self.body(ExecutionContext(context.debugger,context))
             if r == BREAK:
                 break
             if isinstance(r, BASECommand) and r.base == "return":
@@ -68,7 +68,7 @@ class ForLoop(ControlFlow):
             iterable = self.iterable
         if self.index:
             for index, item in enumerate(iterable): # type: ignore
-                ctx = ExecutionContext(context)
+                ctx = ExecutionContext(context.debugger,context)
                 ctx[self.index.name(context)] = index
                 ctx[self.item.name(context)] = item
                 r = self.body(ctx)
@@ -78,7 +78,7 @@ class ForLoop(ControlFlow):
                     return r(context)
         else:
             for item in iterable: # type: ignore
-                ctx = ExecutionContext(context)
+                ctx = ExecutionContext(context.debugger,context)
                 ctx[self.item.name(context)] = item
                 r = self.body(ctx)
                 if r == BREAK:

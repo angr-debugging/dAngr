@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 from dAngr.cli.grammar.control_flow import ForLoop, IfThenElse
 from dAngr.cli.grammar.parser import lex_input, parse_input
-from dAngr.cli.grammar.expressions import BashCommand, Comparison, Dictionary, Expression, Listing, Literal, DangrCommand, Operator, Property, PythonCommand, Range, VariableRef
+from dAngr.angr_ext.expressions import BashCommand, Comparison, Dictionary, Expression, Listing, Literal, DangrCommand, Operator, Property, PythonCommand, Range, VariableRef
 from dAngr.cli.grammar.script import Body, Script
 from dAngr.cli.grammar.statements import Assignment
 from dAngr.exceptions import ParseError

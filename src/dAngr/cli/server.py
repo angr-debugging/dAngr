@@ -10,9 +10,10 @@ from prompt_toolkit.document import Document
 from prompt_toolkit.validation import Validator, ValidationError
 from prompt_toolkit.history import FileHistory
 
+from dAngr.angr_ext.execution_context import ExecutionContext
 from dAngr.cli import  CommandLineDebugger
 from dAngr.cli.cli_connection import CliConnection
-from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS, dAngrExecutionContext
+from dAngr.cli.command_line_debugger import DEBUGGER_COMMANDS
 
 from dAngr.cli.debugger_commands.base import BuiltinFunctionDefinition
 from dAngr.cli.script_processor import ScriptProcessor
@@ -43,7 +44,7 @@ class Server:
         self.script_path = script_path
         self.stop = False
 
-    def reset_completer(self, context:dAngrExecutionContext|None=None):
+    def reset_completer(self, context:ExecutionContext|None=None):
         if context:
             #fetch variables, symbols, and functions with both name and shortname from the context
             dd = {v: f"&vars.{v}" for v in context.variables.keys()}

@@ -2,7 +2,7 @@
 from dAngr.exceptions import DebuggerCommandError
 from .base import BaseCommand
 from .filters import FilterCommands
-from dAngr.cli.filters import AddressFilter, Filter, FunctionFilter
+from dAngr.angr_ext.filters import AddressFilter, Filter, FunctionFilter
 
 class BreakpointCommands(BaseCommand):
     def __init__(self, debugger_core):

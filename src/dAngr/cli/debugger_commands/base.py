@@ -6,13 +6,14 @@ from typing import List
 
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.angr_ext.step_handler import StopReason
-from dAngr.cli.grammar.definitions import ArgumentSpec, FunctionDefinition
-from dAngr.cli.grammar.execution_context import Variable
+from dAngr.angr_ext.definitions import ArgumentSpec, FunctionDefinition
+from dAngr.angr_ext.execution_context import Variable
 from dAngr.exceptions import ExecutionError, InvalidArgumentError,DebuggerCommandError
-from dAngr.utils.utils import str_to_type, undefined, AngrType, AngrValueType, SymBitVector
+from dAngr.angr_ext.utils import undefined, AngrType, AngrValueType, SymBitVector
 
 # required for str_to_type - do not remove
-from dAngr.cli.grammar.expressions import *
+from dAngr.angr_ext.expressions import *
+from dAngr.utils.utils import str_to_type
 
 
 def get_short_cmd_name(name):
@@ -75,8 +76,7 @@ class BuiltinFunctionDefinition(FunctionDefinition):
         return self._package
     
     def __call__(self, context:ExecutionContext,*args, **named_args) -> Any:
-        from dAngr.cli.command_line_debugger import dAngrExecutionContext
-        o = self._cmd_class(cast(dAngrExecutionContext,context.root).debugger)
+        o = self._cmd_class(context.root.debugger)
         # get the function from the class
         f = getattr(o, self._name, None)
         if not f:

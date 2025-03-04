@@ -5,10 +5,10 @@ from prompt_toolkit import ANSI
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.angr_ext.step_handler import StopReason
 from dAngr.cli.debugger_commands import BaseCommand
-from dAngr.cli.grammar.definitions import FunctionDefinition
+from dAngr.angr_ext.definitions import FunctionDefinition
 from dAngr.cli.script_processor import ScriptProcessor
 from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils import AngrType
+from dAngr.angr_ext.utils import AngrType
 import angr
 
 from dAngr.utils.loggers import AsyncLogger
