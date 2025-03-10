@@ -3,6 +3,7 @@ import inspect
 from typing import Any, Callable, cast, get_args
 from angr import SimulationManager
 from typing import List
+from html import escape
 
 from dAngr.angr_ext.debugger import Debugger
 from dAngr.angr_ext.step_handler import StopReason
@@ -156,6 +157,8 @@ def parse_docstring(docstring:str):
                 state = 5
                 if line.endswith(":"):
                     continue
+
+            line = escape(line)
             if state == 0:
                 description += line
             elif state == 1:
