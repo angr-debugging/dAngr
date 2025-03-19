@@ -55,7 +55,7 @@ class CommandLineDebugger(Debugger,StepHandler):
         Debugger.__init__(self, conn)
         self.http_server = None
         self.http_thread = None
-        self.context:ExecutionContext = ExecutionContext(self, DEBUGGER_COMMANDS)
+        self.context:ExecutionContext = ExecutionContext(self, commands=DEBUGGER_COMMANDS)
 
     def reset_state(self):
         self.http_server = None
@@ -85,7 +85,7 @@ class CommandLineDebugger(Debugger,StepHandler):
         elif reason == StopReason.STEP:
             self.conn.send_info(f"Stepped to: {hex(state.addr)}.") # type: ignore
         elif reason == StopReason.BREAKPOINT:
-            for f in self.breakpoints.get_matching_filter(state):
+            for f in self.breakpoints.get_matching_filter(state, self._single_step):
                 self.conn.send_info(f"Break: {f}.")
         else:
             self.conn.send_warning(f"Stopped with unknown reason at: {hex(start)}.") # type: ignore

@@ -53,6 +53,7 @@ def str_to_type(dtype:str):
     else:
         try:
             from dAngr.angr_ext.expressions import ReferenceObject,VariableRef, SymbolicValue, Register, Property, IndexedProperty
+            from dAngr.angr_ext.utils import StreamType, SymBitVector, Variable, Endness, AngrType, Constraint, DataType, SolverType, AngrValueType
             import angr
             tp = eval(dtype)
         except:

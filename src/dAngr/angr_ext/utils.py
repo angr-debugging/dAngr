@@ -437,15 +437,23 @@ class DebugInfo:
             dim_str = "".join(f"[{d}]" for d in dimensions) if dimensions else "[]"
             return f"{base_type_name}{dim_str}"
         if DIE.tag == "DW_TAG_pointer_type":
-            type_ref = DIE.attributes["DW_AT_type"].value
-            base_type_DIE = dwarfinfo.get_DIE_from_refaddr(type_ref)
+            type_ref = self.get_val(DIE, "DW_AT_type") 
+            try:
+                base_type_DIE = dwarfinfo.get_DIE_from_refaddr(type_ref)
+            except :
+                return "<unknown type>"
             return f"{self.resolve_type(dwarfinfo, base_type_DIE)} *"
         if "DW_AT_name" in DIE.attributes:
-            return DIE.attributes["DW_AT_name"].value.decode("utf-8")
+            if v:= self.get_val(DIE, "DW_AT_name"):
+                return v.decode("utf-8")
 
         if "DW_AT_type" in DIE.attributes:
-            type_ref = DIE.attributes["DW_AT_type"].value
-            DIE = DIE.cu.get_DIE_from_refaddr(type_ref)
+            type_ref = self.get_val(DIE, "DW_AT_type")
+            try:
+                base_type_DIE = dwarfinfo.get_DIE_from_refaddr(type_ref)
+                return self.resolve_type(dwarfinfo, base_type_DIE)
+            except :
+                return "<unknown type>"
             return self.resolve_type(dwarfinfo, DIE)
 
         return "<unknown type>"
@@ -486,7 +494,10 @@ class DebugInfo:
         
         # Reference type handling
         if attr.form.startswith("DW_FORM_ref"):
-            return DIE.cu.get_DIE_from_refaddr(attr.value)
+            try:
+                return DIE.cu.get_DIE_from_refaddr(attr.value)
+            except:
+                return None
         
         if attr.form.startswith("DW_FORM_exprloc"):
             return self.decode_exprloc(attr, DIE.cu.dwarfinfo)
@@ -518,6 +529,10 @@ class DebugInfo:
             elif child.tag == "DW_TAG_lexical_block":
                 vars.extend(self.get_variables(child))
         return vars
+    def get_val(self, DIE, name:str):
+        if name in DIE.attributes:
+            return DIE.attributes[name].value
+        return None
     
     def parse_elf_debug_info(self, file, base_addr):
         elf = ELFFile(open(file, 'rb'))
@@ -537,20 +552,24 @@ class DebugInfo:
                             a = self.get_variable(child, child.tag)
                             args.append(a)
                     vars = self.get_variables(DIE)
-
-                    self.functions[func_name] = FunctionInfo(func_name, DIE.attributes["DW_AT_low_pc"].value + base_addr, args, vars)
+                    if "DW_AT_low_pc" in DIE.attributes:
+                        addr = self.get_val(DIE, "DW_AT_low_pc") + base_addr
+                    else:
+                        addr = None
+                    self.functions[func_name] = FunctionInfo(func_name, addr, args, vars)
         #get all global variables
         for CU in dwarfinfo.iter_CUs():
             for DIE in CU.iter_DIEs():
                 if DIE.tag == "DW_TAG_variable" and "DW_AT_name" in DIE.attributes:
-                    var_name = DIE.attributes["DW_AT_name"].value.decode("utf-8")
+                    if v:= self.get_val(DIE, "DW_AT_name"):
+                        var_name = v.decode("utf-8")
                     line_program = dwarfinfo.line_program_for_CU(CU)
                     if not line_program:
                         continue
-                    file_id = DIE.attributes["DW_AT_decl_file"].value
-                    file = line_program['file_entry'][file_id - 1].name
-                    line = DIE.attributes["DW_AT_decl_line"].value
-                    column = DIE.attributes["DW_AT_decl_column"].value
+                    file_id= self.get_val(DIE, "DW_AT_decl_file")
+                    file = line_program['file_entry'][file_id - 1].name if file_id else None
+                    line = self.get_val(DIE, "DW_AT_decl_line")
+                    column = self.get_val(DIE, "DW_AT_decl_column")
                     self.globals[var_name] = {"name":var_name, "file":file, "line":line, "column":column}
 
 

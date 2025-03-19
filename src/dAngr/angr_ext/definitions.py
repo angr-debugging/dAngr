@@ -109,7 +109,7 @@ class CustomFunctionDefinition(FunctionDefinition):
 
     def __call__(self, context, *arg_values, **named_args):
         # add args
-        context = FunctionContext(self, self.debugger, context)
+        context = FunctionContext(self.debugger, self,  context)
         # match arg_values with required and optional args
         for i, arg in enumerate(arg_values):
             context[self.args[i].name]= arg_values[i]

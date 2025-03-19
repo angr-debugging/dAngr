@@ -610,7 +610,7 @@ class BashCommand(Command):
     def __call__(self, context):
         c = context.clone()
         args = "".join([str(a(c)) for a in self.cmds]).split(" ")
-        result = subprocess.run(args, capture_output=True, text=True)
+        result = subprocess.run(args, capture_output=True, text=True, shell=True)
         if len(result.stderr) > 0:
             raise CommandError(result.stderr)
         context.return_value = result.stdout.strip()

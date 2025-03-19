@@ -21,6 +21,21 @@ class FileCommands(BaseCommand):
         """
         return self.debugger.get_stdstream(stream_type)
 
+    def load_file(self, file_path:str, sim_path:str|None=None):
+        """
+        Load a file with local file_path and simulated path sim_path.
+
+        Args:
+            file_path (str): Path of the file.
+            sim_path (str|None): Path of the file in the simulation. Default is None.
+        
+        Short name: cf
+        
+        """
+        self.debugger.read_file(file_path,sim_path)
+        if not sim_path:
+            sim_path = file_path
+        self.send_info(f"File {sim_path} created.")
 
     def create_symbolic_file(self, name:str, content:str|SymBitVector|Variable|None=None, size:int|None=None):
         """

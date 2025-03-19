@@ -18,7 +18,7 @@ class FilterFunction(Filter):
     def enabled(self, value:bool):
         self._enabled = value
 
-    def _filter(self, state:SimState):
+    def _filter(self, state:SimState, single_step):
         try:
             prev = self.debugger.current_state
             self.debugger.current_state = state

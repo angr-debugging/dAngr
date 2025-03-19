@@ -28,7 +28,7 @@ class Body:
             func_name = ctx.function.name
         else:
             func_name = "main"
-        context = ExecutionContext(parent=ctx)
+        context = ExecutionContext(ctx.debugger, parent=ctx)
         try:
             statement_cnt = 0
             for s in self.statements:

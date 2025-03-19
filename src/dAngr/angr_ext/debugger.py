@@ -11,14 +11,14 @@ import claripy
 from cle import ELF
 
 from dAngr.angr_ext.execution_context import ExecutionContext
-from dAngr.angr_ext.expressions import Constraint
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.angr_ext.filters import Filter, FilterList
 from dAngr.angr_ext.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector
 from dAngr.utils import get_local_arch, remove_ansi_escape_codes
 from dAngr.dap.dap_models import Variable
-from dAngr.utils import utils
+from dAngr.angr_ext.utils import Constraint as BoolConstraint
+from dAngr.angr_ext.expressions import Constraint
 from .std_tracker import StdTracker
 from .utils import DebugInfo, create_entry_state, get_function_address, hook_simprocedures, load_module_from_file, get_function_by_name, get_function_by_addr
 from .connection import Connection
@@ -41,6 +41,7 @@ class Debugger:
         self._simgr:angr.sim_manager.SimulationManager|None = None
         self._current_state:angr.SimState|None = None
         self._default_state_options = set()
+        self._debug_info = None
 
         self._pause:bool = False
 
@@ -57,6 +58,7 @@ class Debugger:
         self._exclusions:List[Filter] = [] #TODO: check if we can use FilterList
         self._debug_info = None
         self.context = ExecutionContext(self)
+        self._single_step = False
 
     @property
     def breakpoints(self)->FilterList:
@@ -374,8 +376,11 @@ class Debugger:
         else:
             self.project.analyses.CompleteCallingConventions()
 
-
-        self.debug_info = DebugInfo(binary_path, base_addr)
+    @property
+    def debug_info(self):
+        if self._debug_info is None:
+            self._debug_info = DebugInfo(self._binary_path, self._base_addr)
+        return self._debug_info
     
     def get_binary_info(self):
         # get general info such as path, name, arch, entry point, etc
@@ -435,8 +440,13 @@ class Debugger:
             return self._symbols[name]
         return None
     
-    def eval_symbol(self, sym:SymBitVector|Constraint, dtype:DataType, **kwargs):
+    def eval_symbol(self, sym:SymBitVector|BoolConstraint|Constraint, dtype:DataType, **kwargs):
         if isinstance(sym, SymBitVector):
+            return self.current_state.solver.eval(sym, cast_to=dtype.to_type(), **kwargs)
+        elif isinstance(sym, BoolConstraint):
+            #drop endness from kwargs
+            if 'endness' in kwargs:
+                kwargs.pop('endness')
             return self.current_state.solver.eval(sym, cast_to=dtype.to_type(), **kwargs)
         elif isinstance(sym, Constraint):
             #drop endness from kwargs
@@ -446,7 +456,7 @@ class Debugger:
         else:
             raise DebuggerCommandError(f"Invalid symbol type {type(sym)}.")
         
-    def eval_symbol_n(self, sym:SymBitVector|Constraint, n:int,solver_type:SolverType, dtype:DataType,  **kwargs):
+    def eval_symbol_n(self, sym:SymBitVector|BoolConstraint|Constraint, n:int,solver_type:SolverType, dtype:DataType,  **kwargs):
         switch = {
             SolverType.UpTo: self.current_state.solver.eval_upto,
             SolverType.AtLeast: self.current_state.solver.eval_atleast,
@@ -457,11 +467,16 @@ class Debugger:
             raise DebuggerCommandError(f"Invalid solver type {solver_type}.")
         if isinstance(sym, SymBitVector):
             return f(sym, n, cast_to=dtype.to_type(), **kwargs)
-        elif isinstance(sym, Constraint):
+        elif isinstance(sym, BoolConstraint):
             #drop endness from kwargs
             if 'endness' in kwargs:
                 kwargs.pop('endness')
             return f(sym, n, cast_to=dtype.to_type(), **kwargs)
+        elif isinstance(sym, Constraint):
+            #drop endness from kwargs
+            if 'endness' in kwargs:
+                kwargs.pop('endness')
+            return f(sym(self.context), n, cast_to=dtype.to_type(), **kwargs)
         else:
             raise DebuggerCommandError(f"Invalid symbol type {type(sym)}.")
 
@@ -565,6 +580,7 @@ class Debugger:
 
 
     def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single_step:bool = False):
+        self._single_step=single_step
         u = check_until
         exclusions = self.exclusions
         def check(simgr:angr.SimulationManager):
@@ -573,14 +589,14 @@ class Debugger:
                 return r
             state = simgr.one_active
 
-            if self.breakpoints.filter(state):
+            if self.breakpoints.filter(state, single_step):
                 return StopReason.BREAKPOINT
             return StopReason.NONE
 
         def _exclude(state:angr.SimState)->bool:
             if exclude(state):
                 return True
-            return any([f.filter(state) for f in exclusions])
+            return any([f.filter(state, single_step) for f in exclusions])
         
         self._run_base(handler,check,_exclude, single=single_step)
 
@@ -674,6 +690,16 @@ class Debugger:
     def create_symbolic_file(self, name:str, content:str|claripy.ast.BV|claripy.ast.String|None=None, size:int|None=None):
         file = angr.storage.file.SimFile(name, content=content, size=size)
         self.current_state.fs.insert(name, file)
+    
+    def read_file(self, real_path:str, sim_path):
+        #read file from the real local file system at path
+        with open(real_path, 'rb') as f:
+            file_contents = f.read()
+        if sim_path:
+            real_path = sim_path
+        sim_file = angr.storage.file.SimFile(real_path, file_contents,len(file_contents),has_end=True, concrete=True)
+        sim_file.set_state(self.current_state)
+        self.current_state.fs.insert(real_path, sim_file)
     
     def get_stashes(self):
         return list(self.simgr.stashes.keys())

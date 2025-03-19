@@ -21,13 +21,13 @@ class Filter:
     def enabled(self, value:bool):
         pass
 
-    def filter(self, state:SimState):
+    def filter(self, state:SimState, single_step):
         if self.enabled:
-            return self._filter(state)
+            return self._filter(state, single_step)
         return False
     
     @abstractmethod
-    def _filter(self, state:SimState)->bool:
+    def _filter(self, state:SimState, single_step)->bool:
         pass
 
 
@@ -46,9 +46,9 @@ class FilterList(Filter):
         for f in self.filters:
             f.enabled = value
 
-    def get_matching_filter(self, state:SimState):
+    def get_matching_filter(self, state:SimState, single_step):
         for f in self.filters:
-            if f.filter(state):
+            if f.filter(state, single_step):
                 yield f
                 
     def append(self, filter:Filter):
@@ -64,8 +64,8 @@ class FilterList(Filter):
         self.filters.clear()
     def __getitem__(self, index:int):
         return self.filters[index]
-    def _filter(self, state:SimState):
-        return self._combination(f._filter(state) for f in self.filters)
+    def _filter(self, state:SimState, single_step):
+        return self._combination(f._filter(state, single_step) for f in self.filters)
     def __len__(self):
         return len(self.filters)
     def __repr__(self) -> str:
@@ -91,10 +91,9 @@ class AndFilterList(FilterList):
     
 
 class AddressFilter(Filter):
-    def __init__(self, address:int, exact:bool = False):
+    def __init__(self, address:int):
         super().__init__()
         self.address = address
-        self.exact = exact
         self._enabled = True
     
     @property
@@ -105,10 +104,10 @@ class AddressFilter(Filter):
     def enabled(self, value:bool):
         self._enabled = value
 
-    def _filter(self, state:SimState)->bool:
+    def _filter(self, state:SimState, single_step)->bool:
         if self.address == state.addr:
             return True
-        elif self.exact:
+        elif single_step:
             return False
         # check if in range of block
         start:int = state.addr # type: ignore
@@ -139,7 +138,7 @@ class FunctionFilter(Filter):
     def enabled(self, value:bool):
         self._enabled = value
 
-    def _filter(self, state:SimState):
+    def _filter(self, state:SimState, single_step):
         if self.f_addr is None:
             self.f_addr = func = state.project.kb.functions(name=self.function_name) # type: ignore
         return self.f_addr == state.callstack.func_addr
@@ -165,7 +164,7 @@ class StdStreamFilter(Filter):
     def enabled(self, value:bool):
         self._enabled = value
 
-    def _filter(self, state:SimState):
+    def _filter(self, state:SimState, single_step):
         if mapped := self.mapping.get(self.stream):
             std:StdTracker = state.get_plugin(f'{mapped}_tracker')
             std_data = std.get_prev_string()
@@ -191,15 +190,15 @@ class InputFileFilter(Filter):
     def enabled(self, value:bool):
         self._enabled = value
 
-    def _filter(self, state:SimState):
+    def _filter(self, state:SimState, single_step):
         return self.value in str(state.posix.dump_file_by_path(self.path))
     
     def __repr__(self) -> str:
         return f"Input File Filter: {self.path}"
 
 class SourceFilter(AddressFilter):
-    def __init__(self, address:int, source_file:str, line_nr:int):
-        super().__init__(address=address, exact=True)
+    def __init__(self, address:int, source_file:str, line_nr:int, exact:bool = False):
+        super().__init__(address=address)
         self.source_file = source_file
         self.line_nr = line_nr
         
@@ -219,7 +218,7 @@ class SymbolicFilter(AddressFilter):
     def enabled(self, value:bool):
         self._enabled = value
 
-    def _filter(self, state:SimState):
+    def _filter(self, state:SimState, single_step):
         a = state.mem[self.address].int.resolved
         return state.solver.symbolic(a)
     

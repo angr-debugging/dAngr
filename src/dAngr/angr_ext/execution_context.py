@@ -27,7 +27,7 @@ class ExecutionContext:
         return self._parent.root if self._parent else self
     
     def clone(self):
-        e = ExecutionContext() # type: ignore
+        e = ExecutionContext(self.debugger) # type: ignore
         e._variables = self._variables.copy()
         e._definitions = self._definitions.copy()
         e._parent = self

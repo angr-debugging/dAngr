@@ -242,3 +242,29 @@ class ToolCommands(BaseCommand):
              return value
         else:
             raise DebuggerCommandError("Invalid format")
+
+    def change_dir(self, path:str):
+        """
+        Change the current working directory
+
+        Args:
+            path (str): Path to change to.
+        
+        Short name: cd
+
+        """
+        import os
+        try:
+            os.chdir(os.path.expanduser(path))
+        except Exception as e:
+            raise DebuggerCommandError(f"Failed to change directory: {e}")
+        
+    def get_dir(self):
+        """
+        Get the current working directory
+
+        Short name: pwd
+
+        """
+        import os
+        return os.getcwd()

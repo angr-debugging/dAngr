@@ -139,7 +139,7 @@ class Server:
                     # lines = self._preprocess_input(conn, lines)
                     if not lines:
                         continue
-                    if not dbg.handle(lines, False):
+                    if not dbg.handle(lines, DEBUG_COMMANDS):
                         self.stop = True
                     self.reset_completer(dbg.context)
             except KeyboardInterrupt:

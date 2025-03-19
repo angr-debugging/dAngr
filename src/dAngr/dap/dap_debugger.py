@@ -197,7 +197,7 @@ class DAPDebugger(Debugger, StepHandler):
             ids=[]
             id=0
             for f in self.breakpoints.filters:
-                if f.filter(state):
+                if f.filter(state, self._single_step):
                     ids.append(id)
                 id+=1
             self.conn.send_event_sync(dap.StoppedEvent, body=dap.Body1(reason='breakpoint', hitBreakpointIds=ids, description=f"Stopped at breakpoint {f}", threadId=0, allThreadsStopped=True)) # type: ignore[call-arg]

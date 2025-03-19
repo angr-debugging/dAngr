@@ -19,7 +19,7 @@
             "program": "./src/app.py",
             // "cwd": "${workspaceFolder}/examples/malware.oregonctf.org",
             "args": [
-                "-s",
+                // "-s",
                 // "${workspaceFolder}/p2pcam.dangr"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/00_angr_find.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/01_angr_avoid.md"
@@ -42,7 +42,7 @@
                 // "${workspaceFolder}/examples/basic_example/example.dangr"
                 //  "${workspaceFolder}/examples/angr_examples/Reverse/01_easy/fauxware.md"
                 // "${workspaceFolder}/examples/angr_examples/01_little_engine.md"
-                 "${workspaceFolder}/examples/angr_examples/Reverse/03_hard/whitehat_crypto400.md"
+                //  "${workspaceFolder}/examples/angr_examples/Reverse/03_hard/whitehat_crypto400.md"
                 // "${workspaceFolder}/examples/angr_examples/03_csaw_wyvern.md"
                 // "${workspaceFolder}/examples/angr_examples/04_tumctf2016_zwiebel.md"
                 // "${workspaceFolder}/examples/angr_examples/Reverse/01_easy/flareon2015_2.md"
