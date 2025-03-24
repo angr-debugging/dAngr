@@ -1,5 +1,6 @@
 from array import array
 
+from dAngr.angr_ext.expressions import BashCommand
 from dAngr.cli.debugger_commands.base import BaseCommand
 from dAngr.exceptions import DebuggerCommandError
 from dAngr.angr_ext.utils import DataType, AngrType, AngrValueType, Endness
@@ -256,6 +257,8 @@ class ToolCommands(BaseCommand):
         import os
         try:
             os.chdir(os.path.expanduser(path))
+            # sync BashCommand shell
+            BashCommand.shell.run_command("cd" + os.path.expanduser(path))
         except Exception as e:
             raise DebuggerCommandError(f"Failed to change directory: {e}")
         

@@ -3,8 +3,9 @@ import os
 
 from prompt_toolkit import PromptSession
 
-from prompt_toolkit.completion import WordCompleter, merge_completers, PathCompleter
+from prompt_toolkit.completion import WordCompleter, merge_completers, PathCompleter, Completer, Completion
 from prompt_toolkit.patch_stdout import patch_stdout
+from prompt_toolkit.styles import Style
 from prompt_toolkit import HTML
 from prompt_toolkit.document import Document
 from prompt_toolkit.validation import Validator, ValidationError
@@ -32,6 +33,74 @@ class MyValidator(Validator):
                 return
             raise ValidationError(message=e)
 
+# class ArgumentPathCompleter(Completer):
+#     def __init__(self):
+#         self.path_completer = PathCompleter(get_paths=lambda: [os.getcwd()])
+
+#     def get_completions(self, document, complete_event):
+#         text = document.text_before_cursor
+#         words = text.split()
+        
+#         if not words:
+#             return self.path_completer.get_completions(document, complete_event)
+
+#         last_word = words[-1]
+#         unquoted = last_word.strip("'\"")  # Remove surrounding quotes if present
+#         quote_char = last_word[0] if last_word and last_word[0] in "'\"" else ""
+
+#         fake_doc = Document(unquoted, cursor_position=len(unquoted))
+#         style = "class:completion.path"
+#         for completion in self.path_completer.get_completions(fake_doc, complete_event):
+#             if quote_char:
+#                 yield Completion(last_word + completion.text + quote_char, start_position=-len(last_word), display=fake_doc.text + completion.text, style=style)
+#             else:
+#                 yield Completion(last_word + completion.text, start_position=-len(last_word), display=fake_doc.text + completion.text, style=style)
+from prompt_toolkit.completion import Completer, Completion, PathCompleter
+from prompt_toolkit.document import Document
+from prompt_toolkit import PromptSession
+import os
+
+class ArgumentPathCompleter(Completer):
+    def __init__(self):
+        self.path_completer = PathCompleter(expanduser=True)
+
+    def get_completions(self, document, complete_event):
+        text = document.text_before_cursor
+        words = text.split()
+
+        if not words:
+            return self.path_completer.get_completions(document, complete_event)
+
+        last_word = words[-1]
+        unquoted = last_word.strip("'\"")  # Remove surrounding quotes if present
+        quote_char = last_word[0] if last_word and last_word[0] in "'\"" else ""
+
+        fake_doc = Document(unquoted, cursor_position=len(unquoted))
+        style = "class:completion.path"
+
+        return self.path_completer.get_completions(fake_doc, complete_event)
+        # for completion in self.path_completer.get_completions(fake_doc, complete_event):
+        #     full_path = os.path.expanduser(completion.text)
+        #     needs_quotes = " " in full_path or "/" in full_path
+
+        #     if quote_char:
+        #         new_text = f"{quote_char}{completion.text}{quote_char}"
+        #     elif needs_quotes:
+        #         new_text = f'"{completion.text}"'
+        #     else:
+        #         new_text = completion.text
+
+        #     yield Completion(new_text, start_position=-len(last_word), display=completion.display, style=style)
+
+class SortedCompleter(Completer):
+    def __init__(self, *completers):
+        self.completer = merge_completers(completers)
+
+    def get_completions(self, document, complete_event):
+        completions = list(self.completer.get_completions(document, complete_event))
+        completions.sort(key=lambda c: c.text)  # Sort alphabetically
+        for completion in completions:
+            yield completion
 
 DEBUG_COMMANDS = False
 class Server:
@@ -64,8 +133,12 @@ class Server:
             dd.update({self.commands[c].package + '.' + c: f"{c}" for c in self.commands.keys()})
 
         word_completer = WordCompleter(sorted(dd.keys()), display_dict=dd, WORD=True)
-        self.completer = merge_completers([word_completer,PathCompleter(get_paths=lambda: [os.getcwd()])])
+        self.completer = SortedCompleter(word_completer,ArgumentPathCompleter())
 
+    def get_style(self):
+        return Style.from_dict({
+            "completion.path": "ansicyan",
+        })
 
     def loop(self):
         conn = CliConnection()
@@ -73,7 +146,7 @@ class Server:
         conn.send_info("Welcome to dAngr, the symbolic debugger. Type help or ? to list commands.")
         prmpt = HTML('<darkcyan>(dAngr)> </darkcyan>')
         cmd_history = FileHistory(os.path.expanduser("~/.dAngr_history"))
-        session = PromptSession(enable_history_search=True, history=cmd_history)
+        session = PromptSession(enable_history_search=True, history=cmd_history, style=self.get_style())
         if self.debug_file_path:
             dbg.handle(f"load {self.debug_file_path}", False)
         if self.script_path:

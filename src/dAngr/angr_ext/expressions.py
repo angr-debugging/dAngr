@@ -1,9 +1,12 @@
 from enum import Enum
 import io
+import os
+import select
 from types import UnionType
 from typing import Dict, List, Any, cast, get_args, get_origin
 from abc import abstractmethod
 import subprocess
+import threading
 import claripy
 
 from dAngr.angr_ext.execution_context import ExecutionContext
@@ -601,20 +604,106 @@ class PythonCommand(Command):
         return "".join([ str(c) for c in self.cmds])
     def __eq__(self, other):
         return isinstance(other, PythonCommand) and self.cmds == other.cmds
-    
+
+
+class PersistentShell:
+    def __init__(self):
+        self.process = subprocess.Popen(
+            ['/bin/bash'],  # Use 'cmd.exe' or 'powershell' on Windows
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1
+        )
+        self.stdout_lines = []
+        self.stderr_lines = []
+        self._lock = threading.Lock()
+
+        # Threads to capture stdout and stderr
+        threading.Thread(target=self._read_output, args=(self.process.stdout, self.stdout_lines), daemon=True).start()
+        threading.Thread(target=self._read_output, args=(self.process.stderr, self.stderr_lines), daemon=True).start()
+
+    def _read_output(self, pipe, output_list):
+        for line in iter(pipe.readline, ''):
+            with self._lock:
+                output_list.append(line)
+
+    import os
+
+    def run_command(self, command):
+        if self.process.stdin is None:
+            raise ValueError('Shell is not available')
+
+        with self._lock:
+            self.stdout_lines.clear()
+            self.stderr_lines.clear()
+
+        # Add: echo working dir as a special marker
+        full_command = f"{command}\necho $? __END__\npwd && echo __PWD_END__\n"
+        self.process.stdin.write(full_command)
+        self.process.stdin.flush()
+
+        return_code = None
+        output = []
+        cwd = None
+        while True:
+            with self._lock:
+                if self.stdout_lines:
+                    line = self.stdout_lines.pop(0)
+                    stripped = line.strip()
+                    if stripped.endswith('__END__'):
+                        try:
+                            return_code = int(stripped.split()[0])
+                        except ValueError:
+                            return_code = -1
+                    elif stripped == '__PWD_END__':
+                        # Done reading output
+                        break
+                    else:
+                        output.append(line)
+                        if return_code is not None and cwd is None:
+                            # The line after __END__ should be the cwd (from `pwd`)
+                            cwd = stripped
+
+        with self._lock:
+            stderr = ''.join(self.stderr_lines)
+
+        # Sync Python's working dir with shell's
+        if cwd and os.path.isdir(cwd):
+            os.chdir(cwd)
+
+        return ''.join(output), stderr, return_code
+
+
+    def close(self):
+        self.process.terminate()
+        self.process.wait()
+
 class BashCommand(Command):
+    shell = PersistentShell()
     def __init__(self, *cmds:Expression|str|int|bytes):
         cc = [ Literal(c) if isinstance(c, (str,int,bytes)) else c for c in cmds if isinstance(c, (Expression,str,int,bytes))]
         self.cmds:List[Expression] = self._merge_consecutive_literals(cc)
 
     def __call__(self, context):
         c = context.clone()
-        args = "".join([str(a(c)) for a in self.cmds]).split(" ")
-        result = subprocess.run(args, capture_output=True, text=True, shell=True)
-        if len(result.stderr) > 0:
-            raise CommandError(result.stderr)
-        context.return_value = result.stdout.strip()
+        cmd = "".join([str(a(c)) for a in self.cmds])
+        stdout, stderr, returncode = BashCommand.shell.run_command(cmd)
+        # BashCommand.proc.stdin.write(cmd + "\n")
+        # BashCommand.proc.stdin.flush()
+        # stdout,stderr = BashCommand.proc.communicate()
+        if returncode != 0:
+            raise CommandError(stderr)
+
+        context.return_value = stdout.strip()
         return context.return_value
+        # # args = "".join([str(a(c)) for a in self.cmds]).split(" ")
+        # result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+        # if len(result.stderr) > 0:
+        #     raise CommandError(result.stderr)
+        # context.return_value = result.stdout.strip()
+        # return context.return_value
     
     def __str__(self):
         return "".join([ str(c) for c in self.cmds])

@@ -2093,7 +2093,7 @@ Available commands:
 * Python calls may include dAngr or shell commands by using &(...), $(...) respectively.
 
 ## Bash API
-* Execute shell commands in the debugger by preceding with `%` (percentage sign). For example, to list the files in the current directory, use `%ls`.
+* Execute shell commands in the debugger by preceding with `$` (percentage sign). For example, to list the files in the current directory, use `$ls`.
 * include dAngr or Python commands by using &(...), !(...) respectively.
 
 
