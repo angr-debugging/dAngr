@@ -1,0 +1,29 @@
+FROM ubuntu:latest 
+LABEL maintainer='DistriNet'
+#TO RUN AND CONNECT TO THE IMAGE RUN THE FOLLOWING COMMANDS:
+#docker build -t <"name">
+#map the port being exposed at the bottom of this scripts to any ports of your choosing
+
+#needed for some examples
+#RUN dpkg --add-architecture i386
+
+RUN apt-get update 
+RUN apt-get install --no-install-recommends --yes python3
+RUN apt-get -y install git
+RUN apt-get -y install python3-pip 
+RUN apt-get -y install python3.12-venv 
+RUN apt-get -y install graphviz
+RUN apt-get -y install graphviz-dev 
+RUN apt-get -y install default-jre
+#needed for some examples
+#RUN apt-get install -y libc6:i386 libstdc++6:i386
+
+# Setup environment
+ENV VIRTUAL_ENV=/home/ubuntu/dAngr/venv
+RUN mkdir -p /home/ubuntu/dAngr
+
+RUN python3 -m venv "$VIRTUAL_ENV"
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+WORKDIR /workspaces/dAngr
+
+
