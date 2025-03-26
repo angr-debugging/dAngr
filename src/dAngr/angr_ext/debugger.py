@@ -46,7 +46,7 @@ class Debugger:
         self._pause:bool = False
 
         self._base_addr:int = 0x400000
-        self.verbose_step:bool = True
+        self.verbose_step:bool = False
         self._function_prototypes = {}
         self._current_function:str = ''
         self._cfg:CFGFast|None = None
