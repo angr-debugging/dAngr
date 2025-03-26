@@ -121,7 +121,7 @@ class CommandLineDebugger(Debugger,StepHandler):
         try:
             if not command:
                 return True
-            elif command == "exit":
+            elif command in ("exit", "q"):
                 return False
             # command = command.strip()
             script = parse_input(command, debugger=self)
