@@ -78,7 +78,16 @@ Contributions to dAngr are welcome! If you find any bugs or have suggestions for
 
 This research has been conducted at the Embedded Testing Team from the [DistriNet Research Group](https://distrinet.cs.kuleuven.be/) at KU Leuven, campus Ghent.
 
-Check out our other research [here](https://distrinet.cs.kuleuven.be/research/publications) 
+Check out our other research [here](https://distrinet.cs.kuleuven.be/research/publications)
+
+```
+@inproceedings{deruck2025dangr,
+  title={dAngr: Lifting Software Debugging to a Symbolic Level},
+  author={de Ruck, Dairo and Jacobs, Jef and Lapon, Jorn and Naessens, Vincent},
+  booktitle={Proceedings of the Workshop on Binary Analysis Research (BAR)},
+  year={2025}
+}
+```
 
 
 ## Contact
