@@ -65,7 +65,7 @@ def convert_string(sim_type, value):
         raise InvalidArgumentError(f"arg_type {sim_type} not implemented")
     
 def get_function_by_addr(proj,addr) -> knowledge_plugins.functions.function.Function | None:
-    return proj.kb.functions.ceiling_func(addr)
+    return proj.kb.functions.floor_func(addr)
 
 def get_function_by_name(proj,name) -> knowledge_plugins.functions.function.Function | None:
     function_list = list(proj.kb.functions.get_by_name(name=name))

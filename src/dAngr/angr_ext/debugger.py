@@ -261,6 +261,10 @@ class Debugger:
         return get_function_by_addr(self.project, func)
        else:
         return get_function_by_name(self.project, func)
+       
+    def list_functions(self) -> list[Function]:
+        self.cfg
+        return [f for f in self.project.kb.functions.values()]
     
     def get_function_prototype(self, prototype:str, arguments:List[str]):
         return angr.SimCC.guess_prototype(arguments, prototype).with_arch(self.project.arch)
@@ -418,9 +422,10 @@ class Debugger:
         return self.current_state.satisfiable(extra_constraints=[constraint])
 
 
-
     def set_symbol(self, name, value):
         self._symbols[name] = value
+
+    
     def is_symbolic(self, value):
         self.throw_if_not_active()
         return self.current_state.solver.symbolic(value)
@@ -530,18 +535,19 @@ class Debugger:
     def get_current_addr(self):
         return self.current_state.addr
 
-
+    # TODO: fix, this function should return the callstack. However, the current implementation doesn't get the start and end correct.
+    # Check with 00_angr_find --> __wrap_main and main.
     def get_callstack(self,state):
         paths = [] 
         prev = state.addr
         i = 0
-        for ix,s in enumerate(state.callstack):
+        for ix,call_state in enumerate(state.callstack):
             block = self.project.factory.block(prev)
-            f = self.get_function_info(s.func_addr) if s.func_addr!=0 else None
-            name = f.name if f else f"State at address{hex(s.func_addr)}"
-            end = block.instruction_addrs[-1] if len(block.instruction_addrs) else s.func_addr # type: ignore
-            paths.append({"addr":prev, "id":i, "func":s.func_addr, "end": end, "name":  name})
-            prev = s.call_site_addr
+            f = self.get_function_info(call_state.func_addr) if call_state.func_addr!=0 else None
+            name = f.name if f else f"State at address{hex(call_state.func_addr)}"
+            end = block.instruction_addrs[-1] if len(block.instruction_addrs) else call_state.func_addr # type: ignore
+            paths.append({"addr":prev, "id":i, "func":call_state.func_addr, "end": end, "name":  name})
+            prev = call_state.call_site_addr
             i += 1
         return paths
 
@@ -575,6 +581,8 @@ class Debugger:
             #include function name if available:
             func = self.cfg.kb.functions.get(node.function_address, None)
             yield BasicBlock(node.addr, node.size, len(node.instruction_addrs), node.block.capstone if node.block else None, func.name if func else None)
+
+        
     def get_bb_count(self):
         return len(self.cfg.graph.nodes())
         

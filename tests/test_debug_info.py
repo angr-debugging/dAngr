@@ -41,7 +41,20 @@ class TestDebugInfoCommands:
     #     assert r == True
     #     assert "{\'graph\': \'digraph " in str(conn.send_info.call_args[0][0])
     
-    
+    def test_function_info(self, dbg, conn):
+        functions = dbg.list_functions()
+        for function in functions:
+            func_name = function.name
+            func = dbg.get_function_info(func_name)
+            assert function == func
+            basic_blocks = [(bb.address, bb.address+bb.size) for bb in dbg.get_bbs() if bb.function == func_name]
+            addrs = [addr for start, stop in basic_blocks for addr in range(start, stop)]
+            for value in addrs:
+                fnt = dbg.get_function_info(value)
+                assert fnt == func
+
+
+
     def test_get_basicblocks(self, dbg, conn):
         assert dbg.handle("get_basicblocks")
         assert "Address: 0x40059b" in str(conn.send_result.call_args[0][0])
