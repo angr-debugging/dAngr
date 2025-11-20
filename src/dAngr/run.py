@@ -1,6 +1,7 @@
 import argparse
 from dAngr.cli.server import Server
 
+
 def run():
     parser = argparse.ArgumentParser(description="dAngr Symbolic debugger.")
     parser.add_argument("-f", type=str, help="File to debug.", required=False)
