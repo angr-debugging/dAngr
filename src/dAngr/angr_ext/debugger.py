@@ -248,13 +248,15 @@ class Debugger:
         self._save_unconstrained = value
         self._simgr = None
 
+
     def set_function_prototype(self, return_type:str, name:str, args:List[str]):  
         # Parse argument types
         sim_arg_types = [angr.types.parse_type(arg.strip()) for arg in args]
         sim_return_type = angr.types.parse_type(return_type)
-
         # Create function prototype
         self._function_prototypes[name] = {"prototype":angr.types.SimTypeFunction(sim_arg_types, sim_return_type)} # type: ignore
+
+
     def store_function(self, name, prototype, addr, cc):
         self._function_prototypes[name] = {"prototype":prototype, "addr":addr, "cc":cc}
 
@@ -265,6 +267,7 @@ class Debugger:
             raise DebuggerCommandError(f"Function {name} not found.")
         return f
     
+
     def set_current_function(self, name:str):
         self._current_function = name
     
@@ -280,6 +283,10 @@ class Debugger:
         return get_function_by_addr(self.project, func)
        else:
         return get_function_by_name(self.project, func)
+       
+    def list_functions(self) -> list[Function]:
+        self.cfg
+        return [f for f in self.project.kb.functions.values()]
     
     def get_function_prototype(self, prototype:str, arguments:List[str]):
         return angr.SimCC.guess_prototype(arguments, prototype).with_arch(self.project.arch)
@@ -412,14 +419,18 @@ class Debugger:
         if name in self._symbols:
             return self._symbols[name]
         else : raise DebuggerCommandError(f"Symbol {name} not found.")
+
+
     def to_symbol(self, name:str, lst:list):
         self.add_symbol(name, claripy.Concat(*lst))
         
+
     def find_symbol(self, name:str):
         if name in self._symbols:
             return self._symbols[name]
         return None
     
+
     def eval_symbol(self, sym:SymBitVector|Constraint, dtype:DataType, **kwargs):
         if isinstance(sym, SymBitVector):
             return self.current_state.solver.eval(sym, cast_to=dtype.to_type(), **kwargs)
@@ -455,9 +466,10 @@ class Debugger:
         return self.current_state.satisfiable(extra_constraints=[constraint])
 
 
-
     def set_symbol(self, name, value):
         self._symbols[name] = value
+
+    
     def is_symbolic(self, value):
         self.throw_if_not_active()
         return self.current_state.solver.symbolic(value)
@@ -547,9 +559,16 @@ class Debugger:
                 self.stop_reason = StopReason.TERMINATE
                 return True
             self.stop_reason = check_until(simgr)
+
             return self.stop_reason != StopReason.NONE
-        self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func,step_func=step_func, num_inst=1 if single else None)
+        
+        self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func, step_func=step_func, num_inst=1 if single else None)
+
         self._set_current_state( self.simgr.one_active if self.simgr.active else None)
+        # if self.stop_reason == StopReason.BREAKPOINT:
+            # Get the address is breaked for
+            # check if the address matches
+            # if not run until that address
         handler.handle_step(self.stop_reason, self._current_state)
 
     def back(self):
@@ -571,18 +590,19 @@ class Debugger:
     def get_current_addr(self):
         return self.current_state.addr
 
-
+    # TODO: fix, this function should return the callstack. However, the current implementation doesn't get the start and end correct.
+    # Check with 00_angr_find --> __wrap_main and main.
     def get_callstack(self,state):
         paths = [] 
         prev = state.addr
         i = 0
-        for ix,s in enumerate(state.callstack):
+        for ix,call_state in enumerate(state.callstack):
             block = self.project.factory.block(prev)
-            f = self.get_function_info(s.func_addr) if s.func_addr!=0 else None
-            name = f.name if f else f"State at address{hex(s.func_addr)}"
-            end = block.instruction_addrs[-1] if len(block.instruction_addrs) else s.func_addr # type: ignore
-            paths.append({"addr":prev, "id":i, "func":s.func_addr, "end": end, "name":  name})
-            prev = s.call_site_addr
+            f = self.get_function_info(call_state.func_addr) if call_state.func_addr!=0 else None
+            name = f.name if f else f"State at address{hex(call_state.func_addr)}"
+            end = block.instruction_addrs[-1] if len(block.instruction_addrs) else call_state.func_addr # type: ignore
+            paths.append({"addr":prev, "id":i, "func":call_state.func_addr, "end": end, "name":  name})
+            prev = call_state.call_site_addr
             i += 1
         return paths
 
@@ -616,6 +636,8 @@ class Debugger:
             #include function name if available:
             func = self.cfg.kb.functions.get(node.function_address, None)
             yield BasicBlock(node.addr, node.size, len(node.instruction_addrs), node.block.capstone if node.block else None, func.name if func else None)
+
+        
     def get_bb_count(self):
         return len(self.cfg.graph.nodes())
         

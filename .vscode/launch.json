@@ -21,7 +21,7 @@
             "args": [
                 "-s",
                 // "${workspaceFolder}/p2pcam.dangr"
-                // "${workspaceFolder}/examples/malware.oregonctf.org/00_angr_find.md"
+                "${workspaceFolder}/examples/malware.oregonctf.org/00_angr_find.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/01_angr_avoid.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/02_angr_find_condition.md"
                 // "${workspaceFolder}/examples/malware.oregonctf.org/03_angr_symbolic_registers.md"
@@ -53,7 +53,7 @@
                 // "${workspaceFolder}/examples/angr_examples/Reverse/01_easy/mma_howtouse.md"
                 // "${workspaceFolder}/examples/angr_examples/Reverse/02_medium/defcon2016quals_baby-re.md"
                 // "${workspaceFolder}/examples/angr_examples/Reverse/02_medium/google2016_unbreakable.md"
-                //"/workspaces/dAngr/examples/angr_examples/vuln_exploit/01_easy/cgc_identification.md"
+                // "/workspaces/dAngr/examples/angr_examples/vuln_exploit/01_easy/cgc_identification.md"
                 // "/workspaces/dAngr/examples/angr_examples/vuln_exploit/02_medium/insomnihack_aeg.md"
                 // "${workspaceFolder}/examples/angr_examples/Reverse/03_hard/0cft_trace.md"
                 // "${workspaceFolder}/examples/angr_examples/06_0cft_trace.md"
@@ -68,11 +68,13 @@
             "name": "Python: Debug Tests",
             "type": "debugpy",
             "request": "launch",
-            "purpose": ["debug-test"],
+            "purpose": [
+                "debug-test"
+            ],
             "justMyCode": false,
             "args": [
-                "--pdb"  // This will invoke the Python debugger on exceptions
-            ],         
+                "--pdb" // This will invoke the Python debugger on exceptions
+            ],
             "console": "integratedTerminal"
         }
     ]

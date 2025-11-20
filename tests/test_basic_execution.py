@@ -30,10 +30,10 @@ class TestBasicExecutionCommands:
         dbg.handle("load 'example'")
         return dbg
 
-    
     def test_reset(self, dbg, conn):
         assert dbg.handle("reset_state")
         conn.send_info.assert_called_with("State reset.")
+
 
     
     def test_continue(self, dbg, conn):

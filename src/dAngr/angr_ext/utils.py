@@ -78,9 +78,8 @@ def get_function_by_addr(proj:Project,addr) -> knowledge_plugins.functions.funct
     if (f is not None) and _addr_in_func(f, addr):
         return f
     
-    f = proj.kb.functions.ceiling_func(addr)
-    if (f is not None) and _addr_in_func(f, addr):
-        return f
+def get_function_by_addr(proj,addr) -> knowledge_plugins.functions.function.Function | None:
+    return proj.kb.functions.floor_func(addr)
 
 def get_function_by_name(proj:Project,name) -> knowledge_plugins.functions.function.Function | None:
     function_list = list(proj.kb.functions.get_by_name(name=name))
