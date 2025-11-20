@@ -41,7 +41,7 @@ def to_color(str:str, color:Color):
     return f"\x1b[{c}m{str}\x1b[0m"
     
 class StateVisualizer():
-    REGISTERS = {
+    x86_registers = {
     8 : ["al", "ah", "bl", "bh", "cl", "ch", "dl", "dh"],
     16: ["ax", "bx", "cx", "dx"],
     32: ["eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp", "eip"],
@@ -52,6 +52,8 @@ class StateVisualizer():
         self.state:angr.SimState = state
         if state:
             self.bits = state.arch.bits
+            self.arch_type = state.arch.name
+            self.registers = state.arch.default_symbolic_registers
             self.stack_end = state.registers.load('sp').concrete_value # type: ignore
             bp = state.registers.load('bp') # type: ignore
             if not bp.concrete:
@@ -70,7 +72,7 @@ class StateVisualizer():
             self.code_end = state.project.loader.main_object.max_addr
 
     def arch_registers(self, arch_bits):
-        return self.REGISTERS[arch_bits]
+        return self.registers[arch_bits]
     
     def create_legend(self):
         template = "Legend: | {stack} | {heap} | {code} | {instruction} | {symbol} |"
@@ -163,7 +165,7 @@ class StateVisualizer():
     def pprint(self):
         assert self.state is not None
         regs = {}
-        for reg in self.REGISTERS[self.bits]:
+        for reg in self.registers:
             value = self.state.registers.load(reg) # type: ignore
             regs[reg] = self.format_value(value)
         
