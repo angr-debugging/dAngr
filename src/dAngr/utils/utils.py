@@ -10,6 +10,8 @@ import archinfo
 import re
 
 import claripy
+from claripy.ast.bv import BV
+
 import platform
 
 from dAngr.exceptions import DebuggerCommandError, InvalidArgumentError, ValueError
@@ -178,7 +180,20 @@ class DataType(Enum):
         }
         return switch.get(self, type(None))
 
+    @staticmethod
+    def extract_BV_value(value):
+        if isinstance(value, BV):
+            if value.concrete:
+                return value.args[0] # For concrete BV, args[0] is the Python int
+            else:
+                raise DebuggerCommandError(
+                    "Symbolic Claripy BV values are not supported, expected a concrete value."
+                )
+        return value
+
     def convert(self, value, arch:archinfo.Arch, **kwargs):
+        value = self.extract_BV_value(value)
+            
         if not type(value) in [int, str, bytes, bool]:
             raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', 'bytes', or 'bool'.")
         switch = {
@@ -193,8 +208,11 @@ class DataType(Enum):
 
     @staticmethod
     def _to_int(value, arch:archinfo.Arch, endness:Endness=Endness.DEFAULT):
+        value = DataType.extract_BV_value(value)
+
         if not type(value) in [int, str, bytes, bool]:
-            raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', 'bytes', or 'bool'.")
+            raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', 'bytes', 'BV' or 'bool'.")
+
         if type(value) == int:
             return value
         elif type(value) == str:
@@ -209,6 +227,8 @@ class DataType(Enum):
     
     @staticmethod
     def _to_address(value, arch:archinfo.Arch, endness:Endness=Endness.DEFAULT):
+        value = DataType.extract_BV_value(value)
+
         if not type(value) in [int, str, bytes, bool]:
             raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', 'bytes', or 'bool'.")
         if type(value) == int:
@@ -225,6 +245,8 @@ class DataType(Enum):
     
     @staticmethod
     def _to_hex( value, arch:archinfo.Arch, endness:Endness=Endness.DEFAULT):
+        value = DataType.extract_BV_value(value)
+
         if not type(value) in [int, str, bytes, bool]:
             raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', 'bytes', or 'bool'.")
         if type(value) == int:
@@ -239,6 +261,8 @@ class DataType(Enum):
 
     @staticmethod
     def _to_str(value, arch:archinfo.Arch):
+        value = DataType.extract_BV_value(value)
+
         if not type(value) in [int, str, bytes, bool]:
             raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', 'bytes', or 'bool'.")
         if type(value) == int:
@@ -253,6 +277,8 @@ class DataType(Enum):
 
     @staticmethod
     def _to_bool(value, arch:archinfo.Arch, endness:Endness=Endness.DEFAULT):
+        value = DataType.extract_BV_value(value)
+
         if not type(value) in [int, str, bytes, bool]:
             raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', 'bytes', or 'bool'.")
         if type(value) == int:
@@ -267,6 +293,8 @@ class DataType(Enum):
 
     @staticmethod
     def _to_bytes(value, arch:archinfo.Arch, endness:Endness=Endness.DEFAULT):
+        value = DataType.extract_BV_value(value)
+        
         if not type(value) in [int, str, bytes, bool]:
             raise DebuggerCommandError(f"Type not supported. Use 'int', 'str', 'bytes', or 'bool'.")
         if type(value) == int:

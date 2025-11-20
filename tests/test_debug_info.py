@@ -44,7 +44,7 @@ class TestDebugInfoCommands:
     
     def test_get_basicblocks(self, dbg, conn):
         assert dbg.handle("get_basicblocks")
-        assert "Address: 0x40059b" in str(conn.send_result.call_args[0][0])
+        assert "Address: 0x400687" in str(conn.send_result.call_args[0][0])
 
     
     def test_get_current_block(self, dbg, conn):

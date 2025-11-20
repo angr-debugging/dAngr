@@ -216,3 +216,31 @@ class MemoryCommands(BaseCommand):
         """
         self.debugger.unconstrained_fill(symbolic)
         self.send_info( f"Fill {'with symbols' if symbolic else 'with zeros'}.")
+
+
+    def malloc(self, sim_size:int):
+        """
+        Allocate memory on the heap.
+
+        Args:
+            sim_size (int): Size of memory to allocate.
+
+        Returns:
+            int: Address of allocated memory.
+
+        Short name: mal
+        """
+
+        return self.debugger.malloc(sim_size)
+    
+    def free(self, address:int):
+        """
+        Free memory on the heap
+
+        Args:
+            address (int): Address of memory allocation
+
+        Short name: fr
+        """
+
+        return self.debugger.free(address)

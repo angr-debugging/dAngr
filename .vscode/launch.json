@@ -5,7 +5,7 @@
             "name": "Launch Active Python File",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "${workspaceFolder}/src/app.py",
             "args": [
                 "dist"
             ],
@@ -42,7 +42,9 @@
                 // "${workspaceFolder}/examples/basic_example/example.dangr"
                 //  "${workspaceFolder}/examples/angr_examples/Reverse/01_easy/fauxware.md"
                 // "${workspaceFolder}/examples/angr_examples/01_little_engine.md"
-                 "${workspaceFolder}/examples/angr_examples/Reverse/03_hard/whitehat_crypto400.md"
+                "${workspaceFolder}/examples/angr_examples/vuln_exploit/03_hard/mbrainfuzz.md"
+                // "${workspaceFolder}/temp/turnserver.md"
+                //"${workspaceFolder}/examples/malware.oregonctf.org/17_angr_arbitrary_jump.md"
                 // "${workspaceFolder}/examples/angr_examples/03_csaw_wyvern.md"
                 // "${workspaceFolder}/examples/angr_examples/04_tumctf2016_zwiebel.md"
                 // "${workspaceFolder}/examples/angr_examples/Reverse/01_easy/flareon2015_2.md"

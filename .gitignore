@@ -15,3 +15,5 @@ src/dAngr.egg-info/
 dAngr.egg-info/
 p2pcam
 examples/malware.oregonctf.org/build/
+temp/
+pypy3.11/examples/oss-fuzz/repo/file
