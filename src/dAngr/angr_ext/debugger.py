@@ -229,13 +229,15 @@ class Debugger:
         self._save_unconstrained = value
         self._simgr = None
 
+
     def set_function_prototype(self, return_type:str, name:str, args:List[str]):  
         # Parse argument types
         sim_arg_types = [angr.types.parse_type(arg.strip()) for arg in args]
         sim_return_type = angr.types.parse_type(return_type)
-
         # Create function prototype
         self._function_prototypes[name] = {"prototype":angr.types.SimTypeFunction(sim_arg_types, sim_return_type)} # type: ignore
+
+
     def store_function(self, name, prototype, addr, cc):
         self._function_prototypes[name] = {"prototype":prototype, "addr":addr, "cc":cc}
 
@@ -246,6 +248,7 @@ class Debugger:
             raise DebuggerCommandError(f"Function {name} not found.")
         return f
     
+
     def set_current_function(self, name:str):
         self._current_function = name
     
@@ -379,14 +382,18 @@ class Debugger:
         if name in self._symbols:
             return self._symbols[name]
         else : raise DebuggerCommandError(f"Symbol {name} not found.")
+
+
     def to_symbol(self, name:str, lst:list):
         self.add_symbol(name, claripy.Concat(*lst))
         
+
     def find_symbol(self, name:str):
         if name in self._symbols:
             return self._symbols[name]
         return None
     
+
     def eval_symbol(self, sym:SymBitVector|Constraint, dtype:DataType, **kwargs):
         if isinstance(sym, SymBitVector):
             return self.current_state.solver.eval(sym, cast_to=dtype.to_type(), **kwargs)
@@ -511,9 +518,16 @@ class Debugger:
                 self.stop_reason = StopReason.TERMINATE
                 return True
             self.stop_reason = check_until(simgr)
+
             return self.stop_reason != StopReason.NONE
-        self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func,step_func=step_func, num_inst=1 if single else None)
+        
+        self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func, step_func=step_func, num_inst=1 if single else None)
+
         self._set_current_state( self.simgr.one_active if self.simgr.active else None)
+        # if self.stop_reason == StopReason.BREAKPOINT:
+            # Get the address is breaked for
+            # check if the address matches
+            # if not run until that address
         handler.handle_step(self.stop_reason, self._current_state)
 
     def back(self):

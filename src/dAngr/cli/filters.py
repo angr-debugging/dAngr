@@ -76,12 +76,16 @@ class FilterList(Filter):
         return len(self.filters)
     def empty(self):
         return len(self.filters) == 0
+
+
 class OrFilterList(FilterList):
     def __init__(self, filters:List[Filter]):
         super().__init__(filters)
         self._combination = any
     def __repr__(self) -> str:
         return f"OrFilterList: {', '.join(str(f) for f in self.filters)}"
+    
+
 class AndFilterList(FilterList):
     def __init__(self, filters:List[Filter]):
         super().__init__(filters)
@@ -137,11 +141,14 @@ class AddressFilter(Filter):
         #check if start is in binary
         if not state.project.loader.main_object.contains_addr(start): # type: ignore
             return False
-        instrs = state.block().instruction_addrs
-        if not instrs:
+        
+        bock_instructions = state.block().instruction_addrs
+        if not bock_instructions:
             return False
-        end = instrs[-1] # type: ignore
-        return start <= self.address <= end
+        
+        end = bock_instructions[-1] # type: ignore
+        is_in_block = start <= self.address <= end
+        return is_in_block
     
     def __repr__(self) -> str:
         return f"Address Filter: {hex(self.address)}"

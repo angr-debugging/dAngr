@@ -15,7 +15,7 @@ from dAngr.angr_ext.debugger import Debugger
 
 from dAngr.cli.debugger_commands import *
 from dAngr.cli.debugger_commands.base import BuiltinFunctionDefinition
-from dAngr.cli.filters import Filter, FilterList
+from dAngr.cli.filters import AddressFilter, Filter, FilterList
 from dAngr.cli.grammar.parser import parse_input, validate_input
 from dAngr.cli.grammar.execution_context import ExecutionContext
 from dAngr.cli.grammar.expressions import Object
@@ -314,15 +314,39 @@ class CommandLineDebugger(Debugger,StepHandler):
             html_table += "\n"
         
         self.conn.send_result(html_table, style=style)
+
+    def __get_hit_breakpoint(self) -> AddressFilter | None:
+        for breakpoint in self.breakpoints:
+            if type(breakpoint) == AddressFilter and breakpoint.filter(self.current_state):
+                return breakpoint
+        
+        return None
     
+    def __run_to_addr_in_bb(self, exclude):
+        hit_breakpoint: AddressFilter|None = self.__get_hit_breakpoint()
+        if not hit_breakpoint:
+            return
+        if self.current_state.addr == hit_breakpoint.address:
+            return
+
+        addr = hit_breakpoint.address
+        def check(simg: angr.SimulationManager):
+            state = simg.one_active
+            if state.addr == addr:
+                return StopReason.BREAKPOINT
+            
+            return StopReason.NONE
+
+        self._run(self, check, exclude, single=True)
+                
 
     def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single_step:bool = False):
-        u = check_until
+        until_fnt = check_until
         exclusions = self.exclusions
         def check(simgr:angr.SimulationManager):
-            r = u(simgr)
-            if r != StopReason.NONE:
-                return r
+            reason = until_fnt(simgr)
+            if reason != StopReason.NONE:
+                return reason
             state = simgr.one_active
 
             if self.breakpoints.filter(state):
@@ -335,3 +359,7 @@ class CommandLineDebugger(Debugger,StepHandler):
             return any([f.filter(state) for f in exclusions])
         
         self._run(self, check,_exclude, single=single_step)
+
+        if self.stop_reason == StopReason.BREAKPOINT:
+            self.__run_to_addr_in_bb(_exclude) # type: ignore
+        

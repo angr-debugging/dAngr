@@ -111,5 +111,20 @@ class TestDebugBreakpointCommands:
         assert "All breakpoints cleared." == str(conn.send_info.call_args[0][0])
         assert dbg.handle("run")
         conn.send_info.assert_called_with("Terminated.")
-    
+
+    def run_to_bp(self, dbg, addr):
+        assert dbg.handle(f"add_breakpoint {addr}")
+        assert dbg.handle("run")
+        assert dbg.current_state.addr == addr
+
+    def test_run_to_bb_bp(self, dbg, conn):
+        bb_address = 0x400566
+        self.run_to_bp(dbg, bb_address)
+        
+    def test_run_to_inst_bp(self, dbg, conn):
+        addr_in_bb = 0x400570
+        self.run_to_bp(dbg, addr_in_bb)
+
+
+
     
