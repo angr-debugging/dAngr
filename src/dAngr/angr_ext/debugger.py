@@ -10,7 +10,7 @@ import angr.storage
 import cloudpickle as pickle
 import claripy
 from cle import ELF
-import pprint, dive
+import pprint
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
@@ -52,6 +52,7 @@ class Debugger:
         self._function_prototypes = {}
         self._current_function:str = ''
         self._cfg:CFGFast|None = None
+        self._basic_blocks: List[BasicBlock] | None = None
         self.stop_reason = StopReason.NONE
         self._save_unconstrained = False
         self._entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None = None
@@ -71,6 +72,18 @@ class Debugger:
             self.conn.send_info("Constructing cfg, this may take a while...")
             self._cfg = self.project.analyses.CFGFast(normalize=True)
         return self._cfg
+    
+    @property
+    def basic_blocks(self):
+        self.cfg
+        if self._basic_blocks is None:
+            self._basic_blocks = []
+            for node in self.cfg.graph.nodes():
+                func = self.cfg.kb.functions.get(node.function_address, None)
+                self._basic_blocks.append(BasicBlock(node.addr, node.size, len(node.instruction_addrs), node.block.capstone if node.block else None, func.name if func else None))
+            
+        return self._basic_blocks
+        
 
     @property
     def simgr(self)->SimulationManager:
@@ -275,14 +288,23 @@ class Debugger:
         cc = angr.default_cc(self.project.arch.name, platform=self.project.simos.name if self.project.simos is not None else None)
         if cc is None:
             raise DebuggerCommandError("Failed to get calling convention.")
+        
         return cc(self.project.arch)
-    
+
     def get_function_info(self, func) -> Function |None:
        self.cfg
        if type(func) is int:
-        return get_function_by_addr(self.project, func)
+        address = func
+        function =  get_function_by_addr(self.project, address)
+        if function:
+            return function
+        
+        bb = self.get_basic_block_at(address)
+        if bb:
+            return get_function_by_name(self.project, bb.function)
        else:
         return get_function_by_name(self.project, func)
+    
        
     def list_functions(self) -> list[Function]:
         self.cfg
@@ -632,14 +654,11 @@ class Debugger:
     def get_bbs(self):
         # TODO: Add filtering support
         #return all basic blocks of the binary including block addr size instructions and capstone based on the CFG
-        for node in self.cfg.graph.nodes():
-            #include function name if available:
-            func = self.cfg.kb.functions.get(node.function_address, None)
-            yield BasicBlock(node.addr, node.size, len(node.instruction_addrs), node.block.capstone if node.block else None, func.name if func else None)
+        return self.basic_blocks
 
         
     def get_bb_count(self):
-        return len(self.cfg.graph.nodes())
+        return len(self.basic_blocks)
         
     def get_current_basic_block(self):
         state = self.current_state
@@ -651,8 +670,9 @@ class Debugger:
 
     def get_basic_block_at(self, addr:int):
         try:
-            block = self.project.factory.block(addr)
-            return BasicBlock(block.addr,block.size,block.instructions,block.capstone) # type: ignore
+            for bb in self.basic_blocks:  # uses the property
+                if bb.address <= addr < bb.address + bb.size:
+                    return bb
         except Exception as e:
             raise DebuggerCommandError(f"Failed to retrieve basic block at address {hex(addr)}: {e}")
 
