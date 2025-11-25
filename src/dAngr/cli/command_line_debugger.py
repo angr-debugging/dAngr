@@ -324,11 +324,17 @@ class CommandLineDebugger(Debugger,StepHandler):
         self.conn.send_result(html_table, style=style)
 
     def __get_hit_breakpoint(self) -> AddressFilter | None:
+        list_breakpoints = []
         for breakpoint in self.breakpoints:
-            if type(breakpoint) == AddressFilter and breakpoint.filter(self.current_state):
-                return breakpoint
+            if type(breakpoint) == AddressFilter and breakpoint.filter(self.current_state) and breakpoint.address > self.current_state.addr:
+                list_breakpoints.append(breakpoint)
+
+        br = None
+        for b in list_breakpoints:
+            if br is None or b.address < br.address:
+                br = b
         
-        return None
+        return br
     
     def __run_to_addr_in_bb(self, exclude):
         hit_breakpoint: AddressFilter|None = self.__get_hit_breakpoint()
@@ -346,6 +352,16 @@ class CommandLineDebugger(Debugger,StepHandler):
             return StopReason.NONE
 
         self._run(self, check, exclude, single=True)
+
+    def __check_current_bb_for_breakpoint(self)->bool:
+        # get current basic block
+        bb = self.project.factory.block(self.current_state.addr)
+        for instr_addr in bb.instruction_addrs:
+            if instr_addr > self.current_state.addr:
+                for bp in self.breakpoints:
+                    if type(bp) == AddressFilter and bp.address == instr_addr:
+                        return True
+        return False
                 
 
     def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single_step:bool = False):
@@ -365,9 +381,12 @@ class CommandLineDebugger(Debugger,StepHandler):
             if exclude(state):
                 return True
             return any([f.filter(state) for f in exclusions])
-        
-        self._run(self, check,_exclude, single=single_step)
 
-        if self.stop_reason == StopReason.BREAKPOINT:
-            self.__run_to_addr_in_bb(_exclude) # type: ignore
+        if self.__check_current_bb_for_breakpoint():
+            self.__run_to_addr_in_bb(_exclude)
+        else:
+            self._run(self, check,_exclude, single=single_step)
+
+            if self.stop_reason == StopReason.BREAKPOINT:
+                self.__run_to_addr_in_bb(_exclude) # type: ignore
         

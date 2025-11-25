@@ -56,6 +56,9 @@
         "visualParseTreeClustered": false
     },
     "files.associations": {
-        "*.jinja": "cpp"
+        "*.jinja": "cpp",
+        "in.h": "c",
+        "event.h": "c",
+        "stdlib.h": "c"
     }
 }

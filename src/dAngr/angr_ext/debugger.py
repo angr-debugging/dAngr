@@ -7,8 +7,10 @@ from angr import SimCC, SimProcedure, SimState, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
 import angr.storage
+import cloudpickle as pickle
 import claripy
 from cle import ELF
+import pprint
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.semantic_callstack import CallStackEntry, SemanticCallstack, initialize_semantic_callstack
@@ -16,8 +18,10 @@ from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import Constraint
 from dAngr.cli.state_visualizer import StateVisualizer
+from dAngr.cli.state_history import StateHistory
 from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector, get_local_arch, remove_ansi_escape_codes
 from dAngr.utils import utils
+from dAngr.cli.memory_managment import MemoryManagment
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, hook_simprocedures, is_plt_stub, load_module_from_file, get_function_by_name, get_function_by_addr
 from .connection import Connection
@@ -40,6 +44,7 @@ class Debugger:
         self._simgr:angr.sim_manager.SimulationManager|None = None
         self._current_state:angr.SimState|None = None
         self._default_state_options = set()
+        self._memory_manager:MemoryManagment|None = None
 
         self._pause:bool = False
 
@@ -48,6 +53,7 @@ class Debugger:
         self._function_prototypes = {}
         self._current_function:str = ''
         self._cfg:CFGFast|None = None
+        self._basic_blocks: List[BasicBlock] | None = None
         self.stop_reason = StopReason.NONE
         self._save_unconstrained = False
         self._entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None = None
@@ -67,6 +73,18 @@ class Debugger:
             self.conn.send_info("Constructing cfg, this may take a while...")
             self._cfg = self.project.analyses.CFGFast(normalize=True)
         return self._cfg
+    
+    @property
+    def basic_blocks(self):
+        self.cfg
+        if self._basic_blocks is None:
+            self._basic_blocks = []
+            for node in self.cfg.graph.nodes():
+                func = self.cfg.kb.functions.get(node.function_address, None)
+                self._basic_blocks.append(BasicBlock(node.addr, node.size, len(node.instruction_addrs), node.block.capstone if node.block else None, func.name if func else None))
+            
+        return self._basic_blocks
+        
 
     @property
     def simgr(self)->SimulationManager:
@@ -119,7 +137,8 @@ class Debugger:
 
     def _set_current_state(self, state):
         if state:
-            state.register_plugin('stdout_tracker', StdTracker())    
+            if not state.has_plugin("stdout_tracker"):
+                state.register_plugin("stdout_tracker", StdTracker())
         self._current_state = state
                 
     def set_current_state(self, stateID:int, stash="active"):
@@ -187,6 +206,9 @@ class Debugger:
         # TODO: check add_options
         self._set_current_state( self.project.factory.call_state(func_addr,*arguments,
                     add_options = self._default_state_options, save_unconstrained=self._save_unconstrained))
+        
+        if(self.history_cache_state > 0):
+            self.state_history_manager = StateHistory(self.current_state, self.history_cache_state)
 
     def set_entry_state(self,addr = None, *args, **kwargs):
         if self._simgr is not None:
@@ -197,8 +219,12 @@ class Debugger:
             kwargs['args'] = args
         if kwargs.get('add_options') is None:
             kwargs['add_options'] = self._default_state_options
+            #kwargs['add_options'] = angr.options.unicorn
         self._set_current_state(self.project.factory.entry_state(
                      **kwargs))
+        
+        if(self.history_cache_state > 0):
+            self.state_history_manager = StateHistory(self.simgr, self.history_cache_state)
     
     def set_full_state(self, *args, **kwargs):
         if self._simgr is not None:
@@ -209,6 +235,9 @@ class Debugger:
             kwargs['add_options'] = self._default_state_options
         self._set_current_state(self.project.factory.full_init_state(
                     **kwargs))
+        
+        if(self.history_cache_state > 0):
+            self.state_history_manager = StateHistory(self.current_state, self.history_cache_state)
 
     def set_blank_state(self, *args, **kwargs):
         if self._simgr is not None:
@@ -220,6 +249,9 @@ class Debugger:
         log.debug(f"Creating blank state with kwargs: {kwargs}")
         state = self.project.factory.blank_state(**kwargs)
         self._set_current_state(state)
+
+        if(self.history_cache_state > 0):
+            self.state_history_manager = StateHistory(self.current_state, self.history_cache_state)
         
     @property
     def keep_unconstrained(self):
@@ -257,14 +289,23 @@ class Debugger:
         cc = angr.default_cc(self.project.arch.name, platform=self.project.simos.name if self.project.simos is not None else None)
         if cc is None:
             raise DebuggerCommandError("Failed to get calling convention.")
+        
         return cc(self.project.arch)
-    
+
     def get_function_info(self, func) -> Function |None:
        self.cfg
        if type(func) is int:
-        return get_function_by_addr(self.project, func)
+        address = func
+        function =  get_function_by_addr(self.project, address)
+        if function:
+            return function
+        
+        bb = self.get_basic_block_at(address)
+        if bb:
+            return get_function_by_name(self.project, bb.function)
        else:
         return get_function_by_name(self.project, func)
+    
        
     def list_functions(self) -> list[Function]:
         self.cfg
@@ -315,9 +356,11 @@ class Debugger:
             return self.from_src_path + path[len(self.to_src_path):]
         return path
     
-    def init(self, binary_path:str, base_addr:int=0, from_src_path=None, to_src_path=None, veritesting:bool=False, **kwargs): #support passing custom angr arguments to project
+    def init(self, binary_path:str, base_addr:int=0, from_src_path=None, to_src_path=None, veritesting:bool=False, history_cache_state:int=0, **kwargs): #support passing custom angr arguments to project
         self.reset_state()
         self.veritesting = veritesting
+        self.history_cache_state = history_cache_state
+
         self._binary_path = binary_path
         self.from_src_path = os.path.abspath(os.path.expanduser(os.path.normpath(from_src_path))) if from_src_path else ''
         self.to_src_path = os.path.abspath(os.path.expanduser(os.path.normpath(to_src_path))) if to_src_path else ''
@@ -347,6 +390,22 @@ class Debugger:
             "base_addr": hex(self.project.loader.main_object.mapped_base)
         }
     
+    def get_memory_region_info(self, address: int):
+        self.throw_if_not_initialized()
+
+        memory_regions = self.project.loader.memory_regions
+        for region in memory_regions:
+            if region.min_addr <= address < region.max_addr:
+                return {
+                    "start": region.min_addr,
+                    "end": region.max_addr,
+                    "size": region.max_addr - region.min_addr,
+                    "is_readable": region.is_readable,
+                    "is_writable": region.is_writable,
+                    "is_executable": region.is_executable
+                }
+        return None
+
     def get_stdin_variables(self):
         return self.current_state.solver.get_variables('file', self.current_state.posix.stdin.ident)
 
@@ -506,10 +565,14 @@ class Debugger:
                 return "excluded"
             return None
         
-        def step_func(simgr):
+        def step_func(simgr:angr.SimulationManager):
             # handle output
             if simgr.active:
                 state = simgr.one_active
+                
+                if self.history_cache_state > 0:
+                    self.state_history_manager.save_copy_state(simgr, state)
+
                 if state.has_plugin('stdout_tracker'):
                     std:StdTracker = state.get_plugin('stdout_tracker')
                     std_data = std.get_new_string()
@@ -600,14 +663,11 @@ class Debugger:
     def get_bbs(self):
         # TODO: Add filtering support
         #return all basic blocks of the binary including block addr size instructions and capstone based on the CFG
-        for node in self.cfg.graph.nodes():
-            #include function name if available:
-            func = self.cfg.kb.functions.get(node.function_address, None)
-            yield BasicBlock(node.addr, node.size, len(node.instruction_addrs), node.block.capstone if node.block else None, func.name if func else None)
+        return self.basic_blocks
 
         
     def get_bb_count(self):
-        return len(self.cfg.graph.nodes())
+        return len(self.basic_blocks)
         
     def get_current_basic_block(self):
         state = self.current_state
@@ -616,7 +676,16 @@ class Debugger:
             return BasicBlock(block.addr,block.size,block.instructions,block.capstone) # type: ignore
         except Exception as e:
             raise DebuggerCommandError(f"Failed to retrieve basic block: {e}")
-        
+
+    def get_basic_block_at(self, addr:int):
+        try:
+            for bb in self.basic_blocks:  # uses the property
+                if bb.address <= addr < bb.address + bb.size:
+                    return bb
+        except Exception as e:
+            raise DebuggerCommandError(f"Failed to retrieve basic block at address {hex(addr)}: {e}")
+
+
     def get_stdstream(self, stream:StreamType):
         return self.current_state.posix.dumps(stream.value)
      
@@ -696,6 +765,22 @@ class Debugger:
         symbols = list({symbol.name:symbol for symbol in symbols}.values())
         return symbols
     
+    def get_binary_sections(self):
+        sections = []
+        for section in self.project.loader.main_object.sections:
+            if section.name != '' and section.memsize > 0 and section.occupies_memory == True:
+                sections.append({
+                    "name": section.name,
+                    "min_addr": hex(section.min_addr),
+                    "max_addr": hex(section.max_addr),
+                    "size": hex(section.memsize),
+                    "is_readable": section.is_readable,
+                    "is_writable": section.is_writable,
+                    "is_executable": section.is_executable,
+                    "only_contains_uninitialized_data": section.only_contains_uninitialized_data
+                })
+        return sections
+
     def get_decompiled_function(self, func_name):
         func = self.cfg.kb.functions.function(name=func_name)
         if func:
@@ -785,6 +870,42 @@ class Debugger:
     def set_register(self, register, value:int|claripy.ast.BV):
         self.current_state.registers.store(register, value)
 
+    def get_call_stack(self):
+        if(not self.current_state):
+            return []
+        return self.get_callstack(self.current_state)
+
     def visualize_state(self):
         state_printer = StateVisualizer(self.current_state)
         return state_printer.pprint()
+    
+    def malloc(self, size:int):
+        if(self._project == None or self._current_state == None):
+            raise DebuggerCommandError('Project and state needs to be initialised.')
+        if(self._memory_manager == None):
+            self._memory_manager = MemoryManagment(self._current_state)
+
+        return self._memory_manager.malloc(size)
+    
+    def free(self, address:int):
+        if(self._project == None or self._current_state == None or self._memory_manager == None):
+            raise DebuggerCommandError('Project, state and memory manager needs to be initialised.')
+
+        return self._memory_manager.free(address)
+    
+    def undo_step(self, index:int):
+        if(index == 0):
+            raise DebuggerCommandError('Index cannot be 0.')
+        self.state_history_manager.go_back_in_history(index, self.simgr)
+        self._set_current_state(self.simgr.stashes["active"][0])
+
+    def export_state(self, filepath:str):
+        copy_state = self.current_state.copy()
+        copy_state.history.trim()
+
+        print("About to dump state to:", os.path.abspath(filepath))
+        pprint.pprint(copy_state.__dict__)
+
+        with open(filepath, 'wb') as f:
+            pickle.dump(copy_state, f)
+

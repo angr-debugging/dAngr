@@ -69,16 +69,23 @@ def convert_string(sim_type, value):
         return float(value)
     else:
         raise InvalidArgumentError(f"arg_type {sim_type} not implemented")
+
+def _addr_in_func(f, addr: int) -> bool:
+    # True if addr falls inside any of the function's basic blocks
+    for b in f.blocks:
+        size = b.size or 0
+        if size and b.addr <= addr < b.addr + size:
+            return True
+    return False
+
+def get_function_by_addr(proj:Project,addr) -> knowledge_plugins.functions.function.Function | None:
+    f = proj.kb.functions.floor_func(addr)
+    if (f is not None) and _addr_in_func(f, addr):
+        return f
     
 
-def get_function_by_addr(proj: angr.Project, cfg: angr.analyses.cfg.cfg_base.CFGBase, addr: int):
-    if node := cfg.get_any_node(addr):
-        func = proj.kb.functions.get(node.function_address, None)
-    else:
-        func = proj.kb.functions.get(addr, None)
-    return func
 
-def get_function_by_name(proj,name) -> knowledge_plugins.functions.function.Function | None:
+def get_function_by_name(proj:Project,name) -> knowledge_plugins.functions.function.Function | None:
     function_list = list(proj.kb.functions.get_by_name(name=name))
     if not function_list:
         return None

@@ -1,7 +1,7 @@
 from enum import Enum
 import signal
 from contextlib import contextmanager
-
+from claripy.ast.bv import BV
 import angr
 
 class TimeoutException(Exception): pass
@@ -41,17 +41,12 @@ def to_color(str:str, color:Color):
     return f"\x1b[{c}m{str}\x1b[0m"
     
 class StateVisualizer():
-    REGISTERS = {
-    8 : ["al", "ah", "bl", "bh", "cl", "ch", "dl", "dh"],
-    16: ["ax", "bx", "cx", "dx"],
-    32: ["eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp", "eip"],
-    64: ["rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "rip",
-        "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15"]}
-
     def __init__(self, state:angr.SimState):
         self.state:angr.SimState = state
         if state:
             self.bits = state.arch.bits
+            self.arch_type = state.arch.name
+            self.registers = state.arch.default_symbolic_registers
             self.stack_end = state.registers.load('sp').concrete_value # type: ignore
             bp = state.registers.load('bp') # type: ignore
             if not bp.concrete:
@@ -68,9 +63,6 @@ class StateVisualizer():
             assert state.project is not None, "State project is None"
             self.code_start = state.project.loader.main_object.min_addr
             self.code_end = state.project.loader.main_object.max_addr
-
-    def arch_registers(self, arch_bits):
-        return self.REGISTERS[arch_bits]
     
     def create_legend(self):
         template = "Legend: | {stack} | {heap} | {code} | {instruction} | {symbol} |"
@@ -119,10 +111,32 @@ class StateVisualizer():
     
         return template.format(value=value, symbol_name=symbol_name)
 
-    def value_to_pstr(self, value, mem_location):
-        if value == None:
+    def _is_uninitialized(self, ast: BV) -> bool:
+        """
+        Return True if this BV likely represents an uninitialized value.
+        Works across older Claripy (ast.uninitialized) and newer styles (annotations).
+        """
+        # Old Claripy: direct attribute (may be True/False/None or missing)
+        ui = getattr(ast, "uninitialized", None)
+        if ui is True:
+            return True
+        if ui is False or ui is None:
+            pass  # keep checking
+
+        # Newer angr/Claripy often uses AST annotations
+        for ann in getattr(ast, "annotations", ()):
+            # Be conservative: match by class name or attribute hints
+            name = ann.__class__.__name__.lower()
+            if "uninitialized" in name or "uc" == name or "underconstrained" in name:
+                return True
+            if getattr(ann, "uninitialized", False):
+                return True
+        return False
+
+    def value_to_pstr(self, value: BV, mem_location):
+        if value is None:
             return value
-        if value.uninitialized:
+        if self._is_uninitialized(value):
             return to_color(str(value), Color.GRAY)
         elif value.symbolic:
             variable_name = self.sybmolic_var_representation(value)
@@ -141,7 +155,7 @@ class StateVisualizer():
     def pprint(self):
         assert self.state is not None
         regs = {}
-        for reg in self.REGISTERS[self.bits]:
+        for reg in self.registers:
             value = self.state.registers.load(reg) # type: ignore
             regs[reg] = self.format_value(value)
         
@@ -152,9 +166,10 @@ class StateVisualizer():
             addr = self.stack_end + offset
             stack_objs[offset] = (addr , self.format_value(self.state.stack_read(offset, int(self.bits/8))))
         pstr_stack = self.pprint_stack(stack_objs)
+        pstr_heap = self.pprint_heap_regions()
         pstr_inst = self.pprint_instructions()
         legend = self.create_legend()
-        return "\n" + legend + "\n" + pstr_regs + "\n" + pstr_stack + "\n" + pstr_inst
+        return "\n" + legend + "\n" + pstr_regs + "\n" + pstr_stack+ "\n" + pstr_heap + "\n" + pstr_inst
 
     def deref(self, value, mem_location):
         assert self.state is not None
@@ -218,6 +233,17 @@ class StateVisualizer():
         
         return stack_str
     
+    def pprint_heap_regions(self):
+        assert self.state is not None
+        heap_str = "[%s]" % to_color(" Heap Regions ", Color.CYAN).center(78, '-')
+        heap_str += "\n"
+
+        heap_str += to_color("Allocated Heap Region: ", Color.BLUE)
+        heap_str += to_color(f"{hex(self.heap_start)} - {hex(self.heap_end)}\n", Color.WHITE)
+        heap_str += to_color(f"Size: ", Color.BLUE)
+        heap_str += to_color(f"{hex(self.heap_end - self.heap_start)} bytes\n", Color.WHITE)
+        
+        return heap_str
 
     def pprint_instructions(self):
         assert self.state is not None

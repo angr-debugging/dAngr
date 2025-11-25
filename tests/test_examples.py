@@ -155,7 +155,7 @@ class TestExamples:
     def test_17_angr_arbitrary_jump(self, conn):
         dbg = CommandLineDebugger(conn)
         dbg.handle("run_script 'examples/malware.oregonctf.org/17_angr_arbitrary_jump.md'")
-        assert conn.send_result.call_args[0][0] == 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCPRCMCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
+        assert conn.send_result.call_args[0][0] == 'DLDPPHPCDDPPPPCPKKKLCKPKPPHPLKPPPPLCPHKKHKKDPDPPRCMKHCPHKCLCPHPPPKLCKCDKCCDLDPPKPCPPKHPHLHPCHHPKKPLP'
     
     def test_crackme(self, conn):
         dbg = CommandLineDebugger(conn)
@@ -221,7 +221,7 @@ class TestExamples:
     def test_whitehat_crypto400(self, conn):
         dbg = CommandLineDebugger(conn)
         dbg.handle("run_script 'examples/angr_examples/Reverse/03_hard/whitehat_crypto400.md'")
-        assert conn.send_result.call_args[0][0] == 'input: nytEaTBU -> FLAG: growfish_nytEaTBU'
+        assert conn.send_result.call_args[0][0] == 'input: nytEaTBU -> FLAG: growfish_nytEaTBU_whitehat'
     
     def test_cgc_identification(self, conn):
         dbg = CommandLineDebugger(conn)

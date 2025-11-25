@@ -245,7 +245,7 @@ class ExecutionCommands(BaseCommand):
         """
         return self.debugger.get_from_state(name)
 
-    def load(self, binary_path:str, base_addr:int=0, veritesting:bool=False, **kwargs):
+    def load(self, binary_path:str, base_addr:int=0, veritesting:bool=False, history_cache_state:int=0, **kwargs):
         """
         Load a binary into the debugger.
 
@@ -254,6 +254,8 @@ class ExecutionCommands(BaseCommand):
             base_addr (int): The base address of the binary. Default is 0, means the binary is loaded at its default base address.
             veritesting (bool): Enable veritesting. Default is False.
             kwargs (dict): Additional keyword arguments to pass to the angr project.
+            history_cache_state (int): Tracks the most recent state changes. Default: 0.
+
         Short name: l
         """
         try:
@@ -263,6 +265,8 @@ class ExecutionCommands(BaseCommand):
                 raise DebuggerCommandError(f"File '{binary_path}' not found.")
             if base_addr:
                 kwargs['base_addr'] = base_addr
+            kwargs['history_cache_state'] = history_cache_state
+            
             self.debugger.init(binary_path, **kwargs)
         except Exception as e:
             raise DebuggerCommandError(f"Failed to load binary: {e}")
@@ -435,3 +439,17 @@ class ExecutionCommands(BaseCommand):
         """
         self.debugger.to_stash(stash)
         self.send_info(f"Current active state moved to {stash}.")
+
+    def undo_step(self, index:int):
+        """
+        Revert the program by a given number of steps.
+
+        Args:
+            index (int): Number of steps to revert.
+
+        Short name: us
+        """
+
+        self.debugger.undo_step(index)
+
+        

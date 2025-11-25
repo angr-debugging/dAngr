@@ -4,6 +4,9 @@ from dAngr.cli.debugger_commands.base import BaseCommand
 from dAngr.exceptions import DebuggerCommandError
 from dAngr.utils.utils import DataType, AngrType, AngrValueType, Endness
 
+#import Bool from claripy
+from claripy.ast import Bool
+
 from dAngr.utils.loggers import get_logger
 log = get_logger(__name__)
 
@@ -242,3 +245,36 @@ class ToolCommands(BaseCommand):
              return value
         else:
             raise DebuggerCommandError("Invalid format")
+        
+    def assertion(self, condition:bool|Bool, message:str="Assertion failed"):
+        """
+        Assert a condition.
+
+        Args:
+            condition (bool): Condition to assert.
+            message (str): Message to display if assertion fails.
+
+        Raises:
+            DebuggerCommandError: If the assertion fails.
+
+        Short name: assert
+        """
+        if(isinstance(condition, Bool) and not condition.is_true()):
+            raise DebuggerCommandError(message)
+        if(isinstance(condition, bool) and not condition):
+            raise DebuggerCommandError(message)
+        
+    def export_state(self, filepath:str):
+        """
+        Export the current state to a file.
+
+        Args:
+            filepath (str): Path to the file where the state will be exported.
+
+        Short name: expstate
+        """
+        self.debugger.export_state(filepath)
+        self.send_info(f"State exported to {filepath}.")
+
+
+        

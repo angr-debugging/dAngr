@@ -6,7 +6,7 @@ from .base import BaseCommand
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from prompt_toolkit.shortcuts import ProgressBar
 from prompt_toolkit import ANSI
-
+from dAngr.angr_ext.models import BasicBlock
 import angrutils
 
 class InformationCommands(BaseCommand):
@@ -42,6 +42,41 @@ class InformationCommands(BaseCommand):
         if b is None:
             raise DebuggerCommandError("No basic block found.")
         return b
+    
+    def get_basicblock_at(self, addr:int):
+        """
+        Show the basic block at the given address.
+
+        Args:
+            addr (int): Address of the basic block.
+
+        Returns:
+            str: The basic block at the given address.
+
+        Raises:
+            DebuggerCommandError: If no basic block is found at the given address.
+        
+        Short name: bba
+        """
+        b = self.debugger.get_basic_block_at(addr)
+        if b is None:
+            raise DebuggerCommandError(f"No basic block found at address {hex(addr)}.")
+        return b
+    
+    def get_size_basicblock(self, addr:int):
+        """
+        Get the size of a basic block.
+
+        Args:
+            addr (int): Address of the basic block.
+
+        Returns:
+            int: The size of the basic block.
+
+        Short name: bbsz
+        """
+        b = self.debugger.get_basic_block_at(addr)
+        return b.size
     
     def get_cfg(self):
         """
@@ -138,6 +173,29 @@ class InformationCommands(BaseCommand):
         binary_symbols = "\n".join([str(s) for s in symbols])
         return f"Binary Symbols: {binary_symbols}"
 
+    def list_binary_sections(self):
+        """
+        List all binary sections.
+
+        Returns:
+            str: Information about the binary sections.
+
+        Short name: ibsec
+        """
+        sections = self.debugger.get_binary_sections()
+
+        binary_sections = ""
+        for s in sections:
+            binary_sections += f"\n{s['name']}"
+            binary_sections += f"\n\tregion: {s['min_addr']} - {s['max_addr']}"
+            binary_sections += f"\n\tsize: {s['size']}"
+            binary_sections += f"\n\tpermissions: "
+            binary_sections += "r" if s['is_readable'] else "-"
+            binary_sections += "w" if s['is_writable'] else "-"
+            binary_sections += "x" if s['is_executable'] else "-"
+        return f"{binary_sections}"
+
+
     def list_constraints(self):
         """
         List the current path's constraints and symbolic variables.
@@ -216,6 +274,21 @@ class InformationCommands(BaseCommand):
         info = self.debugger.get_binary_security_features()
         return "\n".join([f"{i}: {info[i]}" for i in info])
     
+    def get_call_stack(self):
+        """
+        Get the current call stack.
+
+        Returns:
+            str: Information about the call stack.
+
+        Short name: gcstack
+        """
+        call_stack = self.debugger.get_call_stack()
+        stack_str = "\n"
+        for frame in call_stack:
+            if(frame['func'] != 0 and "State at address" not in frame['name']):
+                stack_str += f"Function: {frame['name']} ({hex(frame['func'])}) at {hex(frame['end'])}\n"
+        return stack_str
 
     def inspect_state(self):
         """
