@@ -5,7 +5,6 @@ import os
 import types
 from typing import Any, Set, List, Tuple
 from angr import Project, SimCC, SimProcedure, SimState, SimulationManager, types, knowledge_plugins
-import angr
 
 
 
