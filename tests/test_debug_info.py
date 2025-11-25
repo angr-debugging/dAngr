@@ -1,6 +1,6 @@
 from dAngr.cli.command_line_debugger import CommandLineDebugger
 from dAngr.cli.cli_connection import CliConnection
-
+from dAngr.angr_ext.debugger import Debugger
 
 import pytest
 
@@ -41,7 +41,7 @@ class TestDebugInfoCommands:
     #     assert r == True
     #     assert "{\'graph\': \'digraph " in str(conn.send_info.call_args[0][0])
     
-    def test_function_info(self, dbg, conn):
+    def test_function_info(self, dbg: Debugger, conn):
         functions = dbg.list_functions()
         for function in functions:
             func_name = function.name
