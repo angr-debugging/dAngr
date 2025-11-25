@@ -2,7 +2,7 @@ import html
 import os
 
 from prompt_toolkit import PromptSession
-
+from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import WordCompleter, merge_completers, PathCompleter
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit import HTML
@@ -72,7 +72,18 @@ class Server:
         conn.send_info("Welcome to dAngr, the symbolic debugger. Type help or ? to list commands.")
         prmpt = HTML('<darkcyan>(dAngr)> </darkcyan>')
         cmd_history = FileHistory(os.path.expanduser("~/.dAngr_history"))
-        session = PromptSession(enable_history_search=True, history=cmd_history)
+        kb = KeyBindings()
+        run_script = False
+        @kb.add('c-r')
+        def _(event):
+            """ When Ctrl-R is pressed, run the rest of the script without stopping """
+            nonlocal run_script
+            run_script = True
+            # break out of the prompt
+            event.app.exit()
+            
+        
+        session = PromptSession(enable_history_search=True, history=cmd_history, key_bindings=kb)
         if self.debug_file_path:
             dbg.handle(f"load {self.debug_file_path}", False)
         if self.script_path:
@@ -81,13 +92,19 @@ class Server:
                     os.chdir(os.path.dirname(self.script_path))
                 proc:ScriptProcessor = ScriptProcessor(os.path.basename(self.script_path))
                 first = True
+                #read script line by line and execute commands
                 for line in proc.process_file():
                     if not line:
                         continue
-                    #read script line by line and execute commands
+                    if run_script:
+                        if line.strip().startswith("#"):
+                            continue
+                        if not dbg.handle(line, False):
+                            self.stop = True
+                        continue
                     with patch_stdout() as po:
                         if first:
-                            prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {html.escape(line).strip()} <gray>(hit enter to proceed, Ctrl-c to end script)</gray>')
+                            prmpt2 = HTML(f'<darkcyan>(dAngr)> </darkcyan> {html.escape(line).strip()} <gray>(hit enter to proceed, Ctrl-r to run remainder, Ctrl-c to end script)</gray>')
                             first = False
                         else:
                             l = line
@@ -100,7 +117,7 @@ class Server:
                                 # line = self._preprocess_input(conn, line)
                                 if not dbg.handle(line, False):
                                     self.stop = True
-                        except KeyboardInterrupt:
+                        except KeyboardInterrupt as ki:
                             self.stop = True
                         except EOFError:
                             return # Ctrl-D to exit
