@@ -170,6 +170,28 @@ class InformationCommands(BaseCommand):
         path_string = "\n".join([str(p) for p in self.debugger.list_path_history(index, stash)])
         return f"Path History: {path_string}"
     
+    def init_callstack(self):
+        """
+        Initialize the semantic callstack for the current state.
+
+        Short name: iccs
+        """
+        self.debugger.init_callstack()
+
+    
+    def get_callstack(self):
+        """
+        Get the current callstack. Requires semantic callstack to be initialized.
+
+        Returns:
+            str: Information about the callstack.
+
+        Short name: ccs
+        """
+        state = self.debugger.current_state
+        callstack = self.debugger.get_callstack(state=state)
+        return callstack
+    
     def get_binary_info(self):
         """
         Get information about the binary.

@@ -3,7 +3,7 @@ import re
 import subprocess
 from typing import Any, Callable, Dict, Generator, List, Tuple
 import angr
-from angr import SimCC, SimProcedure, SimulationManager, types
+from angr import SimCC, SimProcedure, SimState, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
 import angr.storage
@@ -11,6 +11,7 @@ import claripy
 from cle import ELF
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
+from dAngr.angr_ext.semantic_callstack import CallStackEntry, SemanticCallstack, initialize_semantic_callstack
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import Constraint
@@ -18,7 +19,7 @@ from dAngr.cli.state_visualizer import StateVisualizer
 from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector, get_local_arch, remove_ansi_escape_codes
 from dAngr.utils import utils
 from .std_tracker import StdTracker
-from .utils import create_entry_state, get_function_address, hook_simprocedures, load_module_from_file, get_function_by_name, get_function_by_addr
+from .utils import create_entry_state, get_function_address, hook_simprocedures, is_plt_stub, load_module_from_file, get_function_by_name, get_function_by_addr
 from .connection import Connection
 from angr.storage.memory_mixins.convenient_mappings_mixin import *
 
@@ -118,7 +119,7 @@ class Debugger:
 
     def _set_current_state(self, state):
         if state:
-            state.register_plugin('stdout_tracker', StdTracker())
+            state.register_plugin('stdout_tracker', StdTracker())    
         self._current_state = state
                 
     def set_current_state(self, stateID:int, stash="active"):
@@ -509,9 +510,12 @@ class Debugger:
             # handle output
             if simgr.active:
                 state = simgr.one_active
-                std:StdTracker = state.get_plugin('stdout_tracker')
-                std_data = std.get_new_string()
-                if std_data:handler.handle_output(std_data)
+                if state.has_plugin('stdout_tracker'):
+                    std:StdTracker = state.get_plugin('stdout_tracker')
+                    std_data = std.get_new_string()
+                    if std_data:handler.handle_output(std_data)
+                else:
+                    log.error("State has no stdout_tracker plugin.")
 
         def until_func(simgr):
             if not simgr.active:
@@ -548,22 +552,27 @@ class Debugger:
   
     def get_current_addr(self):
         return self.current_state.addr
+    
+    def init_callstack(self):
+        initialize_semantic_callstack(self.current_state, self.cfg)
+    
+    def get_callstack(self,state:SimState):
+        stack:List[CallStackEntry] = []
 
-    # TODO: fix, this function should return the callstack. However, the current implementation doesn't get the start and end correct.
-    # Check with 00_angr_find --> __wrap_main and main.
-    def get_callstack(self,state):
-        paths = [] 
-        prev = state.addr
-        i = 0
-        for ix,call_state in enumerate(state.callstack):
-            block = self.project.factory.block(prev)
-            f = self.get_function_info(call_state.func_addr) if call_state.func_addr!=0 else None
-            name = f.name if f else f"State at address{hex(call_state.func_addr)}"
-            end = block.instruction_addrs[-1] if len(block.instruction_addrs) else call_state.func_addr # type: ignore
-            paths.append({"addr":prev, "id":i, "func":call_state.func_addr, "end": end, "name":  name})
-            prev = call_state.call_site_addr
-            i += 1
-        return paths
+        _ = self.cfg # must be created for semantic callstack to work
+        for depth, frame in enumerate(state.sem_stack.frames):
+            if name:= frame.simproc:
+                    name = name + " (SimProc)"
+            else:
+                fn = self.cfg.get_any_node(frame.callee)
+                func_addr = fn.function_address if fn else frame.callee
+                func = self.project.kb.functions.get(func_addr, None)
+                name = func.name if func is not None else f"sub_{frame.callee:x}"
+                if is_plt_stub(self.project, frame.callee):
+                    name += " (PLT)"
+            stack.append(CallStackEntry(id=depth, function_address=frame.callee, function_display_name=name, return_address=frame.ret))
+        
+        return stack
 
         
     def get_return_value(self)->int|None|claripy.ast.Base:

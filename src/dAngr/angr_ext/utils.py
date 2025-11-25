@@ -5,6 +5,7 @@ import os
 import types
 from typing import Any, Set, List, Tuple
 from angr import Project, SimCC, SimProcedure, SimState, SimulationManager, types, knowledge_plugins
+import angr
 
 
 
@@ -53,6 +54,11 @@ def get_function_address(project, function_name):
         return f.addr
     return None
 
+def is_plt_stub(project, addr):
+        obj = project.loader.find_object_containing(addr)
+        return obj is project.loader.main_object and obj.sections_map['.plt'].contains_addr(addr)
+
+
 
 def convert_string(sim_type, value):
     if isinstance(sim_type, types.SimTypeInt):
@@ -64,8 +70,13 @@ def convert_string(sim_type, value):
     else:
         raise InvalidArgumentError(f"arg_type {sim_type} not implemented")
     
-def get_function_by_addr(proj,addr) -> knowledge_plugins.functions.function.Function | None:
-    return proj.kb.functions.floor_func(addr)
+
+def get_function_by_addr(proj: angr.Project, cfg: angr.analyses.cfg.cfg_base.CFGBase, addr: int):
+    if node := cfg.get_any_node(addr):
+        func = proj.kb.functions.get(node.function_address, None)
+    else:
+        func = proj.kb.functions.get(addr, None)
+    return func
 
 def get_function_by_name(proj,name) -> knowledge_plugins.functions.function.Function | None:
     function_list = list(proj.kb.functions.get_by_name(name=name))
