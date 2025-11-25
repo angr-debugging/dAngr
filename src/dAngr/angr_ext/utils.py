@@ -78,6 +78,7 @@ def get_function_by_addr(proj:Project,addr) -> knowledge_plugins.functions.funct
         return f
     
 
+
 def get_function_by_name(proj:Project,name) -> knowledge_plugins.functions.function.Function | None:
     function_list = list(proj.kb.functions.get_by_name(name=name))
     if not function_list:
