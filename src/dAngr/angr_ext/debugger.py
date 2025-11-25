@@ -280,7 +280,14 @@ class Debugger:
     def get_function_info(self, func) -> Function |None:
        self.cfg
        if type(func) is int:
-        return get_function_by_addr(self.project, func)
+        address = func
+        function =  get_function_by_addr(self.project, address)
+        if function:
+            return function
+        
+        bb = self.get_basic_block_at(address)
+        if bb:
+            return get_function_by_name(self.project, bb.function)
        else:
         return get_function_by_name(self.project, func)
        
