@@ -20,7 +20,7 @@ from dAngr.cli.state_visualizer import StateVisualizer
 from dAngr.cli.state_history import StateHistory
 from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector, get_local_arch, remove_ansi_escape_codes
 from dAngr.utils import utils
-from dAngr.cli.memory_managment import MemoryManagment
+from dAngr.angr_ext.memory_managment import MemoryManagment
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, hook_simprocedures, load_module_from_file, get_function_by_name, get_function_by_addr
 from .connection import Connection
@@ -207,7 +207,7 @@ class Debugger:
                     add_options = self._default_state_options, save_unconstrained=self._save_unconstrained))
         
         if(self.history_cache_state > 0):
-            self.state_history_manager = StateHistory(self.current_state, self.history_cache_state)
+            self.state_history_manager = StateHistory(self.simgr, self.history_cache_state)
 
     def set_entry_state(self,addr = None, *args, **kwargs):
         if self._simgr is not None:
@@ -236,7 +236,7 @@ class Debugger:
                     **kwargs))
         
         if(self.history_cache_state > 0):
-            self.state_history_manager = StateHistory(self.current_state, self.history_cache_state)
+            self.state_history_manager = StateHistory(self.simgr, self.history_cache_state)
 
     def set_blank_state(self, *args, **kwargs):
         if self._simgr is not None:
@@ -250,7 +250,7 @@ class Debugger:
         self._set_current_state(state)
 
         if(self.history_cache_state > 0):
-            self.state_history_manager = StateHistory(self.current_state, self.history_cache_state)
+            self.state_history_manager = StateHistory(self.simgr, self.history_cache_state)
         
     @property
     def keep_unconstrained(self):
@@ -885,8 +885,6 @@ class Debugger:
         return self._memory_manager.free(address)
     
     def undo_step(self, index:int):
-        if(index == 0):
-            raise DebuggerCommandError('Index cannot be 0.')
         self.state_history_manager.go_back_in_history(index, self.simgr)
         self._set_current_state(self.simgr.stashes["active"][0])
 
@@ -900,3 +898,12 @@ class Debugger:
         with open(filepath, 'wb') as f:
             pickle.dump(copy_state, f)
 
+    def set_exploration_technique(self, technique:str, **kwargs):
+        if technique == "rollback_buffer":
+            if "size" not in kwargs:
+                raise InvalidArgumentError("Missing 'size' argument for rollback_buffer technique.")
+            
+            size = kwargs.get("size", 10)
+            self.history_cache_state = size
+        else:
+            raise DebuggerCommandError(f"Exploration technique '{technique}' not supported.")
