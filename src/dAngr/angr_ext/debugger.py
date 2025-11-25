@@ -10,7 +10,7 @@ import angr.storage
 import cloudpickle as pickle
 import claripy
 from cle import ELF
-import pprint, dive
+import pprint
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
@@ -72,7 +72,7 @@ class Debugger:
             self.conn.send_info("Constructing cfg, this may take a while...")
             self._cfg = self.project.analyses.CFGFast(normalize=True)
         return self._cfg
-
+    
     @property
     def basic_blocks(self):
         self.cfg
@@ -83,6 +83,7 @@ class Debugger:
                 self._basic_blocks.append(BasicBlock(node.addr, node.size, len(node.instruction_addrs), node.block.capstone if node.block else None, func.name if func else None))
             
         return self._basic_blocks
+        
 
     @property
     def simgr(self)->SimulationManager:
@@ -287,8 +288,9 @@ class Debugger:
         cc = angr.default_cc(self.project.arch.name, platform=self.project.simos.name if self.project.simos is not None else None)
         if cc is None:
             raise DebuggerCommandError("Failed to get calling convention.")
+        
         return cc(self.project.arch)
-    
+
     def get_function_info(self, func) -> Function |None:
        self.cfg
        if type(func) is int:
@@ -302,6 +304,7 @@ class Debugger:
             return get_function_by_name(self.project, bb.function)
        else:
         return get_function_by_name(self.project, func)
+    
        
     def list_functions(self) -> list[Function]:
         self.cfg
