@@ -5,17 +5,12 @@ import importlib
 import os
 import inspect
 from typing import Literal, cast, get_args, List
-
 import archinfo
 import re
-
 import claripy
 from claripy.ast.bv import BV
-
 import platform
-
 from dAngr.exceptions import DebuggerCommandError, InvalidArgumentError, ValueError
-
 
 
 #create a undefined type
@@ -394,6 +389,7 @@ def str_to_type(dtype:str):
         try:
             from dAngr.cli.grammar.expressions import ReferenceObject,VariableRef, SymbolicValue, Register, Property, IndexedProperty
             import angr
+            import typing
             tp = eval(dtype)
         except:
             raise ValueError(f"Invalid data type {dtype}")

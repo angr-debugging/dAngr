@@ -3,8 +3,11 @@ from dAngr.dAngr_mcp.breakpoints import BreakpointMCPCommands
 from dAngr.cli.cli_connection import CliConnection
 from dAngr.cli.command_line_debugger import CommandLineDebugger, DEBUGGER_COMMANDS
 from dAngr.dAngr_mcp.execution import ExecutionMCPCommand
+from dAngr.dAngr_mcp.symbols import SymbolMCPCommand
 from dAngr.dAngr_mcp.tools import dAngr_tools
 import inspect
+
+from dAngr.dAngr_mcp.utils import McpUtils
 
 global server_instruction
 
@@ -76,6 +79,8 @@ class dAngrMCP():
     def init_tools(self):
         BreakpointMCPCommands(self.debugger, self.mcp)
         ExecutionMCPCommand(self.debugger, self.mcp)
+        McpUtils(self.debugger, self.mcp)
+        SymbolMCPCommand(self.debugger, self.mcp)
         
         for cmd_name, cmd_spec in DEBUGGER_COMMANDS.items():
             try:

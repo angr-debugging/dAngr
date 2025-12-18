@@ -9,7 +9,9 @@ class SymbolCommands(BaseCommand):
 
     def add_symbol(self, name:str, size:int = 0, dtype:DataType = DataType.bytes):
         """
-        Add a symbol of bytes with name and size.
+        Add a symbol of bytes with name and size. 
+        Symbolic values can be used in later commands by using &sym.name.
+        For instance, after creating the symbol 'test' you can use it by writing &sym.test 
 
         Args:
             name (str): Name of the symbol
@@ -18,7 +20,7 @@ class SymbolCommands(BaseCommand):
         
         Short name: sa
         
-        """
+         """
         if dtype == DataType.int:
             int_size = self.debugger.project.arch.sizeof["int"]
         else: int_size = size
