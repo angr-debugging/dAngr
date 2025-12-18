@@ -1,6 +1,6 @@
 import claripy
 from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils.utils import Constraint, DataType, SolverType, SymBitVector, undefined, AngrType
+from dAngr.utils.utils import Constraint, DataType, SolverType, SymBitVector, AngrType
 from .base import BaseCommand
 
 class SymbolCommands(BaseCommand):
@@ -108,6 +108,7 @@ class SymbolCommands(BaseCommand):
         if constraint is None:
             return self.debugger.satisfiable()
         return self.debugger.satisfiable(constraint)
+    
     def is_symbolic(self, sym:AngrType):
         """
         Check if a symbol is symbolic.

@@ -289,6 +289,8 @@ class ExecutionCommands(BaseCommand):
         """
         self.debugger.set_entry_state(addr, *args, **kwargs)
         self.send_info(f"Execution will start {'at address '+hex(addr) if addr else 'at specified entry point'}.")
+
+
     def set_full_state(self, *args, **kwargs):
         """
         Set a full state.

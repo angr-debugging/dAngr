@@ -67,6 +67,7 @@ class ViewerCommands(BaseCommand):
                 self.send_result(f"${index}: {h[:70]}")
             except IndexError:
                 break
+            
     def clear_history(self):
         """
         Clear the command history.

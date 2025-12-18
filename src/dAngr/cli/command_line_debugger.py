@@ -121,6 +121,10 @@ class CommandLineDebugger(Debugger,StepHandler):
 
     def validate_input(self, command):
         return validate_input(command)
+    
+    def handle_cmd(self, command, **kwargs):
+        pass
+
         
     # command methods
     def handle(self, command:str, raise_error:bool = True):
@@ -134,7 +138,9 @@ class CommandLineDebugger(Debugger,StepHandler):
             if not script:
                 self.conn.send_info("No command entered.")
                 return True
+            
             r = script(self.context)
+
             if r is not None:
                 self.conn.send_result(r, True)
             cast(CliConnection,self.conn).clear_output()
