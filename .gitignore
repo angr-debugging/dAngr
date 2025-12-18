@@ -17,6 +17,4 @@ examples/malware.oregonctf.org/build/
 temp/
 pypy3.11/examples/oss-fuzz/repo/file
 
-p2pcam
-home_security
-dgiot (1)
+examples/real_world/*
