@@ -1,6 +1,6 @@
 import argparse
 from dAngr.cli.server import Server
-from dAngr.MCP.server import dAngrMCP
+from dAngr.dAngr_mcp.server import dAngrMCP
 import threading
 
 def run():
