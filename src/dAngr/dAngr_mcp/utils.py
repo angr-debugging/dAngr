@@ -14,5 +14,4 @@ class McpUtils(McpCommand):
             value (bytes): value or reference to the object.
             endness (Endness): Endianness of the value. Default is BE.
         """
-
         return int(value, 16)

@@ -15,8 +15,12 @@ class ExecutionMCPCommand(McpCommand):
         
         Args:
             addr (int|None): The address the state should start at instead of the entry point (usually _start).
-            argv (list[str]): A list of values to use as the program's argv. A 'c program' the first value is the filename. 
+            argv (list[str]): A list of values to use as the program's argv. A 'c program' the first value is the filename, symbolic values can be passed as &sym.*symbol_name*. 
             other_options (dict[str,typing.Any]): These kwargs are passed to create the `entry_state` with angr and can be used to set other values such as argc or optimization options.
+        
+        Example:
+            add_symbol(name="symbol", size=12)
+            set_entry_state(argv=['file_name', &sym.symbol])
         """
         argv_resolved = []
         for arg in argv:

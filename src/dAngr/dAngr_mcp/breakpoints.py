@@ -24,3 +24,18 @@ class BreakpointMCPCommands(McpCommand):
 
         stream_filter = FilterCommands(self.debugger).by_stream(search_string)
         self.breakpoint_commands.breakpoint(stream_filter)
+    
+    def exclude_by_output(self, search_string:str):
+        """
+        Create an exclusion that ignores states that have the matching string in the stdout.
+
+        Args:
+            search_string (str): Substring used to match against stdout stream.
+
+        Returns:
+            None
+        """
+        
+        stream_filter = FilterCommands(self.debugger).by_stream(search_string)
+        FilterCommands(self.debugger).filter(True, stream_filter)
+

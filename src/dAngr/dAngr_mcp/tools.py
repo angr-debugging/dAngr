@@ -15,10 +15,11 @@ dAngr_tools = [
     "list_exclusions",
     "clear_exclusions",
     "run",
-    "step_over",
+    #"step_over", Currently broken
     "step",
     #"single_step",
     "load",
+    "hook_function",
     "set_full_state",
     "set_blank_state",
     "get_current_state",
@@ -30,9 +31,9 @@ dAngr_tools = [
     "dump_stdstream",
     "create_symbolic_file",
     "get_function_info",
-    #"decompiled_function_at_address",
+    "decompiled_function_at_address",
     "decompiled_function",
-    "get_basicblocks",
+    #"get_basicblocks", write own implementation
     "get_current_block",
     "get_basicblock_at",
     "get_stashes",
@@ -42,8 +43,8 @@ dAngr_tools = [
     "list_binary_sections",
     #"list_constraints",
     "list_path_history",
-    "init_callstack",
-    "get_callstack",
+    #"init_callstack",
+    #"get_callstack",
     "get_binary_info",
     #"get_binary_security_features",
     #"malloc",
@@ -51,16 +52,14 @@ dAngr_tools = [
     "unconstrained_fill",
     "list_registers",
     "get_register",
-    "set_register",
     "set_memory",
-    "get_stdin_variables",
-    "get_addr_for_name",
+    #"get_stdin_variables",
+    #"get_addr_for_name",
     "get_memory",
     "get_memory_string",
     "get_stack",
     "add_symbol",
     #"get_symbol",
-    #"evaluate",
     #"to_symbol",
     "is_symbolic",
     "remove_symbol"
@@ -68,6 +67,8 @@ dAngr_tools = [
  
 
 class McpCommand(BaseCommand):
+    __disable_autorender__ = True
+
     def __init__(self, debugger, mcp):
         super().__init__(debugger)
         self.mcp = mcp
