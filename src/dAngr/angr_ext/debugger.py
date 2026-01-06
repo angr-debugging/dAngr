@@ -230,7 +230,7 @@ class Debugger:
         if self._simgr is not None:
             self.reset_state()
         if args:
-            kwargs['args'] = args
+            kwargs['args'] = args[0]
         if kwargs.get('add_options') is None:
             kwargs['add_options'] = self._default_state_options
         self._set_current_state(self.project.factory.full_init_state(
