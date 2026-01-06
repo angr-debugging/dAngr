@@ -227,15 +227,6 @@ class InformationCommands(BaseCommand):
         path_string = "\n".join([str(p) for p in self.debugger.list_path_history(index, stash)])
         return f"Path History: {path_string}"
     
-    def init_callstack(self):
-        """
-        Initialize the semantic callstack for the current state.
-
-        Short name: iccs
-        """
-        self.debugger.init_callstack()
-
-    
     def get_callstack(self):
         """
         Get the current callstack. Requires semantic callstack to be initialized.
@@ -285,8 +276,8 @@ class InformationCommands(BaseCommand):
         call_stack = self.debugger.get_call_stack()
         stack_str = "\n"
         for frame in call_stack:
-            if(frame['func'] != 0 and "State at address" not in frame['name']):
-                stack_str += f"Function: {frame['name']} ({hex(frame['func'])}) at {hex(frame['end'])}\n"
+            if(frame.function_address != 0 and "State at address" not in frame.function_display_name):
+                stack_str += f"Function: {frame.function_display_name} ({hex(frame.function_address)}) at {hex(frame.return_address)}\n"
         return stack_str
 
     def inspect_state(self):

@@ -2,6 +2,8 @@ import angr, copy
 from dAngr.exceptions import DebuggerCommandError
 from angr.state_plugins.globals import SimStateGlobals
 
+# TODO: make this an exploration technique that hooks into simgr step events instead of injecting calls in the debugger
+
 def create_stash_if_absent(simgr:angr.SimulationManager, name: str):
     if name not in simgr.stashes:
         simgr.stashes[name] = []

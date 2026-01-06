@@ -1,5 +1,5 @@
 class BasicBlock:
-    def __init__(self,address, size, instructions, assembly, function=None):
+    def __init__(self,address:int, size:int, instructions:int, assembly, function:str|None=None):
         self.address = address
         self.size = size
         self.instructions = instructions
