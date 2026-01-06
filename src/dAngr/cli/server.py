@@ -32,7 +32,7 @@ class MyValidator(Validator):
             raise ValidationError(message=e)
 
 
-DEBUG_COMMANDS = True
+DEBUG_COMMANDS = False
 class Server:
     def __init__(self, debug_file_path = None, script_path=None):
         logger.info("Initializing dAngr server with debug_file_path: %s and script_path: %s", debug_file_path, script_path)
