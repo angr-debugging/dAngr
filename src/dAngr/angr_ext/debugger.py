@@ -13,7 +13,7 @@ from cle import ELF
 import pprint
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
-from dAngr.angr_ext.semantic_callstack import CallStackEntry, SemanticCallstack, initialize_semantic_callstack
+from dAngr.angr_ext.semantic_callstack import CallStackEntry, initialize_semantic_callstack
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 # TODO: these refs to cli should be changed. either call it in the command_line_debugger or move these to angr_ext
 from dAngr.cli.grammar.execution_context import Variable
@@ -216,7 +216,7 @@ class Debugger:
         if addr:
             kwargs['addr'] = addr
         if args:
-            kwargs['args'] = args
+            kwargs['args'] = args[0]
         if kwargs.get('add_options') is None:
             kwargs['add_options'] = self._default_state_options
             #kwargs['add_options'] = angr.options.unicorn

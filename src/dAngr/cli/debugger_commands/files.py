@@ -1,7 +1,5 @@
 
-import claripy
-from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils.utils import StreamType, SymBitVector, Variable, convert_argument
+from dAngr.utils.utils import StreamType, SymBitVector, Variable
 from .base import BaseCommand
 
 class FileCommands(BaseCommand):
@@ -13,7 +11,7 @@ class FileCommands(BaseCommand):
         Dump the standard stream.
 
         Args:
-            stream_type (StreamType): The type of the stream to dump. Default is stdout.
+            stream_type (StreamType): The type of the stream to dump. Default value is stdout. (other values stdin (0), stderr (2))
         
         Short name: ds
         

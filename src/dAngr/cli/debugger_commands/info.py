@@ -6,7 +6,6 @@ from .base import BaseCommand
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from prompt_toolkit.shortcuts import ProgressBar
 from prompt_toolkit import ANSI
-from dAngr.angr_ext.models import BasicBlock
 import angrutils
 
 class InformationCommands(BaseCommand):

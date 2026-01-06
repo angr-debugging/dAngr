@@ -70,9 +70,9 @@ class MemoryCommands(BaseCommand):
         Supported Conversion Types: int, bytes, bool, double, hex, none.
 
         Args:
-            address (int): Address in the memory
-            size (int): Size of the memory
-            endness (Endness): Endianness of the value.
+            address (int): Address in the memory can be provided in digit format (123) or hex (0x7B)
+            size (int): Size of the memory in bytes
+            endness (Endness): Endianness of the value (BE or LE, default is BE).
         
         Short name: mg
         

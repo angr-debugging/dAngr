@@ -23,6 +23,9 @@ def get_short_cmd_name(name):
 class AutoRunMeta(type):
     def __init__(self, name, bases, dct):
         super().__init__(name, bases, dct)
+        if getattr(self, "__disable_autorender__", False):
+            return
+        
         # Automatically trigger the static method
         if hasattr(self, '__render_commands__'):
             self.__render_commands__(self) # type: ignore
@@ -213,6 +216,7 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
                 if func.__qualname__.split('.')[0] == base_class.__name__:
                     return True
             return False
+        
         functions = inspect.getmembers(base_class, predicate=check)
         specs = []
         for name, fun in functions:
