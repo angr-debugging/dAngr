@@ -3,7 +3,7 @@ import re
 import subprocess
 from typing import Any, Callable, Dict, Generator, List, Tuple
 import angr
-from angr import SimCC, SimProcedure, SimState, SimulationManager, types
+from angr import SimCC, SimProcedure, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
 import angr.storage
@@ -13,17 +13,16 @@ from cle import ELF
 import pprint
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
-from dAngr.angr_ext.semantic_callstack import CallStackEntry, initialize_semantic_callstack
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
-# TODO: these refs to cli should be changed. either call it in the command_line_debugger or move these to angr_ext
 from dAngr.cli.grammar.execution_context import Variable
+from dAngr.cli.grammar.expressions import Constraint
 from dAngr.cli.state_visualizer import StateVisualizer
 from dAngr.cli.state_history import StateHistory
-from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, Constraint, DataType, DataType, Endness, SolverType, StreamType, SymBitVector, get_local_arch, remove_ansi_escape_codes
+from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector, get_local_arch, remove_ansi_escape_codes
 from dAngr.utils import utils
-from dAngr.cli.memory_managment import MemoryManagment
+from dAngr.angr_ext.memory_managment import MemoryManagment
 from .std_tracker import StdTracker
-from .utils import create_entry_state, get_function_address, hook_simprocedures, is_plt_stub, load_module_from_file, get_function_by_name, get_function_by_addr
+from .utils import create_entry_state, get_function_address, hook_simprocedures, load_module_from_file, get_function_by_name, get_function_by_addr
 from .connection import Connection
 from angr.storage.memory_mixins.convenient_mappings_mixin import *
 
@@ -76,11 +75,13 @@ class Debugger:
     
     @property
     def basic_blocks(self):
+        self.cfg
         if self._basic_blocks is None:
             self._basic_blocks = []
             for node in self.cfg.graph.nodes():
-                # func = self.cfg.kb.functions.get(node.function_address, None)
-                self._basic_blocks.append(BasicBlock(node.addr, node.size, len(node.instruction_addrs), node.block.capstone if node.block else None, node.name))
+                func = self.cfg.kb.functions.get(node.function_address, None)
+                self._basic_blocks.append(BasicBlock(node.addr, node.size, len(node.instruction_addrs), node.block.capstone if node.block else None, func.name if func else None))
+            
         return self._basic_blocks
         
 
@@ -127,7 +128,6 @@ class Debugger:
                 self._current_state = self.simgr.one_deadended
             else:
                 raise DebuggerCommandError("No active or deadended states.")
-            initialize_semantic_callstack(self._current_state, self._cfg)
         return self._current_state
     
     @current_state.setter
@@ -139,9 +139,6 @@ class Debugger:
             if not state.has_plugin("stdout_tracker"):
                 state.register_plugin("stdout_tracker", StdTracker())
         self._current_state = state
-        if(self.history_cache_state > 0):
-            self.state_history_manager = StateHistory(self._current_state, self.history_cache_state)
-
                 
     def set_current_state(self, stateID:int, stash="active"):
         if stash not in self.simgr.stashes:
@@ -209,6 +206,8 @@ class Debugger:
         self._set_current_state( self.project.factory.call_state(func_addr,*arguments,
                     add_options = self._default_state_options, save_unconstrained=self._save_unconstrained))
         
+        if(self.history_cache_state > 0):
+            self.state_history_manager = StateHistory(self.simgr, self.history_cache_state)
 
     def set_entry_state(self,addr = None, *args, **kwargs):
         if self._simgr is not None:
@@ -216,12 +215,15 @@ class Debugger:
         if addr:
             kwargs['addr'] = addr
         if args:
-            kwargs['args'] = args[0]
+            kwargs['args'] = args
         if kwargs.get('add_options') is None:
             kwargs['add_options'] = self._default_state_options
             #kwargs['add_options'] = angr.options.unicorn
         self._set_current_state(self.project.factory.entry_state(
                      **kwargs))
+        
+        if(self.history_cache_state > 0):
+            self.state_history_manager = StateHistory(self.simgr, self.history_cache_state)
     
     def set_full_state(self, *args, **kwargs):
         if self._simgr is not None:
@@ -233,6 +235,8 @@ class Debugger:
         self._set_current_state(self.project.factory.full_init_state(
                     **kwargs))
         
+        if(self.history_cache_state > 0):
+            self.state_history_manager = StateHistory(self.simgr, self.history_cache_state)
 
     def set_blank_state(self, *args, **kwargs):
         if self._simgr is not None:
@@ -245,6 +249,8 @@ class Debugger:
         state = self.project.factory.blank_state(**kwargs)
         self._set_current_state(state)
 
+        if(self.history_cache_state > 0):
+            self.state_history_manager = StateHistory(self.simgr, self.history_cache_state)
         
     @property
     def keep_unconstrained(self):
@@ -286,17 +292,18 @@ class Debugger:
         return cc(self.project.arch)
 
     def get_function_info(self, func) -> Function |None:
-        if type(func) is int:
-            address = func
-            function =  get_function_by_addr(self.project, address)
-            if function:
-                return function
-
-            bb = self.get_basic_block_at(address)
-            if bb:
-                return get_function_by_name(self.project, bb.function)
-        else:
-            return get_function_by_name(self.project, func)
+       self.cfg
+       if type(func) is int:
+        address = func
+        function =  get_function_by_addr(self.project, address)
+        if function:
+            return function
+        
+        bb = self.get_basic_block_at(address)
+        if bb:
+            return get_function_by_name(self.project, bb.function)
+       else:
+        return get_function_by_name(self.project, func)
     
        
     def list_functions(self) -> list[Function]:
@@ -449,7 +456,7 @@ class Debugger:
     def eval_symbol(self, sym:SymBitVector|Constraint, dtype:DataType, **kwargs):
         if isinstance(sym, SymBitVector):
             return self.current_state.solver.eval(sym, cast_to=dtype.to_type(), **kwargs)
-        elif isinstance(sym, Constraint):
+        elif isinstance(sym, utils.Constraint):
             #drop endness from kwargs
             if 'endness' in kwargs:
                 kwargs.pop('endness')
@@ -468,7 +475,7 @@ class Debugger:
             raise DebuggerCommandError(f"Invalid solver type {solver_type}.")
         if isinstance(sym, SymBitVector):
             return f(sym, n, cast_to=dtype.to_type(), **kwargs)
-        elif isinstance(sym, Constraint):
+        elif isinstance(sym, utils.Constraint):
             #drop endness from kwargs
             if 'endness' in kwargs:
                 kwargs.pop('endness')
@@ -565,12 +572,9 @@ class Debugger:
                 if self.history_cache_state > 0:
                     self.state_history_manager.save_copy_state(simgr, state)
 
-                if state.has_plugin('stdout_tracker'):
-                    std:StdTracker = state.get_plugin('stdout_tracker') # type: ignore
-                    std_data = std.get_new_string()
-                    if std_data:handler.handle_output(std_data)
-                else:
-                    log.error("State has no stdout_tracker plugin.")
+                std:StdTracker = state.get_plugin('stdout_tracker')
+                std_data = std.get_new_string()
+                if std_data:handler.handle_output(std_data)
 
         def until_func(simgr):
             if not simgr.active:
@@ -607,31 +611,22 @@ class Debugger:
   
     def get_current_addr(self):
         return self.current_state.addr
-    
-    
-    def get_callstack(self,state:SimState):
-        stack:List[CallStackEntry] = []
 
-        
-        if not state.has_plugin("sem_stack"):
-            raise DebuggerCommandError("State has no semantic callstack plugin.")
-        
-        sem:SemanticCallstack = state.get_plugin("sem_stack") # type: ignore
-        sem.update_cfg(state, self.cfg)
-    
-        for depth, frame in enumerate(sem.frames):
-            if name:= frame.simproc:
-                    name = name + " (SimProc)"
-            else:
-                fn = self.cfg.model.get_any_node(frame.callee)
-                func_addr = fn.function_address if fn else frame.callee
-                func = self.project.kb.functions.get(func_addr, None)
-                name = func.name if func is not None else f"sub_{frame.callee:x}"
-                if is_plt_stub(self.project, frame.callee):
-                    name += " (PLT)"
-            stack.append(CallStackEntry(id=depth, function_address=frame.callee, function_display_name=name, return_address=frame.ret))
-        
-        return stack
+    # TODO: fix, this function should return the callstack. However, the current implementation doesn't get the start and end correct.
+    # Check with 00_angr_find --> __wrap_main and main.
+    def get_callstack(self,state):
+        paths = [] 
+        prev = state.addr
+        i = 0
+        for ix,call_state in enumerate(state.callstack):
+            block = self.project.factory.block(prev)
+            f = self.get_function_info(call_state.func_addr) if call_state.func_addr!=0 else None
+            name = f.name if f else f"State at address{hex(call_state.func_addr)}"
+            end = block.instruction_addrs[-1] if len(block.instruction_addrs) else call_state.func_addr # type: ignore
+            paths.append({"addr":prev, "id":i, "func":call_state.func_addr, "end": end, "name":  name})
+            prev = call_state.call_site_addr
+            i += 1
+        return paths
 
         
     def get_return_value(self)->int|None|claripy.ast.Base:
@@ -728,9 +723,7 @@ class Debugger:
     def get_stream(self, stream:StreamType) -> str:
         state = self.current_state
         mapped = stream.name.lower()
-        if not state.has_plugin(f'{mapped}_tracker'):
-            raise DebuggerCommandError(f"State has no {mapped}_tracker plugin.")
-        std:StdTracker = state.get_plugin(f'{mapped}_tracker') # type: ignore
+        std:StdTracker = state.get_plugin(f'{mapped}_tracker')
         return std.get_prev_string()
 
     def cast_to(self, value:AngrValueType, dtype:DataType, **kwargs):
@@ -749,7 +742,6 @@ class Debugger:
 
     def add_to_state(self, name:str, value:AngrType):
         self.current_state.globals[name] = value
-        
     def get_from_state(self, name:str):
         return self.current_state.globals[name]
 
@@ -883,6 +875,7 @@ class Debugger:
             raise DebuggerCommandError('Project and state needs to be initialised.')
         if(self._memory_manager == None):
             self._memory_manager = MemoryManagment(self._current_state)
+
         return self._memory_manager.malloc(size)
     
     def free(self, address:int):
@@ -892,8 +885,6 @@ class Debugger:
         return self._memory_manager.free(address)
     
     def undo_step(self, index:int):
-        if(index == 0):
-            raise DebuggerCommandError('Index cannot be 0.')
         self.state_history_manager.go_back_in_history(index, self.simgr)
         self._set_current_state(self.simgr.stashes["active"][0])
 
@@ -907,3 +898,12 @@ class Debugger:
         with open(filepath, 'wb') as f:
             pickle.dump(copy_state, f)
 
+    def set_exploration_technique(self, technique:str, **kwargs):
+        if technique == "rollback_buffer":
+            if "size" not in kwargs:
+                raise InvalidArgumentError("Missing 'size' argument for rollback_buffer technique.")
+            
+            size = kwargs.get("size", 10)
+            self.history_cache_state = size
+        else:
+            raise DebuggerCommandError(f"Exploration technique '{technique}' not supported.")
