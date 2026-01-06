@@ -74,7 +74,12 @@ class Debugger:
     def cfg(self):
         if self._cfg is None:
             self.conn.send_info("Constructing cfg, this may take a while...")
-            self._cfg = self.project.analyses.CFGFast(normalize=True)
+            self._cfg = self.project.analyses.CFGFast(
+                show_progressbar=False,
+                normalize=True,
+                resolve_indirect_jumps=True,
+                detect_tail_calls=True,
+            )
             
 
         return self._cfg
@@ -978,7 +983,7 @@ class Debugger:
 
     def launch_cfg_server(self):
         from dAngr.angr_ext.cfg import ControlFlowGraphServer
-        self.cfg_server = ControlFlowGraphServer(self.project, self)
+        self.cfg_server = ControlFlowGraphServer(self)
 
         self.cfg_server.on("node_clicked", self._on_cfg_node_clicked)
         self.cfg_server.start_in_thread()

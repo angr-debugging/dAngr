@@ -74,7 +74,7 @@ class ExecutionCommands(BaseCommand):
             if len(cs)!= len(cs0):
                 return StopReason.NONE
             for i in range(0,len(cs)):
-                if cs[i].function_address != cs0[i].function_address:
+                if cs[i].get('func') != cs0[i].get('func'):
                     return StopReason.NONE
             return StopReason.STEP
 
