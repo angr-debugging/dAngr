@@ -197,3 +197,33 @@ class FunctionCommands(BaseCommand):
         
         return func
     
+
+    def rename_variable(self, function: str|int, variable_name: str, new_name: str):
+        """
+        Rename a variable in a function.
+
+        Args:
+            function (str|int): The name or address of the function.
+            variable_name (str): The current name of the variable.
+            new_name (str): The new name for the variable.
+
+        Raises:
+            DebuggerCommandError: If no function or variable is found with the given names.
+        
+        Short name: frv
+        """
+        func_addr = None
+        if isinstance(function, int):
+            func_addr = function
+        else:
+            func = self.debugger.get_function_info(function)
+            if not func:
+                raise DebuggerCommandError("No function found with this name.")
+            func_addr = func.addr
+
+        success = self.debugger.rename_variable(func_addr, variable_name, new_name)
+
+        if not success:
+            raise DebuggerCommandError("Failed to rename variable. Function or variable not found.")
+        
+        self.send_info(f"Variable '{variable_name}' renamed to '{new_name}' in function '{function}'")
