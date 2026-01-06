@@ -7,6 +7,7 @@ from angr import SimCC, SimProcedure, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
 import angr.storage
+from angr.angrdb import AngrDB
 import cloudpickle as pickle
 import claripy
 from cle import ELF
@@ -14,6 +15,7 @@ import pprint
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
+from dAngr.angr_ext.utils import SearchTechnique
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import Constraint
 from dAngr.cli.state_visualizer import StateVisualizer
@@ -24,6 +26,7 @@ from dAngr.angr_ext.memory_managment import MemoryManagment
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, hook_simprocedures, load_module_from_file, get_function_by_name, get_function_by_addr
 from .connection import Connection
+from .dangr_db import DAngrDB
 from angr.storage.memory_mixins.convenient_mappings_mixin import *
 
 from dAngr.exceptions import DebuggerCommandError
@@ -52,6 +55,7 @@ class Debugger:
         self._function_prototypes = {}
         self._current_function:str = ''
         self._cfg:CFGFast|None = None
+        self._var_kb:angr.KnowledgeBase|None = None
         self._basic_blocks: List[BasicBlock] | None = None
         self.stop_reason = StopReason.NONE
         self._save_unconstrained = False
@@ -71,8 +75,22 @@ class Debugger:
         if self._cfg is None:
             self.conn.send_info("Constructing cfg, this may take a while...")
             self._cfg = self.project.analyses.CFGFast(normalize=True)
+            model = getattr(self._cfg, "model", None)
+            if model is not None:
+                print("Storing CFG model in knowledge base.")
+                self._project.kb.cfgs["CFGFast"] = model
+
         return self._cfg
     
+    @property
+    def var_kb(self) -> angr.KnowledgeBase:
+        self.cfg
+        if self._var_kb is None:
+            self.conn.send_info("Initializing variable knowledge base...")
+            self._var_kb = angr.KnowledgeBase(self.project)
+        return self._var_kb
+            
+
     @property
     def basic_blocks(self):
         self.cfg
@@ -532,29 +550,29 @@ class Debugger:
         self._project = None
         self._simgr = None
         self._current_state = None
+        self.stop_cfg_server()
  
     # @param handler: StepHandler
     # @param check_until: callable return reason to stop, else None
     # @param exclude: callable returns True to exclude state from active stash
     
-    def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single:bool = False):
+    def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, 
+             exclude:Callable[[angr.SimState],bool] = lambda _:False, single:bool = False, technique: SearchTechnique = SearchTechnique.DFS):
+        
         self.throw_if_not_initialized()
         self.stop_reason:StopReason = StopReason.NONE
+
         #make sure current state is an active state and move it to the front if it is not
-        if self.simgr.active:
-            if self._current_state not in self.simgr.active:
-                self._current_state = self.simgr.one_active
-            else:
-                #move current state to the front
-                if self._current_state != self.simgr.one_active:
-                    self.simgr.active.remove(self._current_state)
-                    self.simgr.active.insert(0,self._current_state)
-        else:
+        if not self.simgr.active:
             raise DebuggerCommandError("No active states.")
+
+        if self._current_state not in self.simgr.active:
+            self._current_state = self.simgr.one_active
+        elif self._current_state != self.simgr.one_active:
+            self.simgr.active.remove(self._current_state)
+            self.simgr.active.insert(0,self._current_state)
         
-        def selector_func(state):
-            #return true if state is the first in the active stash
-            return state == self.simgr.one_active  # type: ignore
+        selector_func = technique.selector_func(self)
         
         def filter_func(state):
             if state.addr == 0:
@@ -566,25 +584,36 @@ class Debugger:
         
         def step_func(simgr:angr.SimulationManager):
             # handle output
-            if simgr.active:
-                state = simgr.one_active
-                
-                if self.history_cache_state > 0:
-                    self.state_history_manager.save_copy_state(simgr, state)
+            if not simgr.active:
+                return
 
-                std:StdTracker = state.get_plugin('stdout_tracker')
-                std_data = std.get_new_string()
-                if std_data:handler.handle_output(std_data)
+            state = simgr.one_active
+            
+            if self.history_cache_state > 0:
+                self.state_history_manager.save_copy_state(simgr, state)
+
+            std:StdTracker = state.get_plugin('stdout_tracker')
+            std_data = std.get_new_string()
+            if std_data:handler.handle_output(std_data)
+
+            technique.after_step(self, simgr, state)
 
         def until_func(simgr):
             if not simgr.active:
                 self.stop_reason = StopReason.TERMINATE
                 return True
+            
             self.stop_reason = check_until(simgr)
-
             return self.stop_reason != StopReason.NONE
         
-        self.simgr.run(stash="active", selector_func=selector_func, filter_func=filter_func,until=until_func, step_func=step_func, num_inst=1 if single else None)
+        self.simgr.run(
+            stash="active", 
+            selector_func=selector_func, 
+            filter_func=filter_func, 
+            until=until_func, 
+            step_func=step_func, 
+            num_inst=1 if single else None
+        )
 
         self._set_current_state( self.simgr.one_active if self.simgr.active else None)
         # if self.stop_reason == StopReason.BREAKPOINT:
@@ -668,7 +697,7 @@ class Debugger:
         except Exception as e:
             raise DebuggerCommandError(f"Failed to retrieve basic block: {e}")
 
-    def get_basic_block_at(self, addr:int):
+    def get_basic_block_at(self, addr:int) -> BasicBlock|None:
         try:
             for bb in self.basic_blocks:  # uses the property
                 if bb.address <= addr < bb.address + bb.size:
@@ -775,16 +804,12 @@ class Debugger:
     def get_decompiled_function(self, func_name):
         func = self.cfg.kb.functions.function(name=func_name)
         if func:
-            decompiled = self.project.analyses.Decompiler(func)
+            decompiled = self.project.analyses.Decompiler(func, variable_kb=self.var_kb, cfg=self.cfg, regen_clinic=False)
             return decompiled.codegen.text if decompiled.codegen else None
         return None
 
     def get_decompiled_function_at_address(self, start, end):
-        if not self._cfg:
-            cfg = self.project.analyses.CFGFast(start=start,end=end, force_complete_scan=False, normalize=True)
-        else:
-            cfg = self._cfg
-        decompiled = self.project.analyses.Decompiler(start)
+        decompiled = self.project.analyses.Decompiler(start, variable_kb=self.var_kb, cfg=self.cfg, regen_clinic=False)
         return decompiled.codegen.text if decompiled.codegen else None
 
     def get_binary_string_constants(self,min_length=4):
@@ -898,6 +923,42 @@ class Debugger:
         with open(filepath, 'wb') as f:
             pickle.dump(copy_state, f)
 
+    def show_loader(self, proj):
+        print("=== all_objects ===")
+        for o in proj.loader.all_objects:
+            print(type(o).__name__, "->", o.binary)
+
+        print("=== shared_objects ===")
+        for name, o in proj.loader.shared_objects.items():
+            print(name, "->", o.binary)
+
+    def export_project(self, filepath:str):
+        filepath = filepath if filepath.endswith('.sqlite') else filepath + '.sqlite'
+        AngrDB(self._project).dump(filepath, extra_info={"arch": self._project.arch.name, "auto_load_libs": self._project.loader._auto_load_libs})
+        self.show_loader(self._project)
+
+    def import_project(self, filepath:str):
+        self.reset_state()
+        filepath = filepath if filepath.endswith('.sqlite') else filepath + '.sqlite'
+        self._angrdb = DAngrDB()
+
+        try:
+            extra_info_lst = {"arch": None, "auto_load_libs": None}
+            self._project = self._angrdb.load(db_path=filepath, extra_info=extra_info_lst)
+            if(self.project.kb.cfgs["CFGFast"] is not None):
+                self._cfg = self.project.kb.cfgs["CFGFast"]
+                print(self._cfg)
+                print(type(self._cfg))
+
+        except angr.errors.AngrIncompatibleDBError as ex:
+            raise DebuggerCommandError(f"Incompatible database version in '{filepath}': {ex}") from ex
+        except angr.errors.AngrDBError as ex:
+            raise DebuggerCommandError(f"Failed to load project from '{filepath}': {ex}") from ex
+
+        self._binary_path = self._project.loader.main_object.binary
+
+        self.show_loader(self._project)
+
     def set_exploration_technique(self, technique:str, **kwargs):
         if technique == "rollback_buffer":
             if "size" not in kwargs:
@@ -907,3 +968,44 @@ class Debugger:
             self.history_cache_state = size
         else:
             raise DebuggerCommandError(f"Exploration technique '{technique}' not supported.")
+
+    def _on_cfg_node_clicked(self, msg, ws):
+        # msg is a dict like {"type": "node_clicked", "id": "...", "addr": "..."}
+        # ws is the WebSocket connection
+        print("clicked:", msg.get("addr"))
+
+    def launch_cfg_server(self):
+        from dAngr.angr_ext.cfg import ControlFlowGraphServer
+        self.cfg_server = ControlFlowGraphServer(self.project, self)
+
+        self.cfg_server.on("node_clicked", self._on_cfg_node_clicked)
+        self.cfg_server.start_in_thread()
+
+    def stop_cfg_server(self):
+        if(self.cfg_server):
+            self.cfg_server.stop()
+            self.cfg_server = None
+
+    def rename_variable(self, func_addr: int, old_name: str, new_name: str) -> bool:
+        self.cfg 
+        self.var_kb
+        vm_exists = func_addr in self.var_kb.variables.function_managers
+
+        self.project.analyses.Decompiler(
+            func_addr, cfg=self.cfg, variable_kb=self.var_kb,
+            regen_clinic=not vm_exists
+        )
+
+        vm = self.var_kb.variables[func_addr]
+
+        for v in vm.get_unified_variables(sort="stack"):
+            if v.name == old_name:
+                v.name = new_name
+                v.renamed = True
+                if hasattr(v, "_hash"):
+                    v._hash = None # Invalidate cached hash
+                break
+        else:
+            return False
+
+        return True

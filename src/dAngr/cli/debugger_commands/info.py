@@ -292,6 +292,18 @@ class InformationCommands(BaseCommand):
         # Registers --> refactor list registers to format 'eax': 0x0...
         pstr_state = self.debugger.visualize_state()
         self.send_result(ANSI(pstr_state))
+
+    def start_cfg_viewer(self):
+        """
+        Start the CFG viewer server.
+
+        Returns:
+            str: Information about the server.
+
+        Short name: cfgs
+        """
+        base_path = self.debugger.launch_cfg_server()
+        return f"File server started at http://localhost:8000/ serving files from {base_path}"
     
 # Add current basic block, current function + code
 # Name of the symbolic var instead of the to str

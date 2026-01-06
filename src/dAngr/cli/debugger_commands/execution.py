@@ -9,6 +9,7 @@ from dAngr.cli.grammar.definitions import FunctionDefinition
 from dAngr.cli.script_processor import ScriptProcessor
 from dAngr.exceptions import DebuggerCommandError
 from dAngr.utils import AngrType
+from dAngr.angr_ext.utils import SearchTechnique
 import angr
 
 from dAngr.utils.loggers import AsyncLogger
@@ -28,13 +29,23 @@ class ExecutionCommands(BaseCommand):
     #     """
     #     super().run_angr()
     
-    def run(self): # type: ignore
+    def run(self, technique: str = "DFS", address: int = 0): # type: ignore
         """
         Run until a breakpoint or terminated. Same as continue.
 
+        Args:
+            technique (str): The search technique to use (DFS, BFS, TS). Default is DFS.
+            address (int): The address for the targeted search technique.
+
         Short name: c
         """
-        super().run_angr()
+        search_tech = SearchTechnique[technique.upper()]
+        if search_tech == SearchTechnique.TS:
+            if address == 0:
+                raise DebuggerCommandError("Target address must be provided for TS search technique.")
+            search_tech.set_target_address(address)
+
+        super().run_angr(search_technique=search_tech)
 
     def step_out(self):  # type: ignore
         """
