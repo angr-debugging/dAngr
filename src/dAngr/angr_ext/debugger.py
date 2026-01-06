@@ -75,10 +75,7 @@ class Debugger:
         if self._cfg is None:
             self.conn.send_info("Constructing cfg, this may take a while...")
             self._cfg = self.project.analyses.CFGFast(normalize=True)
-            model = getattr(self._cfg, "model", None)
-            if model is not None:
-                print("Storing CFG model in knowledge base.")
-                self._project.kb.cfgs["CFGFast"] = model
+            
 
         return self._cfg
     
@@ -934,7 +931,13 @@ class Debugger:
 
     def export_project(self, filepath:str):
         filepath = filepath if filepath.endswith('.sqlite') else filepath + '.sqlite'
-        AngrDB(self._project).dump(filepath, extra_info={"arch": self._project.arch.name, "auto_load_libs": self._project.loader._auto_load_libs})
+
+        cfgBuild = True
+        if(self._cfg is None):
+            cfgBuild = False
+
+        AngrDB(self._project).dump(filepath, extra_info={"arch": self._project.arch.name, "auto_load_libs": self._project.loader._auto_load_libs, "cfg_built": cfgBuild})
+
         self.show_loader(self._project)
 
     def import_project(self, filepath:str):
@@ -943,12 +946,11 @@ class Debugger:
         self._angrdb = DAngrDB()
 
         try:
-            extra_info_lst = {"arch": None, "auto_load_libs": None}
+            extra_info_lst = {"arch": None, "auto_load_libs": None, "cfg_built": None}
             self._project = self._angrdb.load(db_path=filepath, extra_info=extra_info_lst)
-            if(self.project.kb.cfgs["CFGFast"] is not None):
+
+            if(extra_info_lst.get("cfg_built") == "True"):
                 self._cfg = self.project.kb.cfgs["CFGFast"]
-                print(self._cfg)
-                print(type(self._cfg))
 
         except angr.errors.AngrIncompatibleDBError as ex:
             raise DebuggerCommandError(f"Incompatible database version in '{filepath}': {ex}") from ex
