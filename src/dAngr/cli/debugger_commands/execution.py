@@ -9,6 +9,7 @@ from dAngr.cli.grammar.definitions import FunctionDefinition
 from dAngr.cli.script_processor import ScriptProcessor
 from dAngr.exceptions import DebuggerCommandError
 from dAngr.utils import AngrType
+from dAngr.angr_ext.utils import SearchTechnique
 import angr
 
 from dAngr.utils.loggers import AsyncLogger
@@ -28,13 +29,23 @@ class ExecutionCommands(BaseCommand):
     #     """
     #     super().run_angr()
     
-    def run(self): # type: ignore
+    def run(self, technique: str = "DFS", address: int = 0): # type: ignore
         """
         Run until a breakpoint or terminated. Same as continue.
 
+        Args:
+            technique (str): The search technique to use (DFS, BFS, TS). Default is DFS.
+            address (int): The address for the targeted search technique.
+
         Short name: c
         """
-        super().run_angr()
+        search_tech = SearchTechnique[technique.upper()]
+        if search_tech == SearchTechnique.TS:
+            if address == 0:
+                raise DebuggerCommandError("Target address must be provided for TS search technique.")
+            search_tech.set_target_address(address)
+
+        super().run_angr(search_technique=search_tech)
 
     def step_out(self):  # type: ignore
         """
@@ -245,7 +256,7 @@ class ExecutionCommands(BaseCommand):
         """
         return self.debugger.get_from_state(name)
 
-    def load(self, binary_path:str, base_addr:int=0, veritesting:bool=False, history_cache_state:int=0, **kwargs):
+    def load(self, binary_path:str, base_addr:int=0, veritesting:bool=False, **kwargs):
         """
         Load a binary into the debugger.
 
@@ -254,7 +265,6 @@ class ExecutionCommands(BaseCommand):
             base_addr (int): The base address of the binary. Default is 0, means the binary is loaded at its default base address.
             veritesting (bool): Enable veritesting. Default is False.
             kwargs (dict): Additional keyword arguments to pass to the angr project.
-            history_cache_state (int): Tracks the most recent state changes. Default: 0.
 
         Short name: l
         """
@@ -265,7 +275,6 @@ class ExecutionCommands(BaseCommand):
                 raise DebuggerCommandError(f"File '{binary_path}' not found.")
             if base_addr:
                 kwargs['base_addr'] = base_addr
-            kwargs['history_cache_state'] = history_cache_state
             
             self.debugger.init(binary_path, **kwargs)
         except Exception as e:
@@ -454,4 +463,16 @@ class ExecutionCommands(BaseCommand):
 
         self.debugger.undo_step(index)
 
+    def set_exploration_technique(self, technique:str, **kwargs):
+        """
+        Set the exploration technique.
+
+        Args:
+            technique (str): The exploration technique to set.
+            kwargs (dict): Additional keyword arguments to pass to the exploration technique.
+
+        Short name: set
+        """
+        self.debugger.set_exploration_technique(technique, **kwargs)
+        self.send_info(f"Exploration technique set to {technique}.")
         

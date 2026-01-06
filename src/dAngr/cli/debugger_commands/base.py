@@ -11,6 +11,7 @@ from dAngr.cli.grammar.definitions import ArgumentSpec, FunctionDefinition
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.exceptions import ExecutionError, InvalidArgumentError,DebuggerCommandError
 from dAngr.utils.utils import str_to_type, undefined, AngrType, AngrValueType, SymBitVector
+from dAngr.angr_ext.utils import SearchTechnique
 
 # required for str_to_type - do not remove
 from dAngr.cli.grammar.expressions import *
@@ -265,7 +266,7 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
     @property
     def debugger(self):
         from dAngr.cli.command_line_debugger import CommandLineDebugger
-
+        
         if self._debugger is None:
             raise ExecutionError("Debugger not set.")
         # return self._debugger
@@ -296,9 +297,10 @@ class BaseCommand(IBaseCommand, metaclass=AutoRunMeta):
         else:
             return ref
 
-    def run_angr(self, until:Callable[[SimulationManager],StopReason] = lambda _: StopReason.NONE, single_step = False):
+    def run_angr(self, until:Callable[[SimulationManager],StopReason] = lambda _: StopReason.NONE, 
+                 single_step = False, search_technique: SearchTechnique = SearchTechnique.DFS):
         u = until
-        self.debugger.run(u, single_step=single_step)
+        self.debugger.run(u, single_step=single_step, search_technique=search_technique)
 
     # def get_example(self):
     #     args_lst = [f"<{a[0].replace(' ','_')}>"  for a in self.arg_specs]
