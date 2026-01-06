@@ -12,6 +12,7 @@ from prompt_toolkit.styles import Style
 
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.angr_ext.debugger import Debugger
+from dAngr.angr_ext.utils import SearchTechnique
 
 from dAngr.cli.debugger_commands import *
 from dAngr.cli.debugger_commands.base import BuiltinFunctionDefinition
@@ -370,7 +371,10 @@ class CommandLineDebugger(Debugger,StepHandler):
         return False
                 
 
-    def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single_step:bool = False):
+    def run(self, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, 
+            exclude:Callable[[angr.SimState],bool] = lambda _:False, single_step:bool = False, 
+            search_technique: SearchTechnique = SearchTechnique.DFS):
+        
         until_fnt = check_until
         exclusions = self.exclusions
         def check(simgr:angr.SimulationManager):
@@ -391,7 +395,7 @@ class CommandLineDebugger(Debugger,StepHandler):
         if self.__check_current_bb_for_breakpoint():
             self.__run_to_addr_in_bb(_exclude)
         else:
-            self._run(self, check,_exclude, single=single_step)
+            self._run(self, check,_exclude, single=single_step, technique=search_technique)
 
             if self.stop_reason == StopReason.BREAKPOINT:
                 self.__run_to_addr_in_bb(_exclude) # type: ignore

@@ -276,5 +276,29 @@ class ToolCommands(BaseCommand):
         self.debugger.export_state(filepath)
         self.send_info(f"State exported to {filepath}.")
 
+    def export_project(self, filepath:str):
+        """
+        Export the current project to a file.
+
+        Args:
+            filepath (str): Path to the file where the project will be exported.
+
+        Short name: expproj
+        """
+        self.debugger.export_project(filepath)
+        self.send_info(f"Project exported to {filepath}.")
+
+    def import_project(self, filepath:str):
+        """
+        Import a project from a file.
+
+        Args:
+            filepath (str): Path to the file from which the project will be imported.
+
+        Short name: impproj
+        """
+        self.debugger.import_project(filepath)
+        self.send_info(f"Project imported from {filepath}.")
+
 
         

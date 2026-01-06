@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Tailwind (quick prototype) -->
+  <script src="https://cdn.tailwindcss.com"></script> <!-- :contentReference[oaicite:1]{index=1} -->
+
+  <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+  <script src="https://unpkg.com/cytoscape-node-html-label@1.2.2/dist/cytoscape-node-html-label.js"></script>
+  <script src="https://unpkg.com/cytoscape-svg/cytoscape-svg.js"></script>
+  <script src="https://unpkg.com/dagre/dist/dagre.min.js"></script>
+  <script src="https://unpkg.com/cytoscape-dagre/cytoscape-dagre.js"></script>
+  <script src="https://unpkg.com/klayjs/klay.js"></script>
+  <script src="https://unpkg.com/cytoscape-klay/cytoscape-klay.js"></script>
+  
+  <script src="/static/requests.js"></script>
+  <script src="/static/utils.js"></script>
+  <script src="/static/export_svg.js"></script>
+  <script src="/static/startup.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css" />
+  <title>angr CFG</title>
+</head>
+
+<body class="h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
+  <!-- Top bar -->
+  <header class="flex items-center gap-3 border-b border-slate-800 bg-slate-900/60 px-3 py-2 backdrop-blur hidden">
+    <div class="font-mono text-sm">angr CFG</div>
+
+    <span id="status"
+      class="text-xs rounded-full border border-slate-700 bg-slate-900 px-2 py-1 text-slate-300">
+      connecting…
+    </span>
+
+    <div class="ml-auto flex items-center gap-2">
+      <button id="btnFit"
+        class="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium hover:bg-slate-700 active:scale-[0.99]">
+        Fit
+      </button>
+      <button id="btnRecompute"
+        class="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium hover:bg-indigo-500 active:scale-[0.99]">
+        Recompute CFG
+      </button>
+    </div>
+  </header>
+
+  <!-- Main layout -->
+  <div class="flex h-[calc(100vh)]">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="relative w-80 border-r border-slate-800 bg-slate-900/30 p-3 transition-all duration-200">
+      <!-- Toggle button -->
+      <button id="btnToggleSidebar"
+        class="absolute right-2 top-2 rounded-md border border-slate-700 bg-slate-900/60 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800">
+        ⟨
+      </button>
+
+      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Inspect</div>
+
+      <div class="mt-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+        <div class="text-xs text-slate-400">Clicked node</div>
+        <div id="clickedNode" class="mt-1 font-mono text-xs text-slate-200">—</div>
+
+        <button id="btnLoadBlocks"
+          class="mt-3 w-full rounded-md bg-indigo-600 disabled:bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-indigo-500 disabled:opacity-40"
+          disabled>
+          Load function cfg
+        </button>
+      </div>
+
+      <pre id="functionSelect"
+        class="mt-1 h-[calc(100%-180px)] overflow-auto rounded-lg border border-slate-800 bg-black/30 p-3 text-[15px] text-slate-200">
+      </pre>
+    </aside>
+
+    <!-- Graph canvas -->
+    <main class="relative flex-1 bg-slate-100">
+      <button
+        id="exportSvgBtn"
+        type="button"
+        class="absolute top-3 right-3 z-50 rounded-md bg-white/90 px-3 py-2 text-sm font-medium text-slate-800 shadow hover:bg-white border border-slate-200 hidden"
+      >
+        Export SVG
+      </button>
+      <div id="cyFunc" class="absolute inset-0"></div>
+      <div id="cyAsm"  class="absolute inset-0 hidden"></div>
+    </main>
+  </div>
+
+  <script>
+  (async function () {
+    const statusEl = document.getElementById("status");
+    const clickedNodeEl = document.getElementById("clickedNode");
+    const btnLoadBlock = document.getElementById("btnLoadBlock");
+    const functionSelectEl = document.getElementById("functionSelect");
+
+    // Sidebar toggle
+    const sidebarEl = document.getElementById("sidebar");
+    const btnToggleSidebar = document.getElementById("btnToggleSidebar");
+    let sidebarOpen = true;
+
+    btnToggleSidebar.addEventListener("click", () => {
+      sidebarOpen = !sidebarOpen;
+
+      if (sidebarOpen) {
+        sidebarEl.classList.remove("w-12");
+        sidebarEl.classList.add("w-80");
+        // show content again
+        Array.from(sidebarEl.children).forEach((child) => {
+          if (child.id !== "btnToggleSidebar") child.classList.remove("hidden");
+        });
+        btnToggleSidebar.textContent = "⟨";
+      } else {
+        sidebarEl.classList.remove("w-80");
+        sidebarEl.classList.add("w-12");
+        // hide everything except the button
+        Array.from(sidebarEl.children).forEach((child) => {
+          if (child.id !== "btnToggleSidebar") child.classList.add("hidden");
+        });
+        btnToggleSidebar.textContent = "⟩";
+      }
+
+      // If cytoscape exists globally, resize it (safe no-op if not)
+      if (window.cy) {
+        window.cy.resize();
+        window.cy.fit();
+      }
+    });
+
+    function setStatus(text, kind="idle") {
+      statusEl.textContent = text;
+      statusEl.className =
+        "text-xs rounded-full border px-2 py-1 " +
+        (kind === "ok"  ? "border-emerald-700 bg-emerald-500/10 text-emerald-300" :
+        kind === "bad" ? "border-rose-700 bg-rose-500/10 text-rose-300" :
+                          "border-slate-700 bg-slate-900 text-slate-300");
+    }
+
+    async function loadGraph() {
+      const r = await fetch("/graph");
+      return await r.json();
+    }
+
+    function connectWS() {
+      const proto = (location.protocol === "https:") ? "wss" : "ws";
+      const ws = new WebSocket(`${proto}://${location.host}/ws`);
+      ws.onopen = () => setStatus("ws: connected", "ok");
+      ws.onclose = () => setStatus("ws: disconnected", "bad");
+      ws.onerror = () => setStatus("ws: error", "bad");
+      return ws;
+    }
+  })();
+  </script>
+</body>
+</html>
