@@ -53,6 +53,11 @@ def get_function_address(project, function_name):
         return f.addr
     return None
 
+def is_plt_stub(project, addr):
+        obj = project.loader.find_object_containing(addr)
+        return obj is project.loader.main_object and obj.sections_map['.plt'].contains_addr(addr)
+
+
 
 def convert_string(sim_type, value):
     if isinstance(sim_type, types.SimTypeInt):

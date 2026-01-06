@@ -6,7 +6,6 @@ from .base import BaseCommand
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from prompt_toolkit.shortcuts import ProgressBar
 from prompt_toolkit import ANSI
-from dAngr.angr_ext.models import BasicBlock
 import angrutils
 
 class InformationCommands(BaseCommand):
@@ -228,6 +227,19 @@ class InformationCommands(BaseCommand):
         path_string = "\n".join([str(p) for p in self.debugger.list_path_history(index, stash)])
         return f"Path History: {path_string}"
     
+    def get_callstack(self):
+        """
+        Get the current callstack. Requires semantic callstack to be initialized.
+
+        Returns:
+            str: Information about the callstack.
+
+        Short name: ccs
+        """
+        state = self.debugger.current_state
+        callstack = self.debugger.get_callstack(state=state)
+        return callstack
+    
     def get_binary_info(self):
         """
         Get information about the binary.
@@ -264,8 +276,8 @@ class InformationCommands(BaseCommand):
         call_stack = self.debugger.get_call_stack()
         stack_str = "\n"
         for frame in call_stack:
-            if(frame['func'] != 0 and "State at address" not in frame['name']):
-                stack_str += f"Function: {frame['name']} ({hex(frame['func'])}) at {hex(frame['end'])}\n"
+            if(frame.function_address != 0 and "State at address" not in frame.function_display_name):
+                stack_str += f"Function: {frame.function_display_name} ({hex(frame.function_address)}) at {hex(frame.return_address)}\n"
         return stack_str
 
     def inspect_state(self):

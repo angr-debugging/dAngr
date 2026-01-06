@@ -74,6 +74,12 @@ class CommandLineDebugger(Debugger,StepHandler):
         self.context:dAngrExecutionContext = dAngrExecutionContext(self, DEBUGGER_COMMANDS)
 
     def reset_state(self):
+        # stop and cleanup http server if running
+        if self.http_server is not None:
+            self.http_server.shutdown()
+            self.http_server.server_close()
+        if self.http_thread is not None:
+            self.http_thread.join()
         self.http_server = None
         self.http_thread = None
         return super().reset_state()
@@ -115,6 +121,10 @@ class CommandLineDebugger(Debugger,StepHandler):
 
     def validate_input(self, command):
         return validate_input(command)
+    
+    def handle_cmd(self, command, **kwargs):
+        pass
+
         
     # command methods
     def handle(self, command:str, raise_error:bool = True):
@@ -128,7 +138,9 @@ class CommandLineDebugger(Debugger,StepHandler):
             if not script:
                 self.conn.send_info("No command entered.")
                 return True
+            
             r = script(self.context)
+
             if r is not None:
                 self.conn.send_result(r, True)
             cast(CliConnection,self.conn).clear_output()
@@ -158,9 +170,11 @@ class CommandLineDebugger(Debugger,StepHandler):
             import socketserver
             PORT = 8000
             handler = Handler
-            self.http_server = socketserver.TCPServer(("127.0.0.1", PORT), handler)
-            #serve files in a separate thread
-            self.http_thread = threading.Thread(target=self.http_server.serve_forever).start()
+            #if not started yet, start server
+            if self.http_server is None:
+                self.http_server = socketserver.TCPServer(("127.0.0.1", PORT), handler)
+                #serve files in a separate thread
+                self.http_thread = threading.Thread(target=self.http_server.serve_forever).start()
         return base_path
 
 

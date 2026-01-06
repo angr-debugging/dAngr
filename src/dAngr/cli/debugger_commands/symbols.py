@@ -1,6 +1,6 @@
 import claripy
 from dAngr.exceptions import DebuggerCommandError
-from dAngr.utils.utils import Constraint, DataType, SolverType, SymBitVector, undefined, AngrType
+from dAngr.utils.utils import Constraint, DataType, SolverType, SymBitVector, AngrType
 from .base import BaseCommand
 
 class SymbolCommands(BaseCommand):
@@ -9,7 +9,9 @@ class SymbolCommands(BaseCommand):
 
     def add_symbol(self, name:str, size:int = 0, dtype:DataType = DataType.bytes):
         """
-        Add a symbol of bytes with name and size.
+        Add a symbol of bytes with name and size. 
+        Symbolic values can be used in later commands by using &sym.name.
+        For instance, after creating the symbol 'test' you can use it by writing &sym.test 
 
         Args:
             name (str): Name of the symbol
@@ -18,7 +20,7 @@ class SymbolCommands(BaseCommand):
         
         Short name: sa
         
-        """
+         """
         if dtype == DataType.int:
             int_size = self.debugger.project.arch.sizeof["int"]
         else: int_size = size
@@ -108,6 +110,7 @@ class SymbolCommands(BaseCommand):
         if constraint is None:
             return self.debugger.satisfiable()
         return self.debugger.satisfiable(constraint)
+    
     def is_symbolic(self, sym:AngrType):
         """
         Check if a symbol is symbolic.
