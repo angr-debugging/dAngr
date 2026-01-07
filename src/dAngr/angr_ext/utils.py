@@ -145,6 +145,16 @@ class SearchTechnique(Enum):
         if self is not SearchTechnique.TS:
             return None
         return self.value.target_address
+    
+    # Initialise any parameters needed for the search technique
+    def initialise(self, **kwargs) -> bool:
+        if self == SearchTechnique.TS:
+            target_address = kwargs.get('target_address', None)
+            if(target_address is None):
+                raise ValueError("target_address must be provided for TS search technique")
+
+            self.set_target_address(target_address)
+        return True
 
     def selector_func(self, run_ctx):
         if self in (SearchTechnique.DFS, SearchTechnique.BFS, SearchTechnique.TS):

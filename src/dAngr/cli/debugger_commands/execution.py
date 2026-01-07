@@ -29,23 +29,14 @@ class ExecutionCommands(BaseCommand):
     #     """
     #     super().run_angr()
     
-    def run(self, technique: str = "DFS", address: int = 0): # type: ignore
+    def run(self): # type: ignore
         """
         Run until a breakpoint or terminated. Same as continue.
 
-        Args:
-            technique (str): The search technique to use (DFS, BFS, TS). Default is DFS.
-            address (int): The address for the targeted search technique.
-
         Short name: c
         """
-        search_tech = SearchTechnique[technique.upper()]
-        if search_tech == SearchTechnique.TS:
-            if address == 0:
-                raise DebuggerCommandError("Target address must be provided for TS search technique.")
-            search_tech.set_target_address(address)
 
-        super().run_angr(search_technique=search_tech)
+        super().run_angr(search_technique=self.debugger.search_technique)
 
     def step_out(self):  # type: ignore
         """
@@ -476,3 +467,23 @@ class ExecutionCommands(BaseCommand):
         self.debugger.set_exploration_technique(technique, **kwargs)
         self.send_info(f"Exploration technique set to {technique}.")
         
+
+    def set_search_technique(self, technique:str="", **kwargs):
+        """
+        Set the search technique.
+
+        Args:
+            technique (str): The search technique to set.
+            kwargs (dict): Additional keyword arguments to pass to the exploration technique.
+
+        Short name: sst
+        """
+
+        list_search_techniques = [st.name for st in SearchTechnique]
+
+        if(technique == ""):
+            self.send_warning(f"Pick an available search techniques: {', '.join(list_search_techniques)}")
+            return
+
+        self.debugger.set_search_technique(technique, **kwargs)
+        self.send_info(f"Search technique set to {technique}.")
