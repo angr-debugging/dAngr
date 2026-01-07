@@ -796,7 +796,7 @@ class Debugger:
         decompiled = self.project.analyses.Decompiler(start)
         return decompiled.codegen.text if decompiled.codegen else None
 
-    def get_binary_string_constants(self,min_length=4):
+    def get_binary_string_constants(self,filter="", limit=200, page=0, min_length=4):
         # _ = self.cfg
         constants = []
         for section in self.project.loader.main_object.sections:
@@ -808,7 +808,7 @@ class Debugger:
                 data = self.project.loader.memory.load(base_addr, size)
                 # Find all sequences of printable characters in the data
                 # Adjust the regex pattern as needed for different types of strings
-                re_pattern = rb'[ -~]{%d,}' % min_length
+                re_pattern = rb'(?=[ -~]{%d,})[ -~]*%s[ -~]*' % (min_length, re.escape(filter.encode("utf-8")))
                 matches = re.finditer(re_pattern, data)  # Find strings with at least 4 printable characters
                 
                 for match in matches:
@@ -820,8 +820,16 @@ class Debugger:
                     # Add the string and its address
                     string_address = base_addr + start_offset
                     constants.append((hex(string_address), string_value))
+        
+        if page < 0:
+            page = 0
+        
+        page_end = limit*(page +1)
+        max_index = len(constants) if page_end > len(constants) else page_end
 
-        return constants
+        return constants[limit*page:page_end]
+
+        
     def list_path_history(self, index:int = 0, stash="active"):
         # list basic blocks of states in the path history for both active and deadended states
         st = self.simgr.stashes[stash]

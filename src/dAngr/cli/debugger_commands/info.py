@@ -143,15 +143,18 @@ class InformationCommands(BaseCommand):
 
 
 
-    def list_binary_strings(self, min_length:int = 4):
+    def list_binary_strings(self,filter:str="",page_size:int=200,page_index:int=0, min_length:int = 4):
         """
         List all binary strings.
 
         Args:
+            filter (str): List the strings containing the filtered value (optional).
+            page_size (int): The amount of strings to return (default: 200).
+            page_index (int): The page of the strings that is returned (default: 0).
             min_length (int): The minimum length of the binary strings to list. Default 4.
 
         Returns:
-            str: Information about the binary strings.
+            str: The found strings in the binary and the addressess of these strings.
         
         Short name: ibstr
         """
