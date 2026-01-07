@@ -14,7 +14,7 @@ import pprint
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
-from dAngr.angr_ext.utils import SearchTechnique
+from dAngr.angr_ext.search_technique import SearchTechnique
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import Constraint
 from dAngr.cli.state_visualizer import StateVisualizer
@@ -1008,13 +1008,15 @@ class Debugger:
         return True
 
 
-    def set_search_technique(self, technique:str, **kwargs):
+    def set_search_technique(self, technique:str, **kwargs) -> bool:
         try:
             technique_enum = SearchTechnique[technique]
         except KeyError:
             list_search_techniques = [st.name for st in SearchTechnique]
             self.conn.send_error(f"Search technique '{technique}' not recognized. Available techniques: {', '.join(list_search_techniques)}")
-            return
+            return False
     
-        technique_enum.initialise(**kwargs)
-        self.search_technique = technique_enum
+        if(technique_enum.initialise(self, **kwargs)):
+            self.search_technique = technique_enum
+            return True
+        return False

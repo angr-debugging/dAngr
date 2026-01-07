@@ -12,7 +12,7 @@ from prompt_toolkit.styles import Style
 
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
 from dAngr.angr_ext.debugger import Debugger
-from dAngr.angr_ext.utils import SearchTechnique
+from dAngr.angr_ext.search_technique import SearchTechnique
 
 from dAngr.cli.debugger_commands import *
 from dAngr.cli.debugger_commands.base import BuiltinFunctionDefinition

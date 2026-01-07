@@ -9,7 +9,7 @@ from dAngr.cli.grammar.definitions import FunctionDefinition
 from dAngr.cli.script_processor import ScriptProcessor
 from dAngr.exceptions import DebuggerCommandError
 from dAngr.utils import AngrType
-from dAngr.angr_ext.utils import SearchTechnique
+from dAngr.angr_ext.search_technique import SearchTechnique
 import angr
 
 from dAngr.utils.loggers import AsyncLogger
@@ -485,5 +485,5 @@ class ExecutionCommands(BaseCommand):
             self.send_warning(f"Pick an available search techniques: {', '.join(list_search_techniques)}")
             return
 
-        self.debugger.set_search_technique(technique, **kwargs)
-        self.send_info(f"Search technique set to {technique}.")
+        if(self.debugger.set_search_technique(technique, **kwargs)):
+            self.send_info(f"Search technique set to {technique}.")
