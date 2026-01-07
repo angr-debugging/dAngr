@@ -48,7 +48,7 @@
   vertical-align: middle;
 }
 
-.call-op { cursor: pointer; text-decoration: underline; color: #000000;}
+.call-op { cursor: pointer;  color: #000000;}
 
 .mini-menu{
   position: fixed;

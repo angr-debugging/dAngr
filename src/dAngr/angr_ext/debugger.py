@@ -8,14 +8,13 @@ from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
 import angr.storage
 from angr.angrdb import AngrDB
-import cloudpickle as pickle
 import claripy
 from cle import ELF
 import pprint
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
-from dAngr.angr_ext.utils import SearchTechnique
+from dAngr.angr_ext.search_technique import SearchTechnique
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import Constraint
 from dAngr.cli.state_visualizer import StateVisualizer
@@ -61,6 +60,7 @@ class Debugger:
         self._save_unconstrained = False
         self._entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None = None
         self._symbols:Dict[str,SymBitVector] = {}
+        self.search_technique:SearchTechnique = SearchTechnique.DFS
 
     @property
     def project(self)->angr.project.Project:
@@ -74,7 +74,12 @@ class Debugger:
     def cfg(self):
         if self._cfg is None:
             self.conn.send_info("Constructing cfg, this may take a while...")
-            self._cfg = self.project.analyses.CFGFast(normalize=True)
+            self._cfg = self.project.analyses.CFGFast(
+                show_progressbar=False,
+                normalize=True,
+                resolve_indirect_jumps=True,
+                detect_tail_calls=True,
+            )
             
 
         return self._cfg
@@ -910,16 +915,6 @@ class Debugger:
         self.state_history_manager.go_back_in_history(index, self.simgr)
         self._set_current_state(self.simgr.stashes["active"][0])
 
-    def export_state(self, filepath:str):
-        copy_state = self.current_state.copy()
-        copy_state.history.trim()
-
-        print("About to dump state to:", os.path.abspath(filepath))
-        pprint.pprint(copy_state.__dict__)
-
-        with open(filepath, 'wb') as f:
-            pickle.dump(copy_state, f)
-
     def show_loader(self, proj):
         print("=== all_objects ===")
         for o in proj.loader.all_objects:
@@ -978,7 +973,7 @@ class Debugger:
 
     def launch_cfg_server(self):
         from dAngr.angr_ext.cfg import ControlFlowGraphServer
-        self.cfg_server = ControlFlowGraphServer(self.project, self)
+        self.cfg_server = ControlFlowGraphServer(self)
 
         self.cfg_server.on("node_clicked", self._on_cfg_node_clicked)
         self.cfg_server.start_in_thread()
@@ -1011,3 +1006,17 @@ class Debugger:
             return False
 
         return True
+
+
+    def set_search_technique(self, technique:str, **kwargs) -> bool:
+        try:
+            technique_enum = SearchTechnique[technique]
+        except KeyError:
+            list_search_techniques = [st.name for st in SearchTechnique]
+            self.conn.send_error(f"Search technique '{technique}' not recognized. Available techniques: {', '.join(list_search_techniques)}")
+            return False
+    
+        if(technique_enum.initialise(self, **kwargs)):
+            self.search_technique = technique_enum
+            return True
+        return False
