@@ -15,3 +15,4 @@ cloudpickle==3.1.2
 fastmcp==2.14.1
 fastapi==0.124.4
 uvicorn==0.38.0
+pytriskel==0.5.0
