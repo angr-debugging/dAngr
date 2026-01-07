@@ -546,6 +546,7 @@ class Debugger:
     
     def _run(self, handler:StepHandler, check_until:Callable[[angr.SimulationManager],StopReason] = lambda _:StopReason.NONE, exclude:Callable[[angr.SimState],bool] = lambda _:False, single:bool = False):
         self.throw_if_not_initialized()
+        
         self.stop_reason:StopReason = StopReason.NONE
         #make sure current state is an active state and move it to the front if it is not
         if self.simgr.active:
