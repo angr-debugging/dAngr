@@ -9,7 +9,7 @@ from dAngr.cli.grammar.definitions import FunctionDefinition
 from dAngr.cli.script_processor import ScriptProcessor
 from dAngr.exceptions import DebuggerCommandError
 from dAngr.utils import AngrType
-from dAngr.angr_ext.utils import SearchTechnique
+from dAngr.angr_ext.search_technique import SearchTechnique
 import angr
 
 from dAngr.utils.loggers import AsyncLogger
@@ -29,23 +29,14 @@ class ExecutionCommands(BaseCommand):
     #     """
     #     super().run_angr()
     
-    def run(self, technique: str = "DFS", address: int = 0): # type: ignore
+    def run(self): # type: ignore
         """
         Run until a breakpoint or terminated. Same as continue.
 
-        Args:
-            technique (str): The search technique to use (DFS, BFS, TS). Default is DFS.
-            address (int): The address for the targeted search technique.
-
         Short name: c
         """
-        search_tech = SearchTechnique[technique.upper()]
-        if search_tech == SearchTechnique.TS:
-            if address == 0:
-                raise DebuggerCommandError("Target address must be provided for TS search technique.")
-            search_tech.set_target_address(address)
 
-        super().run_angr(search_technique=search_tech)
+        super().run_angr(search_technique=self.debugger.search_technique)
 
     def step_out(self):  # type: ignore
         """
@@ -74,7 +65,7 @@ class ExecutionCommands(BaseCommand):
             if len(cs)!= len(cs0):
                 return StopReason.NONE
             for i in range(0,len(cs)):
-                if cs[i].function_address != cs0[i].function_address:
+                if cs[i].get('func') != cs0[i].get('func'):
                     return StopReason.NONE
             return StopReason.STEP
 
@@ -476,3 +467,23 @@ class ExecutionCommands(BaseCommand):
         self.debugger.set_exploration_technique(technique, **kwargs)
         self.send_info(f"Exploration technique set to {technique}.")
         
+
+    def set_search_technique(self, technique:str="", **kwargs):
+        """
+        Set the search technique.
+
+        Args:
+            technique (str): The search technique to set.
+            kwargs (dict): Additional keyword arguments to pass to the exploration technique.
+
+        Short name: sst
+        """
+
+        list_search_techniques = [st.name for st in SearchTechnique]
+
+        if(technique == ""):
+            self.send_warning(f"Pick an available search techniques: {', '.join(list_search_techniques)}")
+            return
+
+        if(self.debugger.set_search_technique(technique, **kwargs)):
+            self.send_info(f"Search technique set to {technique}.")

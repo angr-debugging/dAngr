@@ -11,7 +11,7 @@ from dAngr.cli.grammar.definitions import ArgumentSpec, FunctionDefinition
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.exceptions import ExecutionError, InvalidArgumentError,DebuggerCommandError
 from dAngr.utils.utils import str_to_type, undefined, AngrType, AngrValueType, SymBitVector
-from dAngr.angr_ext.utils import SearchTechnique
+from dAngr.angr_ext.search_technique import SearchTechnique
 
 # required for str_to_type - do not remove
 from dAngr.cli.grammar.expressions import *
