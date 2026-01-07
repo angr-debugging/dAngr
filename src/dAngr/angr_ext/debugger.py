@@ -418,12 +418,18 @@ class Debugger:
             checksec = subprocess.run(f"checksec --file={self._binary_path}", cwd=os.path.abspath(os.curdir), capture_output=True, text=True, shell=True)
             if checksec.returncode != 0:
                 raise DebuggerCommandError(f"Failed to run checksec: {checksec.stdout}")
-            output = checksec.stdout
+            output = checksec.stdout if checksec.stdout != '' else checksec.stderr
             lines = output.split("\n")
-            headers = re.split(r'\s{2,}|\t',lines[0])
-            values = [x for x in (remove_ansi_escape_codes(r) for r in re.split(r'\s{2,}|\t',lines[1])) if x.strip()]
-            for i in range(len(headers)):
-                features[headers[i]] = values[i]
+
+            for line in lines[1:]:
+                remove_tabs = re.split(r'\s{2,}|\t',line)
+                if len(remove_tabs) != 3:
+                    continue
+                
+                header = remove_ansi_escape_codes(remove_tabs[1]).replace(':', '')
+                value = remove_ansi_escape_codes(remove_tabs[2])
+
+                features[header] = value
 
         except Exception as e:
             raise DebuggerCommandError(f"Failed to run checksec: {e}")
