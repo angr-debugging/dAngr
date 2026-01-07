@@ -796,7 +796,7 @@ class Debugger:
         decompiled = self.project.analyses.Decompiler(start)
         return decompiled.codegen.text if decompiled.codegen else None
 
-    def get_binary_string_constants(self,filter="", limit=200, page=0, min_length=4):
+    def get_binary_string_constants(self,filter="", min_length=4):
         # _ = self.cfg
         constants = []
         for section in self.project.loader.main_object.sections:
@@ -820,14 +820,8 @@ class Debugger:
                     # Add the string and its address
                     string_address = base_addr + start_offset
                     constants.append((hex(string_address), string_value))
-        
-        if page < 0:
-            page = 0
-        
-        page_end = limit*(page +1)
-        max_index = len(constants) if page_end > len(constants) else page_end
 
-        return constants[limit*page:page_end]
+        return constants
 
         
     def list_path_history(self, index:int = 0, stash="active"):

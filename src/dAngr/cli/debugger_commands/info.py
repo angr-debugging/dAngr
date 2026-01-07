@@ -1,7 +1,7 @@
 import os
 
 
-
+import math
 from .base import BaseCommand
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from prompt_toolkit.shortcuts import ProgressBar
@@ -158,9 +158,28 @@ class InformationCommands(BaseCommand):
         
         Short name: ibstr
         """
-        strings = self.debugger.get_binary_string_constants(filter, page_size, page_index, min_length=min_length)
-        binary_strings = "\n".join([f"{s[0]}\t{s[1]}" for s in strings])
-        return f"\taddress\tvalue (strings_shown: {len(strings)})\n{binary_strings}"
+        strings = self.debugger.get_binary_string_constants(filter, min_length=min_length)
+        if page_index < 0:
+            page_index = 0
+        
+        page_end = page_size*(page_index +1)
+        max_index = len(strings) if page_end > len(strings) else page_end
+
+        strings_filtered = strings[page_size*page_index:max_index]
+
+        binary_strings = "\n".join([f"{s[0]}\t{s[1]}" for s in strings_filtered])
+        return f"\taddress\tvalue (page {page_index}/{math.floor(len(strings)/page_size)})\n{binary_strings}"
+    
+    def list_functions(self, filter:str, page_size:int=200, page_index:int=0):
+        """
+        Docstring for list_functions
+        
+        filter (str): Description
+        page_size (int): Description
+        page_index (int): Description
+        """
+        pass
+        
 
     def list_binary_symbols(self): # type: ignore
         """
