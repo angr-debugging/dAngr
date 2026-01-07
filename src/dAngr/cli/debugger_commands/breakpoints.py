@@ -44,6 +44,8 @@ class BreakpointCommands(BaseCommand):
         
         Short name: baf
         """
+        # CFG is required for the filter to get the address of the function
+        self.debugger.cfg
         f = FilterCommands(self.debugger).by_function(function)
         self.debugger.breakpoints.append(f)
         self.send_info(f"Function {function} added to breakpoints.")
