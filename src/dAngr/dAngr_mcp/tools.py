@@ -39,6 +39,7 @@ dAngr_tools = [
     "get_stashes",
     "list_states",
     "list_binary_strings",
+    "list_binary_functions",
     "list_binary_symbols",
     "list_binary_sections",
     #"list_constraints",

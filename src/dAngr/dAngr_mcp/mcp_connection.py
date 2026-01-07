@@ -4,8 +4,9 @@ from dAngr.cli.cli_connection import CliConnection
 
 class McpConnection(Connection):
 
-    def __init__(self, cli_connection:CliConnection|None=None):
-        self.cli = cli_connection
+    def __init__(self, cli_connection:CliConnection):
+        self.cli:CliConnection = cli_connection
+        self.history = cli_connection.history
         self.info = []
         self.output = []
         super().__init__()
