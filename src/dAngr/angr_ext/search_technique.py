@@ -19,13 +19,17 @@ class TSConfig:
     debugger: Debugger | None = None
 
 @dataclass
-class SearchTechniqueConfig:
+class DFSConfig:
+    debugger: Debugger | None = None
+
+@dataclass
+class BFSConfig:
     debugger: Debugger | None = None
 
 
 class SearchTechnique(Enum):
-    DFS = SearchTechniqueConfig()
-    BFS = SearchTechniqueConfig()
+    DFS = DFSConfig()
+    BFS = BFSConfig()
     TS = TSConfig()
 
     def set_target_address(self, address: Optional[int]) -> None:
