@@ -11,7 +11,6 @@ import angr.storage
 from angr.angrdb import AngrDB
 import claripy
 from cle import ELF
-import pprint
 
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
@@ -57,7 +56,6 @@ class Debugger:
         self._cfg:CFGFast|None = None
         self._cfg_model:CFGModel|None = None
         self._cfg_kb:angr.KnowledgeBase|None = None
-        self._var_kb:angr.KnowledgeBase|None = None
         self._basic_blocks: List[BasicBlock] | None = None
         self.stop_reason = StopReason.NONE
         self._save_unconstrained = False
@@ -97,13 +95,6 @@ class Debugger:
         if self._cfg_kb is None:
             self._cfg_kb = self.cfg.kb
         return self._cfg_kb
-
-    @property
-    def var_kb(self) -> angr.KnowledgeBase:
-        if self._var_kb is None:
-            self.conn.send_info("Initializing variable knowledge base...")
-            self._var_kb = angr.KnowledgeBase(self.project)
-        return self._var_kb
             
 
     @property
@@ -943,13 +934,11 @@ class Debugger:
     def export_project(self, filepath:str):
         filepath = filepath if filepath.endswith('.sqlite') else filepath + '.sqlite'
 
-        cfgBuild = False
-        kbs_export = []
-        if(self._cfg is not None):
-            cfgBuild = True
-            kbs_export.append(self._cfg_kb)
+        cfgBuild = True
+        if(self._cfg is None):
+            cfgBuild = False
 
-        AngrDB(self._project).dump(filepath, kbs=kbs_export, extra_info={"arch": self._project.arch.name, "auto_load_libs": self._project.loader._auto_load_libs, "cfg_built": cfgBuild})
+        AngrDB(self._project).dump(filepath, extra_info={"arch": self._project.arch.name, "auto_load_libs": self._project.loader._auto_load_libs, "cfg_built": cfgBuild})
         self.show_loader(self._project)
 
     def import_project(self, filepath:str):
