@@ -964,16 +964,6 @@ class Debugger:
         filepath = filepath if filepath.endswith('.sqlite') else filepath + '.sqlite'
         self._angrdb = DAngrDB()
 
-        extra_info_lst = {"arch": None, "auto_load_libs": None, "cfg_built": None}
-        self._project = self._angrdb.load(db_path=filepath, extra_info=extra_info_lst)
-
-        if(extra_info_lst.get("cfg_built") == "True"):
-            self._cfg_model = self.project.kb.cfgs["CFGFast"]
-            self._cfg_kb = self._project.kb
-            print("CFG loaded from database.")
-            print(self._cfg_model)
-            print(self._cfg_kb)
-
         try:
             extra_info_lst = {"arch": None, "auto_load_libs": None, "cfg_built": None}
             self._project = self._angrdb.load(db_path=filepath, extra_info=extra_info_lst)
@@ -981,9 +971,6 @@ class Debugger:
             if(extra_info_lst.get("cfg_built") == "True"):
                 self._cfg_model = self.project.kb.cfgs["CFGFast"]
                 self._cfg_kb = self._project.kb
-                print("CFG loaded from database.")
-                print(self._cfg_model)
-                print(self._cfg_kb)
         except angr.errors.AngrIncompatibleDBError as ex:
             raise DebuggerCommandError(f"Incompatible database version in '{filepath}': {ex}") from ex
         except angr.errors.AngrDBError as ex:
