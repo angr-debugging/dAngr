@@ -151,16 +151,16 @@ class InformationCommands(BaseCommand):
             filter (str): List the strings containing the filtered value (optional).
             page_size (int): The amount of strings to return (default: 200).
             page_index (int): The page of the strings that is returned (default: 0).
-            min_length (int): The minimum length of the binary strings to list. Default 4.
+            min_length (int): The minimum length of the binary strings to list (default 4).
 
         Returns:
             str: The found strings in the binary and the addressess of these strings.
         
         Short name: ibstr
         """
-        strings = self.debugger.get_binary_string_constants(min_length=min_length)
+        strings = self.debugger.get_binary_string_constants(filter, page_size, page_index, min_length=min_length)
         binary_strings = "\n".join([f"{s[0]}\t{s[1]}" for s in strings])
-        return f"\taddress\tvalue\n{binary_strings}"
+        return f"\taddress\tvalue (strings_shown: {len(strings)})\n{binary_strings}"
 
     def list_binary_symbols(self): # type: ignore
         """

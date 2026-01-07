@@ -21,7 +21,7 @@ from dAngr.cli.state_visualizer import StateVisualizer
 from dAngr.cli.state_history import StateHistory
 from dAngr.utils.utils import AngrValueType, AngrObjectType, AngrType, DataType, DataType, Endness, SolverType, StreamType, SymBitVector, get_local_arch, remove_ansi_escape_codes
 from dAngr.utils import utils
-from dAngr.cli.memory_managment import MemoryManagment
+from dAngr.angr_ext.memory_managment import MemoryManagment
 from .std_tracker import StdTracker
 from .utils import create_entry_state, get_function_address, hook_simprocedures, is_plt_stub, load_module_from_file, get_function_by_name, get_function_by_addr
 from .connection import Connection
