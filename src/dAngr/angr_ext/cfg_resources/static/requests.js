@@ -5,6 +5,7 @@ function getFunctionsInformation(){
     .then(response => response.json())
     .then(data => {
         const functions = data.functions;
+
         const functionSelect = document.getElementById('functionSelect');
 
         const optionGoBack = document.createElement('option');
@@ -26,6 +27,7 @@ function getFunctionsInformation(){
         functionSelect.appendChild(optionDefault);
 
         functions.forEach(func => {
+            functionMap.set(func.addr, func.name);
             const option = document.createElement('option');
             option.value = func.addr;
             option.text = func.name + ' (' + func.addr + ')';

@@ -40,13 +40,14 @@ class TestSearchTechniques:
         assert dbg.handle("add_breakpoint 0x4012e5")
         assert dbg.handle("add_breakpoint 0x401302")
         assert dbg.handle("add_breakpoint 0x401313")
-        assert dbg.handle("run technique=DFS")
+        assert dbg.handle("sst DFS")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x4012a6.")
-        assert dbg.handle("run technique=DFS")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x4012d4.")
-        assert dbg.handle("run technique=DFS")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x401302.")
-        assert dbg.handle("run technique=DFS")
+        assert dbg.handle("run")
 
 
     # - BFS
@@ -58,21 +59,22 @@ class TestSearchTechniques:
         assert dbg.handle("add_breakpoint 0x4012e5")
         assert dbg.handle("add_breakpoint 0x401302")
         assert dbg.handle("add_breakpoint 0x401313")
-        assert dbg.handle("run technique=BFS")
+        assert dbg.handle("sst BFS")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x4012b7.")
-        assert dbg.handle("run technique=BFS")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x4012a6.")
-        assert dbg.handle("run technique=BFS")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x4012e5.")
-        assert dbg.handle("run technique=BFS")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x4012d4.")
-        assert dbg.handle("run technique=BFS")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x4012e5.")
-        assert dbg.handle("run technique=BFS")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x4012d4.")
-        assert dbg.handle("run technique=BFS")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x401313.")
-        assert dbg.handle("run technique=BFS")
+        assert dbg.handle("run")
         conn.send_info.assert_called_with("Break: Address Filter: 0x401302.")
 
 
@@ -82,7 +84,9 @@ class TestSearchTechniques:
         assert dbg.handle("add_breakpoint 0x4012a6")
         assert dbg.handle("add_breakpoint 0x4012b7")
 
-        assert dbg.handle("run technique=TS address=0x4012b7")
+        assert dbg.handle("sst TS target_address=0x4012b7")
+        assert dbg.handle("run")
+
         conn.send_info.assert_called_with("Break: Address Filter: 0x4012b7.")
 
         assert dbg.handle("load dfs_bfs_demo")
@@ -90,7 +94,9 @@ class TestSearchTechniques:
         assert dbg.handle("add_breakpoint 0x4012d4")
         assert dbg.handle("add_breakpoint 0x4012e5")
 
-        assert dbg.handle("run technique=TS address=0x4012d4")
+        assert dbg.handle("sst TS target_address=0x4012d4")
+        assert dbg.handle("run")
+
         conn.send_info.assert_called_with("Break: Address Filter: 0x4012d4.")
 
         assert dbg.handle("load dfs_bfs_demo")
@@ -98,5 +104,7 @@ class TestSearchTechniques:
         assert dbg.handle("add_breakpoint 0x401302")
         assert dbg.handle("add_breakpoint 0x401313")
 
-        assert dbg.handle("run technique=TS address=0x401313")
+        assert dbg.handle("sst TS target_address=0x401313")
+        assert dbg.handle("run")
+
         conn.send_info.assert_called_with("Break: Address Filter: 0x401313.")

@@ -263,18 +263,6 @@ class ToolCommands(BaseCommand):
             raise DebuggerCommandError(message)
         if(isinstance(condition, bool) and not condition):
             raise DebuggerCommandError(message)
-        
-    def export_state(self, filepath:str):
-        """
-        Export the current state to a file.
-
-        Args:
-            filepath (str): Path to the file where the state will be exported.
-
-        Short name: expstate
-        """
-        self.debugger.export_state(filepath)
-        self.send_info(f"State exported to {filepath}.")
 
     def export_project(self, filepath:str):
         """

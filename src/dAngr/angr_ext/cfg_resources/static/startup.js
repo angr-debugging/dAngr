@@ -1,4 +1,4 @@
-
+var functionMap = new Map();
 
 document.addEventListener('DOMContentLoaded', () => {
     cyAsm = document.getElementById('cyAsm');

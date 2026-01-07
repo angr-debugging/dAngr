@@ -70,13 +70,18 @@ function lineToHtml(line) {
     const op = mOp[1];
     rest = mOp[2] ?? "";
 
-    var callBoolean = false;
-
     if(op == "call"){
         const mOperands = rest.split(',').map(s => s.trim());
         const operand = mOperands[0];
+        console.log("Call operand:", operand);
+        functionName = functionMap.get(operand);
+        console.log("Function name for operand:", functionName);
         result = `<span class="addr">${escapeHtml(addr)}</span> ` + `<span class="call-op" data-op="call" value="${escapeHtml(operand)}"><span class="op">${escapeHtml(op)}</span>`
-        callBoolean = true;
+
+        result += ` <span class="mem">${functionName}</span>`;
+
+        result += `</span>`;
+        return result;
     }else {
         result = `<span class="addr">${escapeHtml(addr)}</span> <span class="op">${escapeHtml(op)}</span>`
     }
@@ -100,9 +105,6 @@ function lineToHtml(line) {
         if(i < mOperands.length - 1) {
             result += `<span class="text">,</span>`;
         }
-    }
-    if(callBoolean){
-        result += `</span>`;
     }
 
     return result;

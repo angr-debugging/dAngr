@@ -7,7 +7,7 @@ from angr import SimCC, SimProcedure, SimState, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
 import angr.storage
-import cloudpickle as pickle
+from angr.angrdb import AngrDB
 import claripy
 from cle import ELF
 import pprint
@@ -15,6 +15,7 @@ import pprint
 from dAngr.angr_ext.models import BasicBlock, DebugSymbol
 from dAngr.angr_ext.semantic_callstack import CallStackEntry, initialize_semantic_callstack
 from dAngr.angr_ext.step_handler import StepHandler, StopReason
+from dAngr.angr_ext.search_technique import SearchTechnique
 from dAngr.cli.grammar.execution_context import Variable
 from dAngr.cli.grammar.expressions import Constraint
 from dAngr.cli.state_visualizer import StateVisualizer
@@ -58,6 +59,7 @@ class Debugger:
         self._save_unconstrained = False
         self._entry_point:int|Tuple[str,types.SimTypeFunction,SimCC,List[Any]]|None = None
         self._symbols:Dict[str,SymBitVector] = {}
+        self.search_technique:SearchTechnique = SearchTechnique.DFS
 
     @property
     def project(self)->angr.project.Project:
@@ -71,7 +73,14 @@ class Debugger:
     def cfg(self):
         if self._cfg is None:
             self.conn.send_info("Constructing cfg, this may take a while...")
-            self._cfg = self.project.analyses.CFGFast(normalize=True)
+            self._cfg = self.project.analyses.CFGFast(
+                show_progressbar=False,
+                normalize=True,
+                resolve_indirect_jumps=True,
+                detect_tail_calls=True,
+            )
+            
+
         return self._cfg
     
     @property
@@ -907,13 +916,108 @@ class Debugger:
         self.state_history_manager.go_back_in_history(index, self.simgr)
         self._set_current_state(self.simgr.stashes["active"][0])
 
-    def export_state(self, filepath:str):
-        copy_state = self.current_state.copy()
-        copy_state.history.trim()
+    def show_loader(self, proj):
+        print("=== all_objects ===")
+        for o in proj.loader.all_objects:
+            print(type(o).__name__, "->", o.binary)
 
-        print("About to dump state to:", os.path.abspath(filepath))
-        pprint.pprint(copy_state.__dict__)
+        print("=== shared_objects ===")
+        for name, o in proj.loader.shared_objects.items():
+            print(name, "->", o.binary)
 
-        with open(filepath, 'wb') as f:
-            pickle.dump(copy_state, f)
+    def export_project(self, filepath:str):
+        filepath = filepath if filepath.endswith('.sqlite') else filepath + '.sqlite'
 
+        cfgBuild = True
+        if(self._cfg is None):
+            cfgBuild = False
+
+        AngrDB(self._project).dump(filepath, extra_info={"arch": self._project.arch.name, "auto_load_libs": self._project.loader._auto_load_libs, "cfg_built": cfgBuild})
+
+        self.show_loader(self._project)
+
+    def import_project(self, filepath:str):
+        self.reset_state()
+        filepath = filepath if filepath.endswith('.sqlite') else filepath + '.sqlite'
+        self._angrdb = DAngrDB()
+
+        try:
+            extra_info_lst = {"arch": None, "auto_load_libs": None, "cfg_built": None}
+            self._project = self._angrdb.load(db_path=filepath, extra_info=extra_info_lst)
+
+            if(extra_info_lst.get("cfg_built") == "True"):
+                self._cfg = self.project.kb.cfgs["CFGFast"]
+
+        except angr.errors.AngrIncompatibleDBError as ex:
+            raise DebuggerCommandError(f"Incompatible database version in '{filepath}': {ex}") from ex
+        except angr.errors.AngrDBError as ex:
+            raise DebuggerCommandError(f"Failed to load project from '{filepath}': {ex}") from ex
+
+        self._binary_path = self._project.loader.main_object.binary
+
+        self.show_loader(self._project)
+
+    def set_exploration_technique(self, technique:str, **kwargs):
+        if technique == "rollback_buffer":
+            if "size" not in kwargs:
+                raise InvalidArgumentError("Missing 'size' argument for rollback_buffer technique.")
+            
+            size = kwargs.get("size", 10)
+            self.history_cache_state = size
+        else:
+            raise DebuggerCommandError(f"Exploration technique '{technique}' not supported.")
+
+    def _on_cfg_node_clicked(self, msg, ws):
+        # msg is a dict like {"type": "node_clicked", "id": "...", "addr": "..."}
+        # ws is the WebSocket connection
+        print("clicked:", msg.get("addr"))
+
+    def launch_cfg_server(self):
+        from dAngr.angr_ext.cfg import ControlFlowGraphServer
+        self.cfg_server = ControlFlowGraphServer(self)
+
+        self.cfg_server.on("node_clicked", self._on_cfg_node_clicked)
+        self.cfg_server.start_in_thread()
+
+    def stop_cfg_server(self):
+        if(self.cfg_server):
+            self.cfg_server.stop()
+            self.cfg_server = None
+
+    def rename_variable(self, func_addr: int, old_name: str, new_name: str) -> bool:
+        self.cfg 
+        self.var_kb
+        vm_exists = func_addr in self.var_kb.variables.function_managers
+
+        self.project.analyses.Decompiler(
+            func_addr, cfg=self.cfg, variable_kb=self.var_kb,
+            regen_clinic=not vm_exists
+        )
+
+        vm = self.var_kb.variables[func_addr]
+
+        for v in vm.get_unified_variables(sort="stack"):
+            if v.name == old_name:
+                v.name = new_name
+                v.renamed = True
+                if hasattr(v, "_hash"):
+                    v._hash = None # Invalidate cached hash
+                break
+        else:
+            return False
+
+        return True
+
+
+    def set_search_technique(self, technique:str, **kwargs) -> bool:
+        try:
+            technique_enum = SearchTechnique[technique]
+        except KeyError:
+            list_search_techniques = [st.name for st in SearchTechnique]
+            self.conn.send_error(f"Search technique '{technique}' not recognized. Available techniques: {', '.join(list_search_techniques)}")
+            return False
+    
+        if(technique_enum.initialise(self, **kwargs)):
+            self.search_technique = technique_enum
+            return True
+        return False

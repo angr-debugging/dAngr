@@ -35,16 +35,11 @@ class ControlFlowGraphServer:
 
         self._setup_routes()
 
-    def __init__(self, project:angr.Project, debugger:CommandLineDebugger):
-        self.project = project
+    def __init__(self, debugger:CommandLineDebugger):
+        self.project = debugger.project
         self.debugger = debugger
         
-        self.cfg = self.project.analyses.CFG(
-                show_progressbar=False,
-                normalize=True,
-                resolve_indirect_jumps=True,
-                detect_tail_calls=True,
-            )
+        self.cfg = debugger.cfg
         
         logging.getLogger(
             "angr.analyses.calling_convention.fact_collector.SimEngineFactCollectorVEX"
