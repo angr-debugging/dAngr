@@ -170,7 +170,7 @@ class FunctionFilter(Filter):
 
     def _filter(self, state:SimState):
         if self.f_addr is None:
-            self.f_addr = func = state.project.kb.functions(name=self.function_name) # type: ignore
+            self.f_addr = next(state.project.kb.functions.get_by_name(name=self.function_name)).addr # type: ignore
         return self.f_addr == state.callstack.func_addr
     
     def __repr__(self) -> str:
