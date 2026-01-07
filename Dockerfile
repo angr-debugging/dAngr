@@ -9,7 +9,8 @@ RUN apt-get -y install git
 RUN apt-get -y install python3-pip 
 RUN apt-get -y install python3.12-venv 
 RUN apt-get -y install graphviz 
-RUN apt-get -y install graphviz-dev 
+RUN apt-get -y install graphviz-dev
+RUN apt-get -y install nettools
 
 # Setup environment
 ENV VIRTUAL_ENV=/home/ubuntu/venv

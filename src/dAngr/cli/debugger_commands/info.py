@@ -1,7 +1,7 @@
 import os
 
 
-
+import math
 from .base import BaseCommand
 from dAngr.exceptions.DebuggerCommandError import DebuggerCommandError
 from prompt_toolkit.shortcuts import ProgressBar
@@ -141,23 +141,59 @@ class InformationCommands(BaseCommand):
             result_list.append(f"{i}: " + str(paths[i]))
         return paths
 
-
-
-    def list_binary_strings(self, min_length:int = 4):
+    def list_binary_strings(self,filter:str="",page_size:int=200,page_index:int=0, min_length:int = 4):
         """
         List all binary strings.
 
         Args:
-            min_length (int): The minimum length of the binary strings to list. Default 4.
+            filter (str): List the strings containing the filtered value (optional).
+            page_size (int): The amount of strings to return (default: 200).
+            page_index (int): The page of the strings that is returned (default: 0).
+            min_length (int): The minimum length of the binary strings to list (default 4).
 
         Returns:
-            str: Information about the binary strings.
+            str: The found strings in the binary and the addressess of these strings.
         
         Short name: ibstr
         """
-        strings = self.debugger.get_binary_string_constants(min_length=min_length)
-        binary_strings = "\n".join([f"{s[0]}\t{s[1]}" for s in strings])
-        return f"\taddress\tvalue\n{binary_strings}"
+        strings = self.debugger.get_binary_string_constants(filter, min_length=min_length)
+        if page_index < 0:
+            page_index = 0
+        
+        page_end = page_size*(page_index +1)
+        max_index = len(strings) if page_end > len(strings) else page_end
+
+        strings_filtered = strings[page_size*page_index:max_index]
+
+        binary_strings = "\n".join([f"{s[0]}\t{s[1]}" for s in strings_filtered])
+        return f"\taddress\tvalue (page {page_index}/{math.floor(len(strings)/page_size)})\n{binary_strings}"
+    
+    def list_binary_functions(self, filter:str="", page_size:int=200, page_index:int=0):
+        """
+        Lists the functions contained in the binary.
+        
+        Args:
+            filter (str): Filter functions that contain this string value (optional)
+            page_size (int): Amount of functions to return per page (default 200).
+            page_index (int): page index to return (default 0).
+        
+        Short name: lbf
+        """
+        functions = self.debugger.list_functions()
+        start_index = page_size*page_index
+        end_index = page_size*(page_index+1)
+        if filter != "":
+            functions = [fn for fn in functions if filter in fn.name]
+
+
+        end_index = end_index if end_index > start_index and end_index <= len(functions) else len(functions)
+        start_index = start_index if start_index > 0 and start_index < len(functions) else 0
+        fn_info = [(fn.addr, fn.name) for fn in functions[start_index:end_index]]
+
+        functions_str = "\n".join([f"{hex(fn[0])}\t{fn[1]}" for fn in fn_info])
+
+        return f"\taddress\tname (page: {page_index}/{math.floor(len(functions)/page_size)})\n{functions_str}"
+        
 
     def list_binary_symbols(self): # type: ignore
         """

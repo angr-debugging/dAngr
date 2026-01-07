@@ -239,7 +239,7 @@ class Debugger:
         if addr:
             kwargs['addr'] = addr
         if args:
-            kwargs['args'] = args
+            kwargs['args'] = args[0]
         if kwargs.get('add_options') is None:
             kwargs['add_options'] = self._default_state_options
             #kwargs['add_options'] = angr.options.unicorn
@@ -253,7 +253,7 @@ class Debugger:
         if self._simgr is not None:
             self.reset_state()
         if args:
-            kwargs['args'] = args
+            kwargs['args'] = args[0]
         if kwargs.get('add_options') is None:
             kwargs['add_options'] = self._default_state_options
         self._set_current_state(self.project.factory.full_init_state(
@@ -266,7 +266,7 @@ class Debugger:
         if self._simgr is not None:
             self.reset_state()
         if args:
-            kwargs['args'] = args
+            kwargs['args'] = args[0]
         if kwargs.get('add_options') is None:
             kwargs['add_options'] = self._default_state_options
         log.debug(f"Creating blank state with kwargs: {kwargs}")
@@ -442,12 +442,18 @@ class Debugger:
             checksec = subprocess.run(f"checksec --file={self._binary_path}", cwd=os.path.abspath(os.curdir), capture_output=True, text=True, shell=True)
             if checksec.returncode != 0:
                 raise DebuggerCommandError(f"Failed to run checksec: {checksec.stdout}")
-            output = checksec.stdout
+            output = checksec.stdout if checksec.stdout != '' else checksec.stderr
             lines = output.split("\n")
-            headers = re.split(r'\s{2,}|\t',lines[0])
-            values = [x for x in (remove_ansi_escape_codes(r) for r in re.split(r'\s{2,}|\t',lines[1])) if x.strip()]
-            for i in range(len(headers)):
-                features[headers[i]] = values[i]
+
+            for line in lines[1:]:
+                remove_tabs = re.split(r'\s{2,}|\t',line)
+                if len(remove_tabs) != 3:
+                    continue
+                
+                header = remove_ansi_escape_codes(remove_tabs[1]).replace(':', '')
+                value = remove_ansi_escape_codes(remove_tabs[2])
+
+                features[header] = value
 
         except Exception as e:
             raise DebuggerCommandError(f"Failed to run checksec: {e}")
@@ -821,7 +827,7 @@ class Debugger:
         decompiled = self.project.analyses.Decompiler(start, variable_kb=self.project.kb, cfg=self.cfg_model, regen_clinic=False)
         return decompiled.codegen.text if decompiled.codegen else None
 
-    def get_binary_string_constants(self,min_length=4):
+    def get_binary_string_constants(self,filter="", min_length=4):
         # _ = self.cfg
         constants = []
         for section in self.project.loader.main_object.sections:
@@ -833,7 +839,7 @@ class Debugger:
                 data = self.project.loader.memory.load(base_addr, size)
                 # Find all sequences of printable characters in the data
                 # Adjust the regex pattern as needed for different types of strings
-                re_pattern = rb'[ -~]{%d,}' % min_length
+                re_pattern = rb'(?=[ -~]{%d,})[ -~]*%s[ -~]*' % (min_length, re.escape(filter.encode("utf-8")))
                 matches = re.finditer(re_pattern, data)  # Find strings with at least 4 printable characters
                 
                 for match in matches:
@@ -847,6 +853,8 @@ class Debugger:
                     constants.append((hex(string_address), string_value))
 
         return constants
+    
+    
     def list_path_history(self, index:int = 0, stash="active"):
         # list basic blocks of states in the path history for both active and deadended states
         st = self.simgr.stashes[stash]
