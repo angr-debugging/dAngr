@@ -1,9 +1,13 @@
 import argparse
-from dAngr.cli.server import Server
-from dAngr.dAngr_mcp.server import dAngrMCP
 import threading
 
 def run():
+    import dAngr.angr_modifications as am
+    am.apply_patches()
+
+    from dAngr.cli.server import Server
+    from dAngr.dAngr_mcp.server import dAngrMCP
+
     parser = argparse.ArgumentParser(description="dAngr Symbolic debugger.")
     parser.add_argument("-f", type=str, help="File to debug.", required=False)
     parser.add_argument("-s", type=str, help="Script to execute.",required=False)

@@ -6,6 +6,7 @@ import angr
 from angr import SimCC, SimProcedure, SimulationManager, types
 from angr.analyses.cfg.cfg_fast import CFGFast
 from angr.knowledge_plugins.functions.function import Function
+from angr.knowledge_plugins.cfg import CFGModel
 import angr.storage
 from angr.angrdb import AngrDB
 import claripy
@@ -53,6 +54,8 @@ class Debugger:
         self._function_prototypes = {}
         self._current_function:str = ''
         self._cfg:CFGFast|None = None
+        self._cfg_model:CFGModel|None = None
+        self._cfg_kb:angr.KnowledgeBase|None = None
         self._var_kb:angr.KnowledgeBase|None = None
         self._basic_blocks: List[BasicBlock] | None = None
         self.stop_reason = StopReason.NONE
@@ -79,13 +82,23 @@ class Debugger:
                 resolve_indirect_jumps=True,
                 detect_tail_calls=True,
             )
-            
 
         return self._cfg
     
     @property
+    def cfg_model(self):
+        if self._cfg_model is None:
+            self._cfg_model = self.cfg.model
+        return self._cfg_model
+    
+    @property
+    def cfg_kb(self) -> angr.KnowledgeBase:
+        if self._cfg_kb is None:
+            self._cfg_kb = self.cfg.kb
+        return self._cfg_kb
+
+    @property
     def var_kb(self) -> angr.KnowledgeBase:
-        self.cfg
         if self._var_kb is None:
             self.conn.send_info("Initializing variable knowledge base...")
             self._var_kb = angr.KnowledgeBase(self.project)
@@ -94,11 +107,11 @@ class Debugger:
 
     @property
     def basic_blocks(self):
-        self.cfg
         if self._basic_blocks is None:
             self._basic_blocks = []
-            for node in self.cfg.graph.nodes():
-                func = self.cfg.kb.functions.get(node.function_address, None)
+            for node in self.cfg_model.graph.nodes():
+                self.cfg_kb
+                func = self.project.kb.functions.get(node.function_address, None)
                 self._basic_blocks.append(BasicBlock(node.addr, node.size, len(node.instruction_addrs), node.block.capstone if node.block else None, func.name if func else None))
             
         return self._basic_blocks
@@ -311,7 +324,7 @@ class Debugger:
         return cc(self.project.arch)
 
     def get_function_info(self, func) -> Function |None:
-       self.cfg
+       self.cfg_kb
        if type(func) is int:
         address = func
         function =  get_function_by_addr(self.project, address)
@@ -326,7 +339,7 @@ class Debugger:
     
        
     def list_functions(self) -> list[Function]:
-        self.cfg
+        self.cfg_kb
         return [f for f in self.project.kb.functions.values()]
     
     def get_function_prototype(self, prototype:str, arguments:List[str]):
@@ -343,6 +356,7 @@ class Debugger:
         return self.simgr.one_active
 
     def get_variables(self, func_addr):
+        self.cfg_kb
         names = list(self.project.kb.dvars._dvar_containers)
         pc = claripy.BVV(func_addr+self._base_addr,64) # self._simgr.active[0].ip
         vars = []
@@ -809,14 +823,16 @@ class Debugger:
         return sections
 
     def get_decompiled_function(self, func_name):
-        func = self.cfg.kb.functions.function(name=func_name)
+        self.cfg_kb
+        func = self.project.kb.functions.function(name=func_name)
         if func:
-            decompiled = self.project.analyses.Decompiler(func, variable_kb=self.var_kb, cfg=self.cfg, regen_clinic=False)
+            decompiled = self.project.analyses.Decompiler(func, variable_kb=self.project.kb, cfg=self.cfg_model, regen_clinic=False)
             return decompiled.codegen.text if decompiled.codegen else None
         return None
 
     def get_decompiled_function_at_address(self, start, end):
-        decompiled = self.project.analyses.Decompiler(start, variable_kb=self.var_kb, cfg=self.cfg, regen_clinic=False)
+        self.cfg_kb
+        decompiled = self.project.analyses.Decompiler(start, variable_kb=self.project.kb, cfg=self.cfg_model, regen_clinic=False)
         return decompiled.codegen.text if decompiled.codegen else None
 
     def get_binary_string_constants(self,filter="", min_length=4):
@@ -934,12 +950,13 @@ class Debugger:
     def export_project(self, filepath:str):
         filepath = filepath if filepath.endswith('.sqlite') else filepath + '.sqlite'
 
-        cfgBuild = True
-        if(self._cfg is None):
-            cfgBuild = False
+        cfgBuild = False
+        kbs_export = []
+        if(self._cfg is not None):
+            cfgBuild = True
+            kbs_export.append(self._cfg_kb)
 
-        AngrDB(self._project).dump(filepath, extra_info={"arch": self._project.arch.name, "auto_load_libs": self._project.loader._auto_load_libs, "cfg_built": cfgBuild})
-
+        AngrDB(self._project).dump(filepath, kbs=kbs_export, extra_info={"arch": self._project.arch.name, "auto_load_libs": self._project.loader._auto_load_libs, "cfg_built": cfgBuild})
         self.show_loader(self._project)
 
     def import_project(self, filepath:str):
@@ -947,13 +964,26 @@ class Debugger:
         filepath = filepath if filepath.endswith('.sqlite') else filepath + '.sqlite'
         self._angrdb = DAngrDB()
 
+        extra_info_lst = {"arch": None, "auto_load_libs": None, "cfg_built": None}
+        self._project = self._angrdb.load(db_path=filepath, extra_info=extra_info_lst)
+
+        if(extra_info_lst.get("cfg_built") == "True"):
+            self._cfg_model = self.project.kb.cfgs["CFGFast"]
+            self._cfg_kb = self._project.kb
+            print("CFG loaded from database.")
+            print(self._cfg_model)
+            print(self._cfg_kb)
+
         try:
             extra_info_lst = {"arch": None, "auto_load_libs": None, "cfg_built": None}
             self._project = self._angrdb.load(db_path=filepath, extra_info=extra_info_lst)
 
             if(extra_info_lst.get("cfg_built") == "True"):
-                self._cfg = self.project.kb.cfgs["CFGFast"]
-
+                self._cfg_model = self.project.kb.cfgs["CFGFast"]
+                self._cfg_kb = self._project.kb
+                print("CFG loaded from database.")
+                print(self._cfg_model)
+                print(self._cfg_kb)
         except angr.errors.AngrIncompatibleDBError as ex:
             raise DebuggerCommandError(f"Incompatible database version in '{filepath}': {ex}") from ex
         except angr.errors.AngrDBError as ex:
@@ -991,18 +1021,15 @@ class Debugger:
             self.cfg_server = None
 
     def rename_variable(self, func_addr: int, old_name: str, new_name: str) -> bool:
-        self.cfg 
-        self.var_kb
-        vm_exists = func_addr in self.var_kb.variables.function_managers
+        #self.var_kb
+        vm_exists = func_addr in self.project.kb.variables.function_managers
 
-        self.project.analyses.Decompiler(
-            func_addr, cfg=self.cfg, variable_kb=self.var_kb,
-            regen_clinic=not vm_exists
-        )
+        self.project.analyses.Decompiler(func_addr, variable_kb=self.project.kb, cfg=self.cfg_model, regen_clinic=False)
 
-        vm = self.var_kb.variables[func_addr]
+        vm = self.project.kb.variables[func_addr]
 
         for v in vm.get_unified_variables(sort="stack"):
+            v_old = v
             if v.name == old_name:
                 v.name = new_name
                 v.renamed = True
