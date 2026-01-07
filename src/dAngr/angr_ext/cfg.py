@@ -39,13 +39,14 @@ class ControlFlowGraphServer:
         self.project = debugger.project
         self.debugger = debugger
         
-        self.cfg = debugger.cfg
+        self.cfg_model = self.debugger.cfg_model
+        self.cfg_kb = self.debugger.cfg_kb
         
         logging.getLogger(
             "angr.analyses.calling_convention.fact_collector.SimEngineFactCollectorVEX"
         ).setLevel(logging.CRITICAL)
         
-        ccc = self.project.analyses.CompleteCallingConventions(analyze_callsites=True, cfg=self.cfg)
+        ccc = self.project.analyses.CompleteCallingConventions(analyze_callsites=True, cfg=self.cfg_model)
 
         self.setup_server()
 
@@ -56,6 +57,7 @@ class ControlFlowGraphServer:
         Nodes: functions (by address)
         Edges: caller -> callee (kind='call'), and optionally callee -> caller (kind='ret')
         """
+        self.cfg_kb
         funcs = self.project.kb.functions
         cg = funcs.callgraph  # DiGraph: function_addr -> function_addr
 
@@ -77,6 +79,7 @@ class ControlFlowGraphServer:
 
 
     def _function_to_cyto_triskel(self, func_addr: int, scale: float = 1.0):
+        self.cfg_kb
         f = self.project.kb.functions[func_addr]
         g = f.graph  # per-function CFG (networkx DiGraph-like)
 
@@ -378,7 +381,8 @@ class ControlFlowGraphServer:
 
         @self.app.get("/functions")
         def functions():
-            funcs = [{"addr": hex(f.addr), "name": f.name} for f in self.cfg.kb.functions.values()]
+            self.cfg_kb
+            funcs = [{"addr": hex(f.addr), "name": f.name} for f in self.project.kb.functions.values()]
             return JSONResponse({"functions": funcs})
         
         @self.app.get("/functions_graph")
@@ -400,6 +404,7 @@ class ControlFlowGraphServer:
                 else:
                     function_addr = int(node_id_raw)
 
+                self.cfg_kb
                 function = self.project.kb.functions.get(function_addr)
 
                 if function is None:
@@ -410,7 +415,7 @@ class ControlFlowGraphServer:
                 allowed = set(int(a) for a in function.block_addrs_set)
                 nodes_by_id = {}
 
-                for n in self.cfg.graph.nodes():
+                for n in self.cfg_model.graph.nodes():
                     addr = int(getattr(n, "addr", None) or 0)
                     node_id = f"0x{addr:x}"
                     size = getattr(n, "size", None)
@@ -584,13 +589,13 @@ class ControlFlowGraphServer:
             a = getattr(n, "addr", None)
             return hex(a) if isinstance(a, int) else str(n)
 
-        for n in self.cfg.graph.nodes():
+        for n in self.cfg_model.graph.nodes():
             a = getattr(n, "addr", None)
             nid = node_id(n)
             label = nid
             nodes.append({"data": {"id": nid, "label": label, "addr": nid}})
 
-        for src, dst in self.cfg.graph.edges():
+        for src, dst in self.cfg_model.graph.edges():
             sid = node_id(src)
             tid = node_id(dst)
             eid = f"{sid}->{tid}"
