@@ -141,8 +141,6 @@ class InformationCommands(BaseCommand):
             result_list.append(f"{i}: " + str(paths[i]))
         return paths
 
-
-
     def list_binary_strings(self,filter:str="",page_size:int=200,page_index:int=0, min_length:int = 4):
         """
         List all binary strings.
@@ -170,15 +168,31 @@ class InformationCommands(BaseCommand):
         binary_strings = "\n".join([f"{s[0]}\t{s[1]}" for s in strings_filtered])
         return f"\taddress\tvalue (page {page_index}/{math.floor(len(strings)/page_size)})\n{binary_strings}"
     
-    def list_functions(self, filter:str, page_size:int=200, page_index:int=0):
+    def list_binary_functions(self, filter:str="", page_size:int=200, page_index:int=0):
         """
-        Docstring for list_functions
+        Lists the functions contained in the binary.
         
-        filter (str): Description
-        page_size (int): Description
-        page_index (int): Description
+        Args:
+            filter (str): Filter functions that contain this string value (optional)
+            page_size (int): Amount of functions to return per page (default 200).
+            page_index (int): page index to return (default 0).
+        
+        Short name: lbf
         """
-        pass
+        functions = self.debugger.list_functions()
+        start_index = page_size*page_index
+        end_index = page_size*(page_index+1)
+        if filter != "":
+            functions = [fn for fn in functions if filter in fn.name]
+
+
+        end_index = end_index if end_index > start_index and end_index <= len(functions) else len(functions)
+        start_index = start_index if start_index > 0 and start_index < len(functions) else 0
+        fn_info = [(fn.addr, fn.name) for fn in functions[start_index:end_index]]
+
+        functions_str = "\n".join([f"{hex(fn[0])}\t{fn[1]}" for fn in fn_info])
+
+        return f"\taddress\tname (page: {page_index}/{math.floor(len(functions)/page_size)})\n{functions_str}"
         
 
     def list_binary_symbols(self): # type: ignore
