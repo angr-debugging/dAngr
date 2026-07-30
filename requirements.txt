@@ -1,4 +1,4 @@
-angr==9.2.189
+angr==9.2.194
 pytest==8.1.1
 prompt_toolkit==3.0.43
 uefi-firmware==1.16
@@ -14,6 +14,7 @@ antlr4-tools==0.2.1
 antlr-denter==1.3.1
 cloudpickle==3.1.2
 fastmcp==2.14.1
+mcp==1.24.0
 fastapi==0.124.4
 uvicorn==0.38.0
 #pytriskel==0.5.0
